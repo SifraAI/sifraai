@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <style>
 :root{
   --bg:#fcfcfc;
@@ -29,18 +31,18 @@
   --danger:#bb2d3b;
 }
 html[data-theme="dark"]{
-  --bg:#212121;
-  --sidebar:#171717;
-  --surface:#2a2a2a;
-  --surface-hover:#2f2f2f;
-  --composer:#2f2f2f;
-  --text:#ececec;
-  --muted:#a9a9a9;
-  --muted-2:#8b8b8b;
-  --line:#303030;
-  --line-strong:#3b3b3b;
-  --user:#2f2f2f;
-  --icon:#ececec;
+  --bg:#111111;
+  --sidebar:#111111;
+  --surface:#181818;
+  --surface-hover:#202020;
+  --composer:#181818;
+  --text:#eeeeee;
+  --muted:#a7a7a7;
+  --muted-2:#858585;
+  --line:#242424;
+  --line-strong:#303030;
+  --user:#242424;
+  --icon:#eeeeee;
   --shadow:0 4px 20px rgba(0,0,0,.22);
   --shadow-composer:0 10px 35px rgba(0,0,0,.25);
   --danger:#ff7f87;
@@ -82,21 +84,14 @@ body.sidebar-collapsed .app{grid-template-columns:0 minmax(0,1fr)}
   height:100dvh;
   overflow:hidden;
   border-left:0;
-  border-right:1px solid #181818;
-  background:#111111;
-  --text:#eeeeee;
-  --muted:#a7a7a7;
-  --muted-2:#858585;
-  --surface:#181818;
-  --surface-hover:#202020;
-  --line:#242424;
-  --line-strong:#303030;
-  --icon:#eeeeee;
+  border-right:1px solid var(--line);
+  background:var(--sidebar);
   display:flex;
   flex-direction:column;
   transition:transform .2s ease,opacity .2s ease;
   z-index:30;
 }
+html[data-theme="dark"] .sidebar{border-right-color:#181818}
 body.sidebar-collapsed .sidebar{
   transform:translateX(-100%);
   opacity:0;
@@ -336,18 +331,7 @@ body.sidebar-collapsed .sidebar{
   position:relative;
   display:flex;
   flex-direction:column;
-  background:#111111;
-  --bg:#111111;
-  --text:#eeeeee;
-  --muted:#a7a7a7;
-  --muted-2:#858585;
-  --surface:#181818;
-  --surface-hover:#202020;
-  --composer:#181818;
-  --line:#242424;
-  --line-strong:#303030;
-  --user:#242424;
-  --icon:#eeeeee;
+  background:var(--bg);
   overflow:hidden;
 }
 .topbar{
@@ -366,8 +350,8 @@ body.sidebar-collapsed .sidebar{
   align-items:stretch;
   gap:3px;
   padding:3px;
-  border:1px solid #242424;
-  background:#151515;
+  border:1px solid var(--line);
+  background:var(--surface);
   border-radius:13px;
   box-shadow:0 3px 14px rgba(0,0,0,.14);
 }
@@ -376,23 +360,23 @@ body.sidebar-collapsed .sidebar{
   min-height:38px;
   border:0;
   background:transparent;
-  color:#8f8f8f;
+  color:var(--muted);
   border-radius:10px;
   padding:5px 9px 4px;
   text-align:left;
   line-height:1.05;
   transition:background .16s ease,color .16s ease,transform .16s ease;
 }
-.model-option:hover{background:#1c1c1c;color:#d9d9d9}
+.model-option:hover{background:var(--surface-hover);color:var(--text)}
 .model-option.active{
-  background:#262626;
-  color:#f5f5f5;
-  box-shadow:inset 0 0 0 1px #303030,0 1px 4px rgba(0,0,0,.16);
+  background:var(--surface-hover);
+  color:var(--text);
+  box-shadow:inset 0 0 0 1px var(--line-strong),0 1px 4px rgba(0,0,0,.08);
 }
 .model-option:active{transform:scale(.985)}
 .model-name{display:block;font-size:12px;font-weight:600;letter-spacing:.01em}
-.model-info{display:block;margin-top:3px;font-size:9.5px;color:#777;white-space:nowrap}
-.model-option.active .model-info{color:#aaa}
+.model-info{display:block;margin-top:3px;font-size:9.5px;color:var(--muted);white-space:nowrap}
+.model-option.active .model-info{color:var(--muted)}
 .reopen-sidebar{display:none}
 body.sidebar-collapsed .reopen-sidebar{display:grid}
 .share-btn{
@@ -496,6 +480,26 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   overflow-wrap:anywhere;
 }
 .assistant-text strong{font-weight:700}
+.assistant-text .math-inline{
+  direction:ltr;
+  unicode-bidi:isolate;
+  display:inline-block;
+  vertical-align:middle;
+  margin:0 .08em;
+}
+.assistant-text .math-display{
+  direction:ltr;
+  unicode-bidi:isolate;
+  display:block;
+  width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  margin:.7em 0;
+  padding:2px 0 5px;
+  text-align:center;
+}
+.assistant-text .math-display .katex-display{margin:0}
+.assistant-text .katex{font-size:1.03em}
 .assistant-text.streaming{
   min-height:1.8em;
 }
@@ -586,7 +590,7 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
 .round-btn:hover{background:var(--surface-hover)}
 .send-btn{
   width:36px;height:36px;border:0;border-radius:50%;
-  background:var(--text);color:#111111;
+  background:var(--text);color:var(--bg);
   display:grid;place-items:center;
   transition:opacity .15s,transform .15s;
 }
@@ -958,7 +962,95 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
   const MAX_IMAGES=2;
 
   function esc(value){return String(value).replace(/[&<>"']/g,function(char){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]})}
-  function formatAnswer(text){return esc(text).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
+  function formatTextSegment(text){
+    return esc(text)
+      .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+      .replace(/\n/g,'<br>');
+  }
+  function renderMathSegment(source,displayMode){
+    const math=String(source).trim();
+    if(!math)return '';
+
+    if(window.katex){
+      try{
+        const rendered=window.katex.renderToString(math,{
+          throwOnError:false,
+          displayMode:displayMode,
+          strict:'ignore',
+          trust:false,
+          output:'htmlAndMathml'
+        });
+        return '<span class="'+(displayMode?'math-display':'math-inline')+'">'+rendered+'</span>';
+      }catch(error){}
+    }
+
+    const delimiter=displayMode?'$$':'$';
+    return formatTextSegment(delimiter+source+delimiter);
+  }
+  function findInlineDollar(source,from){
+    for(let i=from;i<source.length;i+=1){
+      if(
+        source[i]==='$' &&
+        source[i-1]!=='\\' &&
+        source[i-1]!=='$' &&
+        source[i+1]!=='$'
+      ){
+        return i;
+      }
+    }
+    return -1;
+  }
+  function formatAnswer(text){
+    const source=String(text);
+    let output='';
+    let cursor=0;
+
+    while(cursor<source.length){
+      const displayStart=source.indexOf('$$',cursor);
+      const inlineStart=findInlineDollar(source,cursor);
+
+      let start=-1;
+      let displayMode=false;
+
+      if(displayStart!==-1&&(inlineStart===-1||displayStart<=inlineStart)){
+        start=displayStart;
+        displayMode=true;
+      }else if(inlineStart!==-1){
+        start=inlineStart;
+      }
+
+      if(start===-1){
+        output+=formatTextSegment(source.slice(cursor));
+        break;
+      }
+
+      output+=formatTextSegment(source.slice(cursor,start));
+
+      if(displayMode){
+        const end=source.indexOf('$$',start+2);
+
+        if(end===-1){
+          output+=formatTextSegment(source.slice(start));
+          break;
+        }
+
+        output+=renderMathSegment(source.slice(start+2,end),true);
+        cursor=end+2;
+      }else{
+        const end=findInlineDollar(source,start+1);
+
+        if(end===-1){
+          output+=formatTextSegment(source.slice(start));
+          break;
+        }
+
+        output+=renderMathSegment(source.slice(start+1,end),false);
+        cursor=end+1;
+      }
+    }
+
+    return output;
+  }
   function showToast(message){toast.textContent=message;toast.classList.add('on');clearTimeout(showToast.timer);showToast.timer=setTimeout(function(){toast.classList.remove('on')},2200)}
   function resizeTextarea(el){el.style.height='130px';el.style.height=Math.min(Math.max(130,el.scrollHeight),220)+'px'}
   function updateButtons(){const hasHome=homeInput.value.trim()||state.images.length,hasChat=chatInput.value.trim()||state.images.length;sendHome.disabled=state.busy||!hasHome;sendChat.disabled=state.busy||!hasChat}
