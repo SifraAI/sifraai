@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sifra — AI למתמטיקה</title>
+<style>
+:root{--bg:#fff;--soft:#f5f5f5;--line:#e7e7e7;--text:#171717;--muted:#737373}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:Inter,Arial,sans-serif;background:#fff;color:var(--text);overflow:hidden}
+button,textarea{font:inherit}.app{height:100vh;display:grid;grid-template-columns:1fr 245px;direction:ltr}
+.side{direction:rtl;background:#fafafa;border-left:1px solid var(--line);display:flex;flex-direction:column;padding:12px}
+.logo{font-size:20px;font-weight:800;padding:7px 8px 18px;display:flex;gap:9px;align-items:center}.mark{width:30px;height:30px;border-radius:10px;background:#111;color:#fff;display:grid;place-items:center}
+.new{border:1px solid var(--line);background:#fff;border-radius:11px;padding:11px;font-weight:650}.new:hover,.item:hover{background:#f0f0f0}
+.label{font-size:12px;color:#999;margin:24px 8px 8px}.item{border:0;background:transparent;text-align:right;padding:9px;border-radius:9px;color:#444}
+.history{display:flex;flex-direction:column}.account{margin-top:auto;border-top:1px solid var(--line);padding:14px 7px;color:#555;font-size:13px}
+.main{direction:rtl;position:relative;display:flex;flex-direction:column;min-width:0}.top{height:58px;padding:0 20px;display:flex;align-items:center;justify-content:space-between}.top b{font-size:14px}
+.center{width:min(760px,calc(100% - 32px));margin:auto;transform:translateY(-40px)}h1{text-align:center;font-size:38px;letter-spacing:-1.5px;margin:0 0 25px}
+.sub{text-align:center;color:#888;font-size:13px;margin-bottom:10px}.dot{display:inline-block;width:7px;height:7px;background:#16a34a;border-radius:50%;margin-left:7px}
+.box{border:1px solid #e2e2e2;background:#f6f6f6;border-radius:22px;padding:17px;box-shadow:0 12px 35px #0000000a}.box:focus-within{background:#fff;box-shadow:0 15px 40px #00000010}
+textarea{width:100%;height:90px;resize:none;border:0;outline:0;background:transparent;font-size:18px;line-height:1.6;color:#171717}textarea::placeholder{color:#aaa}
+.actions{display:flex;justify-content:space-between;align-items:center}.plus{border:0;background:transparent;width:38px;height:38px;border-radius:10px;font-size:23px;color:#666}.plus:hover{background:#eee}
+.send{width:39px;height:39px;border:0;border-radius:50%;background:#111;color:#fff;font-size:20px}.send:disabled{opacity:.25}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}.q{border:1px solid var(--line);background:#fff;border-radius:13px;padding:13px;text-align:right;color:#555}.q:hover{background:#fafafa}
+.chat{display:none;width:min(760px,calc(100% - 32px));margin:20px auto 125px;overflow:auto}.chat.on{display:block}.msg{margin:0 0 22px;line-height:1.75;white-space:pre-wrap}.user{background:#f2f2f2;border-radius:15px 15px 4px 15px;padding:11px 14px;margin-right:auto;width:max-content;max-width:80%}.ai{padding-right:44px;position:relative}.ai:before{content:"S";position:absolute;right:0;top:0;width:31px;height:31px;background:#111;color:#fff;border-radius:9px;display:grid;place-items:center;font-weight:800}
+.bottom{display:none;position:absolute;bottom:0;left:0;right:0;padding:20px;background:linear-gradient(transparent,#fff 35%)}.bottom.on{display:block}.mini{width:min(760px,100%);margin:auto;background:#f6f6f6;border:1px solid var(--line);border-radius:18px;padding:10px 12px;display:flex;gap:10px;align-items:end}.mini textarea{height:42px;font-size:15px}
+.menu{display:none;border:0;background:transparent;font-size:24px}
+@media(max-width:800px){.app{display:block}.side{position:fixed;z-index:5;right:0;top:0;bottom:0;width:280px;transform:translateX(105%);transition:.2s;box-shadow:-15px 0 40px #0002}.side.on{transform:none}.menu{display:block}.center{transform:translateY(-20px)}.quick{grid-template-columns:1fr}h1{font-size:30px}}
+</style>
+</head>
+<body>
+<div class="app">
+<main class="main">
+  <header class="top"><button class="menu" id="menu">☰</button><b>Sifra</b><span></span></header>
+  <section class="center" id="home">
+    <div class="sub"><span class="dot"></span>מוכן לפתור איתך, שלב אחר שלב</div>
+    <h1>מה נפתור היום?</h1>
+    <div class="box">
+      <textarea id="input" placeholder="כתוב תרגיל, משוואה או שאלה במתמטיקה..."></textarea>
+      <div class="actions"><button class="plus">＋</button><button class="send" id="send" disabled>↑</button></div>
+    </div>
+    <div class="quick">
+      <button class="q">פתור משוואה והסבר שלב־שלב</button>
+      <button class="q">למד אותי נושא מתמטי מהבסיס</button>
+      <button class="q">בדוק פתרון ותגיד איפה טעיתי</button>
+      <button class="q">צור לי תרגול לפי הרמה שלי</button>
+    </div>
+  </section>
+  <section class="chat" id="chat"></section>
+  <div class="bottom" id="bottom"><div class="mini"><textarea id="follow" placeholder="שאל שאלת המשך..."></textarea><button class="send" id="send2" disabled>↑</button></div></div>
+</main>
+<aside class="side" id="side">
+  <div class="logo"><div class="mark">S</div>Sifra</div>
+  <button class="new" id="new">＋ שיחה חדשה</button>
+  <div class="label">כלים</div>
+  <button class="item">צ׳אט</button><button class="item">מחברת פתרונות</button><button class="item">תרגולים אחרונים</button>
+  <div class="label">שיחות אחרונות</div>
+  <div class="history" id="history"><button class="item">משוואה ריבועית</button><button class="item">נגזרות</button><button class="item">גיאומטריה</button></div>
+  <div class="account">החשבון שלי · Free</div>
+</aside>
+</div>
+<script>
+const input=document.querySelector('#input'),send=document.querySelector('#send'),chat=document.querySelector('#chat'),home=document.querySelector('#home'),bottom=document.querySelector('#bottom'),follow=document.querySelector('#follow'),send2=document.querySelector('#send2'),side=document.querySelector('#side');
+const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+input.oninput=()=>send.disabled=!input.value.trim();follow.oninput=()=>send2.disabled=!follow.value.trim();
+document.querySelectorAll('.q').forEach(x=>x.onclick=()=>{input.value=x.textContent;send.disabled=false;input.focus()});
+function msg(text,type){const d=document.createElement('div');d.className='msg '+type;d.innerHTML=esc(text).replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');chat.appendChild(d);return d}
+async function ask(text){
+  const pending=msg('חושב…','ai');
+  try{
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+    const j=await r.json(); pending.remove();
+    if(!r.ok) throw new Error(j.error||'שגיאה');
+    msg(j.answer,'ai');
+  }catch(e){pending.remove();msg(e.message||'לא הצלחתי לקבל תשובה.','ai')}
+  chat.scrollTop=chat.scrollHeight;
+}
+function submit(el){const t=el.value.trim();if(!t)return;home.style.display='none';chat.classList.add('on');bottom.classList.add('on');msg(t,'user');el.value='';send.disabled=true;send2.disabled=true;ask(t)}
+send.onclick=()=>submit(input);send2.onclick=()=>submit(follow);
+[input,follow].forEach(el=>el.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit(el)}});
+document.querySelector('#new').onclick=()=>{chat.innerHTML='';chat.classList.remove('on');bottom.classList.remove('on');home.style.display='';side.classList.remove('on')};
+document.querySelector('#menu').onclick=()=>side.classList.toggle('on');
+</script>
+</body>
+</html>
