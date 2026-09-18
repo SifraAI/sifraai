@@ -3002,132 +3002,335 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     }
   }
 
-  function normalizeLesson(raw){
-    const data=typeof raw==='string'?JSON.parse(raw):raw;
-    const pages=Array.isArray(data.pages)?data.pages.slice(0,8):[];
-    if(!pages.length)throw new Error('אין עמודים לסרטון');
+  function clamp(value,min,max){
+    return Math.max(min,Math.min(max,value));
+  }
 
-    const cleaned=pages.map(function(page,index){
+  function lessonSafeColor(value,fallback){
+    const named={
+      text:'text',
+      muted:'muted',
+      accent:'accent',
+      white:'#ffffff',
+      black:'#000000',
+      red:'#ff5b64',
+      green:'#49c47c',
+      blue:'#6f8cff',
+      yellow:'#f1c75b',
+      purple:'#9a7cff'
+    };
+
+    if(typeof value!=='string')return fallback;
+    const clean=value.trim().toLowerCase();
+    if(named[clean])return named[clean];
+    if(/^#[0-9a-f]{6}$/i.test(clean))return clean;
+    return fallback;
+  }
+
+  function normalizeLesson(raw){
+    const data=
+      typeof raw==='string'
+        ? JSON.parse(raw)
+        : raw;
+
+    const sourceScenes=
+      Array.isArray(data.scenes)
+        ? data.scenes.slice(0,8)
+        : Array.isArray(data.pages)
+          ? data.pages.slice(0,8)
+          : [];
+
+    if(!sourceScenes.length){
+      throw new Error('אין סצנות לסרטון');
+    }
+
+    function legacyElements(scene,index){
+      const elements=[];
+
+      if(scene.title){
+        elements.push({
+          type:'title',
+          text:String(scene.title),
+          x:.90,
+          y:.22,
+          w:.76,
+          size:54,
+          align:'right',
+          animation:'slide-up',
+          at:.15
+        });
+      }
+
+      if(scene.body){
+        elements.push({
+          type:'text',
+          text:String(scene.body),
+          x:.90,
+          y:.42,
+          w:.68,
+          size:28,
+          align:'right',
+          color:'muted',
+          animation:'fade',
+          at:.7
+        });
+      }
+
+      if(scene.formula){
+        elements.push({
+          type:'formula',
+          text:String(scene.formula),
+          x:.5,
+          y:.67,
+          w:.78,
+          size:46,
+          align:'center',
+          animation:'pop',
+          at:1.15
+        });
+      }
+
+      if(Array.isArray(scene.bullets)&&scene.bullets.length){
+        elements.push({
+          type:'bullets',
+          items:scene.bullets.slice(0,4).map(String),
+          x:.89,
+          y:.57,
+          w:.70,
+          size:26,
+          align:'right',
+          animation:'slide-up',
+          at:1
+        });
+      }
+
+      if(!elements.length){
+        elements.push({
+          type:'title',
+          text:'שלב '+(index+1),
+          x:.5,
+          y:.5,
+          w:.7,
+          size:56,
+          align:'center',
+          animation:'fade',
+          at:.1
+        });
+      }
+
+      return elements;
+    }
+
+    const scenes=sourceScenes.map(function(scene,index){
+      const background=
+        typeof scene.background==='string'
+          ? {color:scene.background,pattern:'none'}
+          : (scene.background||{});
+
+      const rawElements=
+        Array.isArray(scene.elements)&&scene.elements.length
+          ? scene.elements.slice(0,9)
+          : legacyElements(scene,index);
+
+      const elements=rawElements.map(function(rawElement){
+        const type=String(rawElement.type||'text').toLowerCase();
+        const element={
+          type:type,
+          text:String(rawElement.text||'').slice(0,420),
+          items:Array.isArray(rawElement.items)
+            ? rawElement.items.slice(0,5).map(function(item){return String(item).slice(0,160)})
+            : [],
+          equation:String(rawElement.equation||'').slice(0,180),
+          expression:String(rawElement.expression||'').slice(0,120),
+          labels:Array.isArray(rawElement.labels)
+            ? rawElement.labels.slice(0,10).map(function(item){return String(item).slice(0,50)})
+            : [],
+          values:Array.isArray(rawElement.values)
+            ? rawElement.values.slice(0,10).map(Number)
+            : [],
+          numerator:Number(rawElement.numerator),
+          denominator:Number(rawElement.denominator),
+          x:clamp(Number(rawElement.x??.5),0,1),
+          y:clamp(Number(rawElement.y??.5),0,1),
+          w:clamp(Number(rawElement.w??.52),.08,1),
+          h:clamp(Number(rawElement.h??.42),.08,1),
+          r:clamp(Number(rawElement.r??.08),.015,.4),
+          size:clamp(Number(rawElement.size??30),14,78),
+          align:['left','center','right'].includes(rawElement.align)
+            ? rawElement.align
+            : 'right',
+          color:lessonSafeColor(rawElement.color,'text'),
+          fill:lessonSafeColor(rawElement.fill,'transparent'),
+          stroke:lessonSafeColor(rawElement.stroke,'text'),
+          label:String(rawElement.label||'').slice(0,100),
+          at:clamp(Number(rawElement.at??0),0,30),
+          duration:clamp(Number(rawElement.duration??.65),.12,8),
+          animation:[
+            'none','fade','slide-up','slide-left','slide-right',
+            'pop','draw','float','pulse','move'
+          ].includes(rawElement.animation)
+            ? rawElement.animation
+            : 'fade',
+          toX:Number.isFinite(Number(rawElement.toX))
+            ? clamp(Number(rawElement.toX),0,1)
+            : null,
+          toY:Number.isFinite(Number(rawElement.toY))
+            ? clamp(Number(rawElement.toY),0,1)
+            : null,
+          from:Array.isArray(rawElement.from)&&rawElement.from.length>=2
+            ? [clamp(Number(rawElement.from[0]),0,1),clamp(Number(rawElement.from[1]),0,1)]
+            : null,
+          to:Array.isArray(rawElement.to)&&rawElement.to.length>=2
+            ? [clamp(Number(rawElement.to[0]),0,1),clamp(Number(rawElement.to[1]),0,1)]
+            : null
+        };
+
+        return element;
+      });
+
       return {
-        title:String(page.title||('שלב '+(index+1))).slice(0,90),
-        body:String(page.body||'').slice(0,280),
-        formula:String(page.formula||'').slice(0,140),
-        bullets:Array.isArray(page.bullets)?page.bullets.slice(0,4).map(function(item){return String(item).slice(0,120)}):[],
-        seconds:Math.max(2,Math.min(18,Number(page.seconds)||8))
+        seconds:clamp(Number(scene.seconds)||8,2,18),
+        transition:['fade','slide','wipe'].includes(scene.transition)
+          ? scene.transition
+          : 'fade',
+        background:{
+          color:['white','black'].includes(background.color)
+            ? background.color
+            : 'black',
+          pattern:['none','grid','dots'].includes(background.pattern)
+            ? background.pattern
+            : 'none',
+          accent:lessonSafeColor(background.accent,'accent')
+        },
+        elements:elements
       };
     });
 
-    let requested=Math.max(15,Math.min(60,Number(data.duration)||cleaned.reduce(function(sum,page){return sum+page.seconds},0)));
-    const sum=cleaned.reduce(function(total,page){return total+page.seconds},0);
+    const natural=scenes.reduce(function(sum,scene){return sum+scene.seconds},0);
+    const requested=clamp(
+      Number(data.duration)||natural,
+      15,
+      60
+    );
 
-    if(sum>0){
-      const scale=requested/sum;
-      cleaned.forEach(function(page){page.seconds=Math.max(1.5,page.seconds*scale)});
+    if(natural>0){
+      const scale=requested/natural;
+      scenes.forEach(function(scene){
+        scene.seconds=Math.max(1.8,scene.seconds*scale);
+      });
     }
+
+    const duration=scenes.reduce(function(sum,scene){return sum+scene.seconds},0);
 
     return {
       title:String(data.title||'סרטון הסבר').slice(0,100),
-      duration:requested,
-      pages:cleaned
+      duration:duration,
+      scenes:scenes
     };
   }
 
   function lessonTimeline(lesson){
     let cursor=0;
-    return lesson.pages.map(function(page,index){
+
+    return lesson.scenes.map(function(scene,index){
       const start=cursor;
-      cursor+=page.seconds;
-      return {page:page,index:index,start:start,end:cursor};
+      cursor+=scene.seconds;
+
+      return {
+        scene:scene,
+        index:index,
+        start:start,
+        end:cursor
+      };
     });
   }
 
-  function setLessonPreviewPage(card,lesson,index){
-    const stage=card.querySelector('.lesson-stage');
-    const pageEl=card.querySelector('.lesson-page');
-    if(!stage||!pageEl)return;
+  function lessonPalette(scene){
+    const dark=scene.background.color!=='white';
 
-    const page=lesson.pages[index]||lesson.pages[0];
-    pageEl.classList.add('switching');
-
-    setTimeout(function(){
-      pageEl.innerHTML='';
-
-      const title=document.createElement('div');
-      title.className='lesson-title';
-      title.textContent=page.title;
-      pageEl.appendChild(title);
-
-      if(page.body){
-        const body=document.createElement('div');
-        body.className='lesson-body';
-        body.textContent=page.body;
-        pageEl.appendChild(body);
-      }
-
-      if(page.formula){
-        const formula=document.createElement('div');
-        formula.className='lesson-formula';
-        formula.textContent=page.formula;
-        pageEl.appendChild(formula);
-      }
-
-      if(page.bullets.length){
-        const list=document.createElement('ul');
-        list.className='lesson-bullets';
-        page.bullets.forEach(function(item){
-          const li=document.createElement('li');
-          li.textContent=item;
-          list.appendChild(li);
-        });
-        pageEl.appendChild(list);
-      }
-
-      const counter=card.querySelector('.lesson-counter');
-      if(counter)counter.textContent=(index+1)+' / '+lesson.pages.length;
-      pageEl.classList.remove('switching');
-    },120);
+    return {
+      dark:dark,
+      background:dark?'#0b0c0f':'#fbfbfb',
+      text:dark?'#f7f7f7':'#111111',
+      muted:dark?'rgba(247,247,247,.66)':'rgba(17,17,17,.58)',
+      subtle:dark?'rgba(255,255,255,.11)':'rgba(0,0,0,.09)',
+      subtle2:dark?'rgba(255,255,255,.18)':'rgba(0,0,0,.16)',
+      accent:
+        scene.background.accent!=='accent'
+          ? scene.background.accent
+          : dark
+            ? '#91a5ff'
+            : '#596dff'
+    };
   }
 
-  function startLessonPreview(card,lesson){
-    if(card._lessonPlaying)return;
-    card._lessonPlaying=true;
+  function lessonColor(value,palette){
+    if(value==='text')return palette.text;
+    if(value==='muted')return palette.muted;
+    if(value==='accent')return palette.accent;
+    if(value==='transparent')return 'transparent';
+    return value||palette.text;
+  }
 
-    const button=card.querySelector('.lesson-center-play');
-    if(button)button.textContent='❚❚';
+  function easeOutCubic(value){
+    const t=clamp(value,0,1);
+    return 1-Math.pow(1-t,3);
+  }
 
-    const bar=card.querySelector('.lesson-stage-progress > div');
-    const timeline=lessonTimeline(lesson);
-    const started=performance.now();
+  function easeInOutCubic(value){
+    const t=clamp(value,0,1);
+    return t<.5
+      ? 4*t*t*t
+      : 1-Math.pow(-2*t+2,3)/2;
+  }
 
-    function tick(now){
-      if(!card._lessonPlaying)return;
-      const elapsed=((now-started)/1000)%lesson.duration;
-      let current=timeline[timeline.length-1];
+  function lessonElementMotion(element,localTime){
+    const elapsed=localTime-element.at;
+    const progress=clamp(elapsed/element.duration,0,1);
+    const eased=easeOutCubic(progress);
 
-      for(const item of timeline){
-        if(elapsed>=item.start&&elapsed<item.end){
-          current=item;
-          break;
-        }
-      }
+    let alpha=
+      elapsed<0
+        ? 0
+        : element.animation==='none'
+          ? 1
+          : eased;
 
-      if(card._lessonPage!==current.index){
-        card._lessonPage=current.index;
-        setLessonPreviewPage(card,lesson,current.index);
-      }
+    let dx=0;
+    let dy=0;
+    let scale=1;
+    let draw=1;
 
-      if(bar)bar.style.width=Math.min(100,(elapsed/lesson.duration)*100)+'%';
-      card._lessonRaf=requestAnimationFrame(tick);
+    if(element.animation==='slide-up'){
+      dy=(1-eased)*36;
+    }else if(element.animation==='slide-left'){
+      dx=(1-eased)*55;
+    }else if(element.animation==='slide-right'){
+      dx=-(1-eased)*55;
+    }else if(element.animation==='pop'){
+      scale=.82+.18*eased;
+    }else if(element.animation==='draw'){
+      draw=eased;
+      alpha=elapsed<0?0:1;
+    }else if(element.animation==='float'&&elapsed>=0){
+      dy=Math.sin((elapsed-progress)*2.2)*7;
+      alpha=1;
+    }else if(element.animation==='pulse'&&elapsed>=0){
+      scale=1+Math.sin(elapsed*3.2)*.035;
+      alpha=1;
+    }else if(element.animation==='move'&&elapsed>=0){
+      alpha=1;
     }
 
-    card._lessonRaf=requestAnimationFrame(tick);
-  }
-
-  function stopLessonPreview(card){
-    card._lessonPlaying=false;
-    if(card._lessonRaf)cancelAnimationFrame(card._lessonRaf);
-    const button=card.querySelector('.lesson-center-play');
-    if(button)button.textContent='▶';
+    return {
+      progress:progress,
+      eased:eased,
+      alpha:alpha,
+      dx:dx,
+      dy:dy,
+      scale:scale,
+      draw:draw
+    };
   }
 
   function roundedRect(ctx,x,y,w,h,r){
@@ -3141,13 +3344,23 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     ctx.closePath();
   }
 
+  function containsHebrew(text){
+    return /[\u0590-\u05ff]/.test(String(text||''));
+  }
+
   function wrapCanvasLines(ctx,text,maxWidth){
-    const words=String(text||'').split(/\s+/).filter(Boolean);
+    const words=String(text||'')
+      .replace(/\s+/g,' ')
+      .trim()
+      .split(' ')
+      .filter(Boolean);
+
     const lines=[];
     let line='';
 
     words.forEach(function(word){
       const test=line?line+' '+word:word;
+
       if(ctx.measureText(test).width>maxWidth&&line){
         lines.push(line);
         line=word;
@@ -3160,157 +3373,958 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     return lines;
   }
 
-  function drawLessonFrame(ctx,lesson,time,width,height){
-    ctx.save();
-    ctx.clearRect(0,0,width,height);
+  function lessonTextAnchor(element,width){
+    const x=element.x*width;
 
-    const g=ctx.createLinearGradient(0,0,width,height);
-    g.addColorStop(0,'#0b0c10');
-    g.addColorStop(.58,'#11131a');
-    g.addColorStop(1,'#17131f');
-    ctx.fillStyle=g;
-    ctx.fillRect(0,0,width,height);
-
-    ctx.globalAlpha=.12;
-    ctx.strokeStyle='#ffffff';
-    ctx.lineWidth=1;
-    for(let x=0;x<width;x+=64){
-      ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,height);ctx.stroke();
-    }
-    for(let y=0;y<height;y+=64){
-      ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(width,y);ctx.stroke();
-    }
-    ctx.globalAlpha=1;
-
-    ctx.direction='rtl';
-    ctx.textAlign='right';
-    ctx.fillStyle='rgba(255,255,255,.74)';
-    ctx.font='500 20px Huninn, Arial';
-    ctx.fillText('Sifra • שיעור מתמטי',width-58,52);
-
-    const timeline=lessonTimeline(lesson);
-    let current=timeline[timeline.length-1];
-    for(const item of timeline){
-      if(time>=item.start&&time<item.end){current=item;break}
+    if(element.align==='left'){
+      return {x:x,align:'left'};
     }
 
-    const page=current.page;
-    const local=Math.max(0,time-current.start);
-    const dur=Math.max(1,current.end-current.start);
-    const enter=Math.min(1,local/.55);
-    const exit=Math.max(0,(local-(dur-.5))/.5);
-    const ease=function(v){return 1-Math.pow(1-v,3)};
-    const alpha=Math.max(0,Math.min(1,ease(enter)*(1-exit)));
-    const offset=(1-ease(enter))*28-exit*16;
+    if(element.align==='center'){
+      return {x:x,align:'center'};
+    }
+
+    return {x:x,align:'right'};
+  }
+
+  function lessonDrawText(ctx,element,text,palette,width,height,localTime,kind){
+    const motion=lessonElementMotion(element,localTime);
+    if(motion.alpha<=0)return;
+
+    let x=element.x*width;
+    let y=element.y*height;
+
+    if(element.animation==='move'){
+      if(element.toX!==null)x=(element.x+(element.toX-element.x)*motion.eased)*width;
+      if(element.toY!==null)y=(element.y+(element.toY-element.y)*motion.eased)*height;
+    }
+
+    x+=motion.dx;
+    y+=motion.dy;
+
+    const maxWidth=element.w*width;
+    const fontSize=element.size;
+    const isFormula=kind==='formula';
+    const isTitle=kind==='title';
+    const weight=isTitle||isFormula?'700':'500';
 
     ctx.save();
-    ctx.globalAlpha=alpha;
-    ctx.translate(0,offset);
+    ctx.globalAlpha=motion.alpha;
+    ctx.translate(x,y);
+    ctx.scale(motion.scale,motion.scale);
 
-    ctx.fillStyle='#ffffff';
-    ctx.font='700 50px Huninn, Arial';
-    const titleLines=wrapCanvasLines(ctx,page.title,width-160);
-    let y=170;
-    titleLines.slice(0,2).forEach(function(line){
-      ctx.fillText(line,width-80,y);
-      y+=60;
-    });
+    ctx.fillStyle=lessonColor(element.color,palette);
+    ctx.font=weight+' '+fontSize+'px Huninn, Arial';
+    ctx.direction=isFormula?'ltr':(containsHebrew(text)?'rtl':'ltr');
+    ctx.textAlign=element.align;
+    ctx.textBaseline='top';
 
-    if(page.body){
-      ctx.fillStyle='rgba(255,255,255,.80)';
-      ctx.font='400 27px Huninn, Arial';
-      const lines=wrapCanvasLines(ctx,page.body,width-200);
-      lines.slice(0,4).forEach(function(line){
-        ctx.fillText(line,width-80,y);
-        y+=40;
-      });
-      y+=6;
-    }
+    if(isFormula){
+      const measure=ctx.measureText(text).width;
+      const boxW=Math.min(maxWidth,Math.max(measure+50,180));
+      const boxH=fontSize+34;
+      let bx=0;
 
-    if(page.formula){
-      const boxW=Math.min(width-220,Math.max(360,ctx.measureText(page.formula).width+80));
-      const boxH=78;
-      const boxX=(width-boxW)/2;
-      const boxY=Math.min(height-190,y+12);
+      if(element.align==='center')bx=-boxW/2;
+      else if(element.align==='right')bx=-boxW;
 
-      roundedRect(ctx,boxX,boxY,boxW,boxH,18);
-      ctx.fillStyle='rgba(255,255,255,.07)';
+      roundedRect(ctx,bx,-13,boxW,boxH,16);
+      ctx.fillStyle=palette.dark?'rgba(255,255,255,.055)':'rgba(0,0,0,.035)';
       ctx.fill();
-      ctx.strokeStyle='rgba(255,255,255,.14)';
+      ctx.strokeStyle=palette.subtle2;
+      ctx.lineWidth=1;
       ctx.stroke();
 
-      ctx.direction='ltr';
-      ctx.textAlign='center';
-      ctx.fillStyle='#ffffff';
-      ctx.font='600 36px Huninn, Arial';
-      ctx.fillText(page.formula,width/2,boxY+50);
-      ctx.direction='rtl';
-      ctx.textAlign='right';
-      y=boxY+boxH+22;
+      ctx.fillStyle=lessonColor(element.color,palette);
+      ctx.fillText(text,0,0,maxWidth);
+      ctx.restore();
+      return;
     }
 
-    if(page.bullets&&page.bullets.length){
-      ctx.fillStyle='rgba(255,255,255,.84)';
-      ctx.font='400 24px Huninn, Arial';
-      page.bullets.slice(0,4).forEach(function(item){
-        const lines=wrapCanvasLines(ctx,'• '+item,width-220);
-        lines.slice(0,2).forEach(function(line){
-          ctx.fillText(line,width-92,y);
-          y+=34;
-        });
-        y+=3;
-      });
-    }
+    const lines=wrapCanvasLines(ctx,text,maxWidth);
+    const lineHeight=fontSize*(isTitle?1.16:1.42);
+    const maxLines=isTitle?3:6;
 
-    ctx.restore();
-
-    ctx.direction='ltr';
-    ctx.textAlign='left';
-    ctx.fillStyle='rgba(255,255,255,.52)';
-    ctx.font='500 18px Huninn, Arial';
-    ctx.fillText((current.index+1)+' / '+lesson.pages.length,58,52);
-
-    const progress=Math.max(0,Math.min(1,time/lesson.duration));
-    ctx.fillStyle='rgba(255,255,255,.13)';
-    ctx.fillRect(0,height-7,width,7);
-    ctx.fillStyle='#ffffff';
-    ctx.fillRect(0,height-7,width*progress,7);
+    lines.slice(0,maxLines).forEach(function(line,index){
+      ctx.fillText(line,0,index*lineHeight,maxWidth);
+    });
 
     ctx.restore();
   }
 
+  function lessonDrawBullets(ctx,element,palette,width,height,localTime){
+    const motion=lessonElementMotion(element,localTime);
+    if(motion.alpha<=0)return;
+
+    const fontSize=element.size;
+    const maxWidth=element.w*width;
+    const startX=element.x*width+motion.dx;
+    const startY=element.y*height+motion.dy;
+
+    ctx.save();
+    ctx.globalAlpha=motion.alpha;
+    ctx.translate(startX,startY);
+    ctx.scale(motion.scale,motion.scale);
+    ctx.fillStyle=lessonColor(element.color,palette);
+    ctx.font='500 '+fontSize+'px Huninn, Arial';
+    ctx.direction='rtl';
+    ctx.textAlign=element.align;
+    ctx.textBaseline='top';
+
+    let y=0;
+
+    element.items.slice(0,5).forEach(function(item,index){
+      const localProgress=clamp(
+        (localTime-element.at-index*.24)/Math.max(.25,element.duration*.7),
+        0,
+        1
+      );
+
+      if(localProgress<=0)return;
+
+      ctx.save();
+      ctx.globalAlpha*=easeOutCubic(localProgress);
+      ctx.translate(0,(1-easeOutCubic(localProgress))*18);
+
+      const lines=wrapCanvasLines(ctx,'• '+item,maxWidth);
+      lines.slice(0,2).forEach(function(line,lineIndex){
+        ctx.fillText(line,0,y+lineIndex*fontSize*1.35,maxWidth);
+      });
+
+      ctx.restore();
+      y+=Math.max(1,lines.slice(0,2).length)*fontSize*1.35+10;
+    });
+
+    ctx.restore();
+  }
+
+  function lessonDrawArrow(ctx,element,palette,width,height,localTime){
+    const motion=lessonElementMotion(element,localTime);
+    if(motion.alpha<=0||!element.from||!element.to)return;
+
+    const x1=element.from[0]*width;
+    const y1=element.from[1]*height;
+    const x2=element.to[0]*width;
+    const y2=element.to[1]*height;
+    const progress=element.animation==='draw'?motion.draw:1;
+    const ex=x1+(x2-x1)*progress;
+    const ey=y1+(y2-y1)*progress;
+    const angle=Math.atan2(ey-y1,ex-x1);
+
+    ctx.save();
+    ctx.globalAlpha=motion.alpha;
+    ctx.strokeStyle=lessonColor(element.color,palette);
+    ctx.fillStyle=lessonColor(element.color,palette);
+    ctx.lineWidth=Math.max(3,width*.003);
+    ctx.lineCap='round';
+
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(ex,ey);
+    ctx.stroke();
+
+    if(progress>.9){
+      const head=Math.max(14,width*.014);
+      ctx.beginPath();
+      ctx.moveTo(ex,ey);
+      ctx.lineTo(
+        ex-head*Math.cos(angle-Math.PI/6),
+        ey-head*Math.sin(angle-Math.PI/6)
+      );
+      ctx.lineTo(
+        ex-head*Math.cos(angle+Math.PI/6),
+        ey-head*Math.sin(angle+Math.PI/6)
+      );
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    if(element.label&&progress>.65){
+      ctx.font='600 23px Huninn, Arial';
+      ctx.direction='rtl';
+      ctx.textAlign='center';
+      ctx.fillText(
+        element.label,
+        (x1+ex)/2,
+        (y1+ey)/2-16
+      );
+    }
+
+    ctx.restore();
+  }
+
+  function lessonDrawLine(ctx,element,palette,width,height,localTime){
+    const motion=lessonElementMotion(element,localTime);
+    if(motion.alpha<=0||!element.from||!element.to)return;
+
+    const x1=element.from[0]*width;
+    const y1=element.from[1]*height;
+    const x2=element.to[0]*width;
+    const y2=element.to[1]*height;
+    const progress=element.animation==='draw'?motion.draw:1;
+
+    ctx.save();
+    ctx.globalAlpha=motion.alpha;
+    ctx.strokeStyle=lessonColor(element.color,palette);
+    ctx.lineWidth=Math.max(2,width*.0025);
+    ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(
+      x1+(x2-x1)*progress,
+      y1+(y2-y1)*progress
+    );
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function lessonDrawShape(ctx,element,palette,width,height,localTime){
+    const motion=lessonElementMotion(element,localTime);
+    if(motion.alpha<=0)return;
+
+    let x=element.x*width;
+    let y=element.y*height;
+
+    if(element.animation==='move'){
+      if(element.toX!==null)x=(element.x+(element.toX-element.x)*motion.eased)*width;
+      if(element.toY!==null)y=(element.y+(element.toY-element.y)*motion.eased)*height;
+    }
+
+    x+=motion.dx;
+    y+=motion.dy;
+
+    ctx.save();
+    ctx.globalAlpha=motion.alpha;
+    ctx.translate(x,y);
+    ctx.scale(motion.scale,motion.scale);
+
+    if(element.type==='circle'){
+      const radius=element.r*Math.min(width,height);
+      ctx.beginPath();
+      ctx.arc(0,0,radius,0,Math.PI*2);
+      ctx.fillStyle=
+        element.fill==='transparent'
+          ? palette.dark?'rgba(255,255,255,.04)':'rgba(0,0,0,.035)'
+          : lessonColor(element.fill,palette);
+      ctx.fill();
+      ctx.strokeStyle=lessonColor(element.stroke,palette);
+      ctx.lineWidth=3;
+      ctx.stroke();
+
+      if(element.text){
+        ctx.fillStyle=lessonColor(element.color,palette);
+        ctx.font='700 '+element.size+'px Huninn, Arial';
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.direction=containsHebrew(element.text)?'rtl':'ltr';
+        ctx.fillText(element.text,0,0,radius*1.6);
+      }
+    }else{
+      const boxW=element.w*width;
+      const boxH=element.h*height;
+      const left=-boxW/2;
+      const top=-boxH/2;
+
+      roundedRect(ctx,left,top,boxW,boxH,18);
+
+      ctx.fillStyle=
+        element.type==='highlight'
+          ? palette.dark?'rgba(145,165,255,.12)':'rgba(89,109,255,.09)'
+          : element.fill==='transparent'
+            ? palette.dark?'rgba(255,255,255,.045)':'rgba(0,0,0,.035)'
+            : lessonColor(element.fill,palette);
+
+      ctx.fill();
+
+      ctx.strokeStyle=
+        element.type==='highlight'
+          ? palette.accent
+          : lessonColor(element.stroke,palette);
+
+      ctx.lineWidth=element.type==='highlight'?2:2;
+      ctx.stroke();
+
+      if(element.text){
+        ctx.fillStyle=lessonColor(element.color,palette);
+        ctx.font='600 '+element.size+'px Huninn, Arial';
+        ctx.direction=containsHebrew(element.text)?'rtl':'ltr';
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillText(element.text,0,0,boxW-28);
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function lessonDrawBadge(ctx,element,palette,width,height,localTime){
+    const motion=lessonElementMotion(element,localTime);
+    if(motion.alpha<=0)return;
+
+    const text=element.text||element.label;
+    if(!text)return;
+
+    let x=element.x*width;
+    let y=element.y*height;
+
+    ctx.save();
+    ctx.font='700 '+Math.max(18,element.size)+'px Huninn, Arial';
+    const textWidth=ctx.measureText(text).width;
+    const boxW=Math.min(element.w*width,Math.max(120,textWidth+34));
+    const boxH=Math.max(42,element.size+22);
+
+    ctx.globalAlpha=motion.alpha;
+    ctx.translate(x+motion.dx,y+motion.dy);
+    ctx.scale(motion.scale,motion.scale);
+
+    roundedRect(ctx,-boxW/2,-boxH/2,boxW,boxH,999);
+    ctx.fillStyle=palette.dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.045)';
+    ctx.fill();
+    ctx.strokeStyle=palette.subtle2;
+    ctx.lineWidth=1;
+    ctx.stroke();
+
+    ctx.fillStyle=lessonColor(element.color,palette);
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.direction=containsHebrew(text)?'rtl':'ltr';
+    ctx.fillText(text,0,1,boxW-22);
+    ctx.restore();
+  }
+
+  function lessonGraphExpression(raw){
+    let expression=String(raw||'')
+      .trim()
+      .replace(/−/g,'-')
+      .replace(/π/g,'pi')
+      .replace(/^\s*(?:y|f\s*\(\s*x\s*\))\s*=\s*/i,'')
+      .replace(/\bln\s*\(/gi,'log(');
+
+    const names=expression.match(/[A-Za-z_]+/g)||[];
+    const allowed=new Set([
+      'x','pi','e','sin','cos','tan','asin','acos','atan',
+      'sqrt','abs','log','exp','floor','ceil'
+    ]);
+
+    if(names.some(function(name){return !allowed.has(name.toLowerCase())})){
+      throw new Error('unsupported graph expression');
+    }
+
+    if(!/^[0-9A-Za-z_+\-*/^().,\s]+$/.test(expression)){
+      throw new Error('unsupported graph expression');
+    }
+
+    return expression;
+  }
+
+  function lessonDrawGraph(ctx,element,palette,width,height,localTime){
+    const motion=lessonElementMotion(element,localTime);
+    if(motion.alpha<=0||!window.math)return;
+
+    const boxW=element.w*width;
+    const boxH=element.h*height;
+    const left=element.x*width-boxW/2;
+    const top=element.y*height-boxH/2;
+    const pad=Math.min(boxW,boxH)*.10;
+    const xMin=-10;
+    const xMax=10;
+
+    let compiled;
+
+    try{
+      compiled=window.math.compile(
+        lessonGraphExpression(element.equation)
+      );
+    }catch(error){
+      return;
+    }
+
+    const samples=[];
+    const ys=[];
+
+    for(let i=0;i<=240;i+=1){
+      const x=xMin+(xMax-xMin)*i/240;
+      let y=NaN;
+
+      try{
+        y=Number(compiled.evaluate({x:x}));
+      }catch(error){}
+
+      samples.push([x,y]);
+
+      if(Number.isFinite(y)&&Math.abs(y)<1e5)ys.push(y);
+    }
+
+    if(ys.length<3)return;
+
+    let yMin=percentile(ys,.05);
+    let yMax=percentile(ys,.95);
+
+    if(!(yMax>yMin)){
+      yMin-=1;
+      yMax+=1;
+    }
+
+    const span=Math.max(2,yMax-yMin);
+    yMin-=span*.12;
+    yMax+=span*.12;
+
+    const px=function(x){
+      return left+pad+(x-xMin)/(xMax-xMin)*(boxW-pad*2);
+    };
+
+    const py=function(y){
+      return top+pad+(1-(y-yMin)/(yMax-yMin))*(boxH-pad*2);
+    };
+
+    ctx.save();
+    ctx.globalAlpha=motion.alpha;
+
+    roundedRect(ctx,left,top,boxW,boxH,20);
+    ctx.fillStyle=palette.dark?'rgba(255,255,255,.035)':'rgba(0,0,0,.025)';
+    ctx.fill();
+    ctx.strokeStyle=palette.subtle2;
+    ctx.lineWidth=1;
+    ctx.stroke();
+
+    ctx.strokeStyle=palette.subtle;
+    ctx.lineWidth=1;
+
+    for(let i=1;i<10;i+=1){
+      const gx=left+boxW*i/10;
+      const gy=top+boxH*i/10;
+      ctx.beginPath();ctx.moveTo(gx,top);ctx.lineTo(gx,top+boxH);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(left,gy);ctx.lineTo(left+boxW,gy);ctx.stroke();
+    }
+
+    ctx.strokeStyle=palette.subtle2;
+    ctx.lineWidth=1.5;
+
+    if(yMin<=0&&yMax>=0){
+      ctx.beginPath();ctx.moveTo(left,py(0));ctx.lineTo(left+boxW,py(0));ctx.stroke();
+    }
+
+    if(xMin<=0&&xMax>=0){
+      ctx.beginPath();ctx.moveTo(px(0),top);ctx.lineTo(px(0),top+boxH);ctx.stroke();
+    }
+
+    const drawProgress=element.animation==='draw'?motion.draw:1;
+    const maxIndex=Math.max(1,Math.floor((samples.length-1)*drawProgress));
+
+    ctx.strokeStyle=lessonColor(element.color==='text'?'accent':element.color,palette);
+    ctx.lineWidth=4;
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+    ctx.beginPath();
+
+    let drawing=false;
+    let previousY=null;
+
+    for(let i=0;i<=maxIndex;i+=1){
+      const point=samples[i];
+      const y=point[1];
+
+      if(!Number.isFinite(y)||y<yMin-span*2||y>yMax+span*2){
+        drawing=false;
+        previousY=null;
+        continue;
+      }
+
+      const sx=px(point[0]);
+      const sy=py(y);
+
+      if(previousY!==null&&Math.abs(sy-previousY)>boxH*.9){
+        drawing=false;
+      }
+
+      if(drawing)ctx.lineTo(sx,sy);
+      else ctx.moveTo(sx,sy);
+
+      drawing=true;
+      previousY=sy;
+    }
+
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function lessonDrawNumberline(ctx,element,palette,width,height,localTime){
+    const motion=lessonElementMotion(element,localTime);
+    if(motion.alpha<=0)return;
+
+    const expression=element.expression||element.text;
+    const rangeMatch=String(expression).match(
+      /^\s*(-?\d+(?:\.\d+)?)\s*(<=|<)\s*x\s*(<=|<)\s*(-?\d+(?:\.\d+)?)\s*$/i
+    );
+    const oneMatch=String(expression).match(
+      /^\s*x\s*(>=|>|<=|<)\s*(-?\d+(?:\.\d+)?)\s*$/i
+    );
+
+    if(!rangeMatch&&!oneMatch)return;
+
+    const boxW=element.w*width;
+    const x0=element.x*width-boxW/2;
+    const x1=element.x*width+boxW/2;
+    const y=element.y*height;
+
+    let min=-5,max=5,marks=[],segment=[x0,x1];
+
+    if(rangeMatch){
+      const a=Number(rangeMatch[1]);
+      const b=Number(rangeMatch[4]);
+      const span=Math.max(4,b-a);
+      min=a-span*.7;
+      max=b+span*.7;
+      const pos=function(v){return x0+(v-min)/(max-min)*boxW};
+      segment=[pos(a),pos(b)];
+      marks=[
+        {x:pos(a),closed:rangeMatch[2]==='<='},
+        {x:pos(b),closed:rangeMatch[3]==='<='}
+      ];
+    }else{
+      const op=oneMatch[1];
+      const value=Number(oneMatch[2]);
+      min=value-6;
+      max=value+6;
+      const pos=function(v){return x0+(v-min)/(max-min)*boxW};
+      const vx=pos(value);
+      segment=op.startsWith('>')?[vx,x1]:[x0,vx];
+      marks=[{x:vx,closed:op==='>='||op==='<='}];
+    }
+
+    ctx.save();
+    ctx.globalAlpha=motion.alpha;
+    ctx.strokeStyle=palette.subtle2;
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();
+
+    const progress=element.animation==='draw'?motion.draw:1;
+    ctx.strokeStyle=palette.accent;
+    ctx.lineWidth=7;
+    ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(segment[0],y);
+    ctx.lineTo(segment[0]+(segment[1]-segment[0])*progress,y);
+    ctx.stroke();
+
+    if(progress>.82){
+      marks.forEach(function(mark){
+        ctx.beginPath();
+        ctx.arc(mark.x,y,9,0,Math.PI*2);
+        ctx.fillStyle=mark.closed?palette.accent:palette.background;
+        ctx.fill();
+        ctx.strokeStyle=palette.accent;
+        ctx.lineWidth=3;
+        ctx.stroke();
+      });
+    }
+
+    ctx.restore();
+  }
+
+  function lessonDrawBars(ctx,element,palette,width,height,localTime){
+    const motion=lessonElementMotion(element,localTime);
+    if(motion.alpha<=0||!element.values.length)return;
+
+    const values=element.values.filter(Number.isFinite);
+    if(!values.length)return;
+
+    const labels=element.labels;
+    const max=Math.max(1,Math.max.apply(null,values));
+    const boxW=element.w*width;
+    const boxH=element.h*height;
+    const left=element.x*width-boxW/2;
+    const top=element.y*height-boxH/2;
+    const base=top+boxH-34;
+    const gap=12;
+    const usable=boxW-40;
+    const barW=(usable-gap*(values.length-1))/values.length;
+
+    ctx.save();
+    ctx.globalAlpha=motion.alpha;
+    ctx.font='600 18px Huninn, Arial';
+    ctx.textAlign='center';
+    ctx.direction='rtl';
+
+    values.forEach(function(value,index){
+      const fullH=(Math.max(0,value)/max)*(boxH-80);
+      const h=fullH*(element.animation==='draw'?motion.draw:1);
+      const x=left+20+index*(barW+gap);
+      const y=base-h;
+
+      roundedRect(ctx,x,y,barW,h,8);
+      ctx.fillStyle=palette.accent;
+      ctx.fill();
+
+      ctx.fillStyle=palette.muted;
+      ctx.fillText(String(labels[index]??index+1),x+barW/2,base+12,barW+8);
+    });
+
+    ctx.restore();
+  }
+
+  function lessonDrawFraction(ctx,element,palette,width,height,localTime){
+    const motion=lessonElementMotion(element,localTime);
+    if(motion.alpha<=0)return;
+
+    const denominator=clamp(Math.floor(element.denominator)||1,1,16);
+    const numerator=clamp(Math.floor(element.numerator)||0,0,denominator);
+    const cols=Math.ceil(Math.sqrt(denominator));
+    const rows=Math.ceil(denominator/cols);
+    const maxW=element.w*width;
+    const cell=Math.min(68,maxW/cols-8,element.h*height/rows-8);
+    const totalW=cols*cell+(cols-1)*8;
+    const totalH=rows*cell+(rows-1)*8;
+    const left=element.x*width-totalW/2;
+    const top=element.y*height-totalH/2;
+
+    ctx.save();
+    ctx.globalAlpha=motion.alpha;
+
+    for(let i=0;i<denominator;i+=1){
+      const col=i%cols;
+      const row=Math.floor(i/cols);
+      const x=left+col*(cell+8);
+      const y=top+row*(cell+8);
+
+      roundedRect(ctx,x,y,cell,cell,10);
+      ctx.fillStyle=i<numerator?palette.accent:(palette.dark?'rgba(255,255,255,.035)':'rgba(0,0,0,.03)');
+      ctx.fill();
+      ctx.strokeStyle=palette.subtle2;
+      ctx.lineWidth=1;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  function lessonDrawCounter(ctx,element,palette,width,height,localTime){
+    const motion=lessonElementMotion(element,localTime);
+    if(motion.alpha<=0)return;
+
+    const raw=Number(element.text);
+    const shown=Number.isFinite(raw)
+      ? Math.round(raw*easeOutCubic(motion.progress)*100)/100
+      : element.text;
+
+    ctx.save();
+    ctx.globalAlpha=motion.alpha;
+    ctx.translate(element.x*width+motion.dx,element.y*height+motion.dy);
+    ctx.scale(motion.scale,motion.scale);
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.direction='ltr';
+    ctx.fillStyle=lessonColor(element.color,palette);
+    ctx.font='700 '+element.size+'px Huninn, Arial';
+    ctx.fillText(String(shown),0,0);
+
+    if(element.label){
+      ctx.direction='rtl';
+      ctx.fillStyle=palette.muted;
+      ctx.font='500 '+Math.max(18,element.size*.36)+'px Huninn, Arial';
+      ctx.fillText(element.label,0,element.size*.72);
+    }
+
+    ctx.restore();
+  }
+
+  function lessonDrawScene(ctx,scene,localTime,width,height,options){
+    const palette=lessonPalette(scene);
+    const alpha=options?.alpha??1;
+    const offsetX=options?.offsetX??0;
+
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    ctx.translate(offsetX,0);
+
+    ctx.fillStyle=palette.background;
+    ctx.fillRect(0,0,width,height);
+
+    if(scene.background.pattern==='grid'){
+      const size=54;
+      const shift=(localTime*6)%size;
+      ctx.strokeStyle=palette.subtle;
+      ctx.lineWidth=1;
+
+      for(let x=-size+shift;x<width+size;x+=size){
+        ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,height);ctx.stroke();
+      }
+
+      for(let y=-size+shift;y<height+size;y+=size){
+        ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(width,y);ctx.stroke();
+      }
+    }else if(scene.background.pattern==='dots'){
+      const size=52;
+      const shift=(localTime*4)%size;
+      ctx.fillStyle=palette.subtle2;
+
+      for(let y=-size+shift;y<height+size;y+=size){
+        for(let x=-size+shift;x<width+size;x+=size){
+          ctx.beginPath();
+          ctx.arc(x,y,1.7,0,Math.PI*2);
+          ctx.fill();
+        }
+      }
+    }
+
+    ctx.fillStyle=palette.muted;
+    ctx.font='600 19px Huninn, Arial';
+    ctx.direction='rtl';
+    ctx.textAlign='right';
+    ctx.textBaseline='top';
+    ctx.fillText('Sifra • שיעור מתמטי',width-42,30);
+
+    scene.elements.forEach(function(element){
+      if(element.type==='title'||element.type==='text'||element.type==='formula'){
+        lessonDrawText(ctx,element,element.text,palette,width,height,localTime,element.type);
+      }else if(element.type==='bullets'){
+        lessonDrawBullets(ctx,element,palette,width,height,localTime);
+      }else if(element.type==='arrow'){
+        lessonDrawArrow(ctx,element,palette,width,height,localTime);
+      }else if(element.type==='line'){
+        lessonDrawLine(ctx,element,palette,width,height,localTime);
+      }else if(element.type==='box'||element.type==='circle'||element.type==='highlight'){
+        lessonDrawShape(ctx,element,palette,width,height,localTime);
+      }else if(element.type==='badge'){
+        lessonDrawBadge(ctx,element,palette,width,height,localTime);
+      }else if(element.type==='graph'){
+        lessonDrawGraph(ctx,element,palette,width,height,localTime);
+      }else if(element.type==='numberline'){
+        lessonDrawNumberline(ctx,element,palette,width,height,localTime);
+      }else if(element.type==='bars'){
+        lessonDrawBars(ctx,element,palette,width,height,localTime);
+      }else if(element.type==='fraction'){
+        lessonDrawFraction(ctx,element,palette,width,height,localTime);
+      }else if(element.type==='counter'){
+        lessonDrawCounter(ctx,element,palette,width,height,localTime);
+      }
+    });
+
+    ctx.restore();
+  }
+
+  function drawLessonFrame(ctx,lesson,time,width,height){
+    const timeline=lessonTimeline(lesson);
+    const safeTime=clamp(time,0,Math.max(0,lesson.duration-.001));
+    let current=timeline[timeline.length-1];
+
+    for(const item of timeline){
+      if(safeTime>=item.start&&safeTime<item.end){
+        current=item;
+        break;
+      }
+    }
+
+    const local=safeTime-current.start;
+    const remaining=current.end-safeTime;
+    const transitionDuration=Math.min(.55,current.scene.seconds*.16);
+
+    ctx.clearRect(0,0,width,height);
+
+    if(
+      remaining<transitionDuration&&
+      current.index<timeline.length-1
+    ){
+      const next=timeline[current.index+1];
+      const p=easeInOutCubic(1-remaining/transitionDuration);
+      const mode=current.scene.transition;
+
+      if(mode==='slide'){
+        lessonDrawScene(
+          ctx,
+          current.scene,
+          local,
+          width,
+          height,
+          {
+            alpha:1,
+            offsetX:-p*width*.09
+          }
+        );
+
+        lessonDrawScene(
+          ctx,
+          next.scene,
+          Math.max(0,p*transitionDuration),
+          width,
+          height,
+          {
+            alpha:p,
+            offsetX:(1-p)*width*.12
+          }
+        );
+      }else if(mode==='wipe'){
+        lessonDrawScene(
+          ctx,
+          current.scene,
+          local,
+          width,
+          height,
+          {alpha:1,offsetX:0}
+        );
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(width*(1-p),0,width*p,height);
+        ctx.clip();
+
+        lessonDrawScene(
+          ctx,
+          next.scene,
+          Math.max(0,p*transitionDuration),
+          width,
+          height,
+          {alpha:1,offsetX:0}
+        );
+
+        ctx.restore();
+      }else{
+        lessonDrawScene(
+          ctx,
+          current.scene,
+          local,
+          width,
+          height,
+          {alpha:1-p,offsetX:0}
+        );
+
+        lessonDrawScene(
+          ctx,
+          next.scene,
+          Math.max(0,p*transitionDuration),
+          width,
+          height,
+          {alpha:p,offsetX:0}
+        );
+      }
+    }else{
+      lessonDrawScene(
+        ctx,
+        current.scene,
+        local,
+        width,
+        height,
+        {alpha:1,offsetX:0}
+      );
+    }
+
+    const progress=lesson.duration>0?safeTime/lesson.duration:0;
+    ctx.fillStyle='rgba(128,128,128,.16)';
+    ctx.fillRect(0,height-6,width,6);
+    ctx.fillStyle=current?lessonPalette(current.scene).accent:'#ffffff';
+    ctx.fillRect(0,height-6,width*progress,6);
+  }
+
+  function formatLessonTime(seconds){
+    const value=Math.max(0,Math.floor(seconds));
+    const minutes=Math.floor(value/60);
+    const secs=String(value%60).padStart(2,'0');
+    return minutes+':'+secs;
+  }
+
+  function renderLessonPreviewFrame(card,lesson,time){
+    const canvas=card.querySelector('.lesson-canvas');
+    if(!canvas)return;
+
+    const ctx=canvas.getContext('2d',{alpha:false});
+    drawLessonFrame(
+      ctx,
+      lesson,
+      time,
+      canvas.width,
+      canvas.height
+    );
+
+    const scrubber=card.querySelector('.lesson-scrubber');
+    const timeEl=card.querySelector('.lesson-time');
+
+    if(scrubber&&!scrubber.matches(':active')){
+      scrubber.value=String(
+        lesson.duration>0
+          ? time/lesson.duration
+          : 0
+      );
+    }
+
+    if(timeEl){
+      timeEl.textContent=
+        formatLessonTime(time)+' / '+
+        formatLessonTime(lesson.duration);
+    }
+  }
+
+  function startLessonPreview(card,lesson){
+    if(card._lessonPlaying)return;
+
+    card._lessonPlaying=true;
+    const play=card.querySelector('.lesson-play');
+    if(play)play.textContent='❚❚';
+
+    const started=
+      performance.now()-
+      (card._lessonTime||0)*1000;
+
+    function tick(now){
+      if(!card._lessonPlaying)return;
+
+      const elapsed=(now-started)/1000;
+
+      if(elapsed>=lesson.duration){
+        card._lessonTime=lesson.duration;
+        renderLessonPreviewFrame(card,lesson,lesson.duration-.001);
+        stopLessonPreview(card);
+        return;
+      }
+
+      card._lessonTime=elapsed;
+      renderLessonPreviewFrame(card,lesson,elapsed);
+      card._lessonRaf=requestAnimationFrame(tick);
+    }
+
+    card._lessonRaf=requestAnimationFrame(tick);
+  }
+
+  function stopLessonPreview(card){
+    card._lessonPlaying=false;
+
+    if(card._lessonRaf){
+      cancelAnimationFrame(card._lessonRaf);
+      card._lessonRaf=0;
+    }
+
+    const play=card.querySelector('.lesson-play');
+    if(play)play.textContent='▶';
+  }
+
   let mediaBunnyLoader=null;
+
   function loadMediaBunny(){
     if(!mediaBunnyLoader){
-      mediaBunnyLoader=import('https://cdn.jsdelivr.net/npm/mediabunny@1.58.0/+esm');
+      mediaBunnyLoader=import(
+        'https://cdn.jsdelivr.net/npm/mediabunny@1.58.0/+esm'
+      );
     }
+
     return mediaBunnyLoader;
   }
 
   async function renderLessonMp4(card,lesson){
     const renderButton=card.querySelector('.lesson-render-button');
     const overlay=card.querySelector('.lesson-render-overlay');
-    const percentEl=card.querySelector('.lesson-render-percent');
-    const statusEl=card.querySelector('.lesson-render-status');
-    const progressEl=card.querySelector('.lesson-render-track > div');
     const stage=card.querySelector('.lesson-stage');
 
     if(renderButton)renderButton.disabled=true;
     if(overlay)overlay.classList.add('show');
+
     stopLessonPreview(card);
 
-    function setProgress(value,status){
-      const percent=Math.max(0,Math.min(100,Math.round(value)));
-      if(percentEl)percentEl.textContent=percent+'%';
-      if(progressEl)progressEl.style.width=percent+'%';
-      if(statusEl&&status)statusEl.textContent=status;
-    }
-
     try{
-      setProgress(2,'מכין מנוע וידאו…');
       await document.fonts.ready;
+      await document.fonts.load('700 54px Huninn');
+      await document.fonts.load('500 28px Huninn');
 
       const media=await loadMediaBunny();
+
       const {
         Output,
         BufferTarget,
@@ -3322,174 +4336,408 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       const width=1280;
       const height=720;
       const fps=30;
+
       const canvas=document.createElement('canvas');
       canvas.width=width;
       canvas.height=height;
+
       const ctx=canvas.getContext('2d',{alpha:false});
 
       const format=new Mp4OutputFormat();
-      const codec=await getFirstEncodableVideoCodec(
-        format.getSupportedVideoCodecs(),
-        {width:width,height:height}
-      );
 
-      if(!codec)throw new Error('הדפדפן לא תומך כרגע ביצירת MP4.');
+      const codec=
+        await getFirstEncodableVideoCodec(
+          format.getSupportedVideoCodecs(),
+          {width:width,height:height}
+        );
+
+      if(!codec){
+        throw new Error(
+          'הדפדפן לא תומך כרגע ביצירת MP4.'
+        );
+      }
 
       const target=new BufferTarget();
+
       const output=new Output({
         format:format,
         target:target
       });
 
-      const source=new CanvasSource(canvas,{
-        codec:codec,
-        bitrate:5_500_000
-      });
+      const source=new CanvasSource(
+        canvas,
+        {
+          codec:codec,
+          bitrate:7_500_000
+        }
+      );
 
       output.addVideoTrack(source);
       await output.start();
 
-      const totalFrames=Math.max(1,Math.round(lesson.duration*fps));
-      setProgress(5,'מרנדר את הסרטון…');
+      const totalFrames=Math.max(
+        1,
+        Math.round(lesson.duration*fps)
+      );
 
       for(let frame=0;frame<totalFrames;frame+=1){
         const time=frame/fps;
-        drawLessonFrame(ctx,lesson,time,width,height);
-        await source.add(time,1/fps);
 
-        if(frame%4===0||frame===totalFrames-1){
-          const p=5+(frame/(totalFrames-1||1))*90;
-          setProgress(p,'מרנדר את הסרטון…');
+        drawLessonFrame(
+          ctx,
+          lesson,
+          time,
+          width,
+          height
+        );
+
+        await source.add(
+          time,
+          1/fps
+        );
+
+        if(frame%24===0){
+          await new Promise(function(resolve){
+            requestAnimationFrame(resolve);
+          });
         }
       }
 
-      setProgress(96,'מקודד MP4…');
       await output.finalize();
 
-      const blob=new Blob([target.buffer],{type:'video/mp4'});
-      const url=URL.createObjectURL(blob);
+      const blob=
+        new Blob(
+          [target.buffer],
+          {type:'video/mp4'}
+        );
+
+      const url=
+        URL.createObjectURL(blob);
+
+      if(card._lessonVideoUrl){
+        URL.revokeObjectURL(
+          card._lessonVideoUrl
+        );
+      }
 
       card._lessonVideoUrl=url;
 
-      const video=document.createElement('video');
+      const oldVideo=
+        stage.querySelector('.lesson-video');
+
+      if(oldVideo)oldVideo.remove();
+
+      const video=
+        document.createElement('video');
+
       video.className='lesson-video';
       video.src=url;
       video.controls=true;
       video.playsInline=true;
+      video.preload='metadata';
+
       stage.appendChild(video);
 
-      const download=card.querySelector('.lesson-download');
+      const download=
+        card.querySelector(
+          '.lesson-download'
+        );
+
       if(download){
         download.href=url;
-        download.download='sifra-'+Date.now()+'.mp4';
+        download.download=
+          'sifra-'+Date.now()+'.mp4';
         download.hidden=false;
       }
 
-      setProgress(100,'הסרטון מוכן');
-      setTimeout(function(){
-        if(overlay)overlay.classList.remove('show');
-      },450);
+      if(overlay){
+        overlay.classList.remove('show');
+      }
     }catch(error){
-      console.error('Video render failed:',error);
-      setProgress(0,error.message||'יצירת הסרטון נכשלה.');
-      if(statusEl)statusEl.style.color='#ff9da3';
-      setTimeout(function(){
-        if(overlay)overlay.classList.remove('show');
-        if(statusEl)statusEl.style.color='';
-      },2200);
+      console.error(
+        'Video render failed:',
+        error
+      );
+
+      if(overlay){
+        const sub=
+          overlay.querySelector(
+            '.lesson-render-sub'
+          );
+
+        if(sub){
+          sub.textContent=
+            error.message||
+            'יצירת הסרטון נכשלה.';
+          sub.style.color='#ff9da3';
+        }
+
+        setTimeout(function(){
+          overlay.classList.remove('show');
+
+          if(sub){
+            sub.textContent=
+              'הסרטון יופיע כאן כשהוא מוכן';
+            sub.style.color='';
+          }
+        },2200);
+      }
     }finally{
-      if(renderButton)renderButton.disabled=false;
+      if(renderButton){
+        renderButton.disabled=false;
+      }
     }
   }
 
   function renderLessonViz(target,payload){
     let lesson;
+
     try{
       lesson=normalizeLesson(payload);
     }catch(error){
-      const shell=vizCard('סרטון הסבר','הנתונים אינם תקינים','Video');
+      const shell=vizCard(
+        'סרטון הסבר',
+        'הנתונים אינם תקינים',
+        'Video'
+      );
+
       target.appendChild(shell.card);
-      const el=document.createElement('div');
+
+      const el=
+        document.createElement('div');
+
       el.className='viz-error';
-      el.textContent='לא הצלחתי להכין את תצוגת הסרטון.';
+      el.textContent=
+        'לא הצלחתי להכין את הסרטון.';
+
       shell.body.appendChild(el);
       return;
     }
 
-    const card=document.createElement('div');
-    card.className='lesson-card';
+    const card=
+      document.createElement('div');
 
-    const stage=document.createElement('div');
+    card.className='lesson-card';
+    card._lessonTime=0;
+
+    const meta=
+      document.createElement('div');
+
+    meta.className='lesson-meta';
+
+    const title=
+      document.createElement('div');
+
+    title.className='lesson-meta-title';
+    title.textContent=lesson.title;
+
+    const sub=
+      document.createElement('div');
+
+    sub.className='lesson-meta-sub';
+    sub.textContent=
+      Math.round(lesson.duration)+
+      ' שניות • '+
+      lesson.scenes.length+
+      ' סצנות • Preview = MP4';
+
+    meta.append(title,sub);
+
+    const stage=
+      document.createElement('div');
+
     stage.className='lesson-stage';
 
-    const grid=document.createElement('div');
-    grid.className='lesson-stage-grid';
+    const canvas=
+      document.createElement('canvas');
 
-    const brand=document.createElement('div');
-    brand.className='lesson-brand';
-    brand.innerHTML='<span class="lesson-brand-dot"></span><span>Sifra</span>';
+    canvas.className='lesson-canvas';
+    canvas.width=1280;
+    canvas.height=720;
 
-    const counter=document.createElement('div');
-    counter.className='lesson-counter';
-    counter.textContent='1 / '+lesson.pages.length;
+    const overlay=
+      document.createElement('div');
 
-    const page=document.createElement('div');
-    page.className='lesson-page';
-
-    const progress=document.createElement('div');
-    progress.className='lesson-stage-progress';
-    progress.innerHTML='<div></div>';
-
-    const play=document.createElement('button');
-    play.className='lesson-center-play';
-    play.type='button';
-    play.textContent='▶';
-    play.setAttribute('aria-label','נגן תצוגה מקדימה');
-
-    const overlay=document.createElement('div');
     overlay.className='lesson-render-overlay';
     overlay.innerHTML=
-      '<div class="lesson-render-percent">0%</div>'+
-      '<div class="lesson-render-status">מכין סרטון…</div>'+
-      '<div class="lesson-render-track"><div></div></div>';
+      '<div class="lesson-render-idle">'+
+        '<div class="lesson-render-title">יוצר את הסרטון…</div>'+
+        '<div class="lesson-render-sub">הסרטון יופיע כאן כשהוא מוכן</div>'+
+        '<div class="lesson-loader"></div>'+
+      '</div>';
 
-    stage.append(grid,brand,counter,page,progress,play,overlay);
+    stage.append(canvas,overlay);
 
-    const toolbar=document.createElement('div');
+    const toolbar=
+      document.createElement('div');
+
     toolbar.className='lesson-toolbar';
 
-    const meta=document.createElement('div');
-    meta.className='lesson-meta';
-    meta.innerHTML=
-      '<div class="lesson-meta-title"></div>'+
-      '<div class="lesson-meta-sub"></div>';
-    meta.querySelector('.lesson-meta-title').textContent=lesson.title;
-    meta.querySelector('.lesson-meta-sub').textContent=Math.round(lesson.duration)+' שניות • '+lesson.pages.length+' סצנות • 1280×720';
+    const play=
+      document.createElement('button');
 
-    const render=document.createElement('button');
-    render.className='lesson-action primary lesson-render-button';
+    play.className='lesson-play';
+    play.type='button';
+    play.textContent='▶';
+    play.setAttribute(
+      'aria-label',
+      'נגן או עצור'
+    );
+
+    const scrubber=
+      document.createElement('input');
+
+    scrubber.className='lesson-scrubber';
+    scrubber.type='range';
+    scrubber.min='0';
+    scrubber.max='1';
+    scrubber.step='0.001';
+    scrubber.value='0';
+
+    const time=
+      document.createElement('div');
+
+    time.className='lesson-time';
+    time.textContent=
+      '0:00 / '+
+      formatLessonTime(lesson.duration);
+
+    toolbar.append(
+      play,
+      scrubber,
+      time
+    );
+
+    const actions=
+      document.createElement('div');
+
+    actions.className='lesson-actions';
+
+    const render=
+      document.createElement('button');
+
+    render.className=
+      'lesson-action primary lesson-render-button';
+
     render.type='button';
     render.textContent='צור MP4';
 
-    const download=document.createElement('a');
-    download.className='lesson-action lesson-download';
+    const download=
+      document.createElement('a');
+
+    download.className=
+      'lesson-action lesson-download';
+
     download.textContent='הורד MP4';
     download.hidden=true;
 
-    toolbar.append(meta,download,render);
-    card.append(stage,toolbar);
+    const spacer=
+      document.createElement('div');
+
+    spacer.className='lesson-spacer';
+
+    actions.append(
+      spacer,
+      download,
+      render
+    );
+
+    card.append(
+      meta,
+      stage,
+      toolbar,
+      actions
+    );
+
     target.appendChild(card);
 
-    setLessonPreviewPage(card,lesson,0);
+    renderLessonPreviewFrame(
+      card,
+      lesson,
+      0
+    );
 
-    play.addEventListener('click',function(){
-      if(card._lessonPlaying)stopLessonPreview(card);
-      else startLessonPreview(card,lesson);
+    document.fonts.ready.then(function(){
+      renderLessonPreviewFrame(
+        card,
+        lesson,
+        card._lessonTime||0
+      );
     });
 
-    render.addEventListener('click',function(){
-      renderLessonMp4(card,lesson);
-    });
+    play.addEventListener(
+      'click',
+      function(){
+        const video=
+          stage.querySelector(
+            '.lesson-video'
+          );
+
+        if(video){
+          if(video.paused)video.play();
+          else video.pause();
+          return;
+        }
+
+        if(card._lessonPlaying){
+          stopLessonPreview(card);
+        }else{
+          if(card._lessonTime>=lesson.duration-.05){
+            card._lessonTime=0;
+          }
+
+          startLessonPreview(
+            card,
+            lesson
+          );
+        }
+      }
+    );
+
+    canvas.addEventListener(
+      'click',
+      function(){
+        if(card._lessonPlaying){
+          stopLessonPreview(card);
+        }else{
+          if(card._lessonTime>=lesson.duration-.05){
+            card._lessonTime=0;
+          }
+
+          startLessonPreview(
+            card,
+            lesson
+          );
+        }
+      }
+    );
+
+    scrubber.addEventListener(
+      'input',
+      function(){
+        stopLessonPreview(card);
+
+        card._lessonTime=
+          Number(scrubber.value)*
+          lesson.duration;
+
+        renderLessonPreviewFrame(
+          card,
+          lesson,
+          card._lessonTime
+        );
+      }
+    );
+
+    render.addEventListener(
+      'click',
+      function(){
+        renderLessonMp4(
+          card,
+          lesson
+        );
+      }
+    );
   }
 
   function hydrateVisuals(root){
