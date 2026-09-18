@@ -133,8 +133,7 @@ async function askSifra({
     );
   }
 
-  // No token cap and no discount/ranking routing.
-  // We send the chosen model directly.
+  // Send the chosen model directly.
   const requestBody = {
     model: MODEL,
     messages: buildMessages(
