@@ -4077,7 +4077,9 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     }
 
     scenes.forEach(function(scene,index){
-      resolveLessonSceneLayout(scene,index);
+      for(let pass=0;pass<3;pass+=1){
+        resolveLessonSceneLayout(scene,index);
+      }
     });
 
     const duration=scenes.reduce(function(sum,scene){return sum+scene.seconds},0);
@@ -4408,9 +4410,9 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
               (.095-labelBox.top)*4;
           }
 
-          if(labelBox.bottom>.86){
+          if(labelBox.bottom>.82){
             value+=
-              (labelBox.bottom-.86)*4;
+              (labelBox.bottom-.82)*4;
           }
 
           return value;
@@ -4442,6 +4444,388 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         );
       });
     }
+  }
+
+  function lessonQualityAudit(lesson){
+    const issues=[];
+    const safe={
+      left:.05,
+      right:.95,
+      top:.075,
+      bottom:.84
+    };
+
+    function hasEnglishWords(text){
+      return /[A-Za-z]{2,}/.test(
+        String(text||'')
+      );
+    }
+
+    lesson.scenes.forEach(function(scene,sceneIndex){
+      if(!scene.elements.length){
+        issues.push(
+          'סצנה '+(sceneIndex+1)+' ריקה'
+        );
+        return;
+      }
+
+      const textValues=[];
+
+      scene.elements.forEach(function(element){
+        if(
+          [
+            'title','text','badge',
+            'counter'
+          ].includes(element.type)
+        ){
+          textValues.push(element.text);
+          textValues.push(element.label);
+        }
+
+        if(element.type==='bullets'){
+          textValues.push.apply(
+            textValues,
+            element.items
+          );
+        }
+
+        if(
+          element.type==='arrow'||
+          element.type==='line'
+        ){
+          textValues.push(element.label);
+        }
+
+        if(element.type==='equation-sequence'){
+          element.steps.forEach(function(step){
+            textValues.push(step.note);
+            textValues.push(step.label);
+          });
+        }
+
+        if(element.type==='summary'){
+          element.summaryItems.forEach(function(item){
+            textValues.push(item.label);
+          });
+        }
+
+        if(element.type==='rectangle'){
+          textValues.push(element.widthLabel);
+          textValues.push(element.heightLabel);
+        }
+
+        const box=lessonElementBox(element);
+
+        if(box){
+          if(
+            box.left<safe.left-.02||
+            box.right>safe.right+.02||
+            box.top<safe.top-.02||
+            box.bottom>safe.bottom+.02
+          ){
+            issues.push(
+              'תוכן קרוב מדי לקצה בסצנה '+
+              (sceneIndex+1)
+            );
+          }
+        }
+      });
+
+      textValues
+        .filter(Boolean)
+        .forEach(function(text){
+          if(hasEnglishWords(text)){
+            issues.push(
+              'טקסט באנגלית בסצנה '+
+              (sceneIndex+1)+
+              ': '+
+              String(text).slice(0,50)
+            );
+          }
+        });
+
+      const boxes=
+        scene.elements
+          .map(function(element){
+            return {
+              element:element,
+              box:lessonElementBox(element)
+            };
+          })
+          .filter(function(item){
+            return (
+              item.box&&
+              ![
+                'arrow','line',
+                'highlight'
+              ].includes(
+                item.element.type
+              )
+            );
+          });
+
+      for(let i=0;i<boxes.length;i+=1){
+        for(let j=i+1;j<boxes.length;j+=1){
+          const overlap=
+            lessonBoxOverlap(
+              boxes[i].box,
+              boxes[j].box
+            );
+
+          if(overlap>.045){
+            issues.push(
+              'חפיפה גדולה בסצנה '+
+              (sceneIndex+1)
+            );
+          }
+        }
+      }
+
+      const earliest=
+        Math.min.apply(
+          null,
+          scene.elements.map(function(element){
+            return Number(element.at)||0;
+          })
+        );
+
+      if(earliest>.35){
+        issues.push(
+          'התחלה איטית בסצנה '+
+          (sceneIndex+1)
+        );
+      }
+    });
+
+    const uniqueIssues=
+      Array.from(new Set(issues));
+
+    return {
+      ok:uniqueIssues.length===0,
+      issues:uniqueIssues
+    };
+  }
+
+  async function lessonVerifyExportFrames(
+    track,
+    lesson,
+    CanvasSink,
+    width,
+    height
+  ){
+    const timeline=
+      lessonTimeline(lesson);
+
+    const timestamps=[];
+
+    timeline.forEach(function(item){
+      timestamps.push(
+        Math.min(
+          item.end-.08,
+          item.start+
+          Math.min(
+            .55,
+            Math.max(
+              .12,
+              item.scene.seconds*.12
+            )
+          )
+        )
+      );
+
+      timestamps.push(
+        (item.start+item.end)/2
+      );
+    });
+
+    const safeTimes=
+      Array.from(
+        new Set(
+          timestamps
+            .filter(function(value){
+              return (
+                Number.isFinite(value)&&
+                value>=0&&
+                value<lesson.duration
+              );
+            })
+            .map(function(value){
+              return Math.round(value*1000)/1000;
+            })
+        )
+      ).slice(0,16);
+
+    const sink=
+      new CanvasSink(
+        track,
+        {
+          width:320,
+          height:180,
+          fit:'fill',
+          poolSize:1,
+          decoderOptions:{
+            hardwareAcceleration:
+              'prefer-software'
+          }
+        }
+      );
+
+    const expectedFull=
+      document.createElement('canvas');
+
+    expectedFull.width=width;
+    expectedFull.height=height;
+
+    const expectedCtx=
+      expectedFull.getContext(
+        '2d',
+        {alpha:false}
+      );
+
+    const expectedSmall=
+      document.createElement('canvas');
+
+    expectedSmall.width=320;
+    expectedSmall.height=180;
+
+    const expectedSmallCtx=
+      expectedSmall.getContext(
+        '2d',
+        {
+          alpha:false,
+          willReadFrequently:true
+        }
+      );
+
+    const actualSmall=
+      document.createElement('canvas');
+
+    actualSmall.width=320;
+    actualSmall.height=180;
+
+    const actualCtx=
+      actualSmall.getContext(
+        '2d',
+        {
+          alpha:false,
+          willReadFrequently:true
+        }
+      );
+
+    let worst=0;
+    let checked=0;
+
+    for await(
+      const wrapped of
+        sink.canvasesAtTimestamps(
+          safeTimes
+        )
+    ){
+      if(!wrapped)continue;
+
+      const time=
+        Number.isFinite(
+          wrapped.timestamp
+        )
+          ? wrapped.timestamp
+          : safeTimes[checked];
+
+      drawLessonFrame(
+        expectedCtx,
+        lesson,
+        time,
+        width,
+        height
+      );
+
+      expectedSmallCtx.clearRect(
+        0,0,320,180
+      );
+
+      expectedSmallCtx.drawImage(
+        expectedFull,
+        0,0,320,180
+      );
+
+      actualCtx.clearRect(
+        0,0,320,180
+      );
+
+      actualCtx.drawImage(
+        wrapped.canvas,
+        0,0,320,180
+      );
+
+      const expectedPixels=
+        expectedSmallCtx
+          .getImageData(
+            0,0,320,180
+          )
+          .data;
+
+      const actualPixels=
+        actualCtx
+          .getImageData(
+            0,0,320,180
+          )
+          .data;
+
+      let diff=0;
+      let samples=0;
+
+      for(
+        let i=0;
+        i<expectedPixels.length;
+        i+=16
+      ){
+        diff+=
+          Math.abs(
+            expectedPixels[i]-
+            actualPixels[i]
+          )+
+          Math.abs(
+            expectedPixels[i+1]-
+            actualPixels[i+1]
+          )+
+          Math.abs(
+            expectedPixels[i+2]-
+            actualPixels[i+2]
+          );
+
+        samples+=3;
+      }
+
+      const mean=
+        diff/
+        Math.max(
+          1,
+          samples
+        );
+
+      worst=Math.max(
+        worst,
+        mean
+      );
+
+      checked+=1;
+    }
+
+    if(checked<Math.min(2,safeTimes.length)){
+      throw new Error(
+        'לא הצלחתי לבדוק מספיק פריימים מה-MP4.'
+      );
+    }
+
+    if(worst>24){
+      throw new Error(
+        'ה-MP4 לא תואם מספיק לתצוגה המקדימה.'
+      );
+    }
+
+    return {
+      checked:checked,
+      worstDifference:worst
+    };
   }
 
   function lessonTimeline(lesson){
@@ -6726,6 +7110,18 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     stopLessonPreview(card);
 
     try{
+      const preflight=
+        lessonQualityAudit(lesson);
+
+      if(!preflight.ok){
+        throw new Error(
+          'הווידאו לא עבר בדיקת איכות: '+
+          preflight.issues
+            .slice(0,3)
+            .join(' • ')
+        );
+      }
+
       await document.fonts.ready;
       await document.fonts.load('700 54px Huninn');
       await document.fonts.load('500 28px Huninn');
@@ -6758,6 +7154,7 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         Input,
         BlobSource,
         ALL_FORMATS,
+        CanvasSink,
         getFirstEncodableVideoCodec
       }=media;
 
@@ -7006,6 +7403,25 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
             'קצב הפריימים של ה-MP4 אינו יציב.'
           );
         }
+
+        if(renderStatus){
+          renderStatus.textContent=
+            'צופה בפריימים ובודק התאמה…';
+        }
+
+        const visualQa=
+          await lessonVerifyExportFrames(
+            track,
+            lesson,
+            CanvasSink,
+            width,
+            height
+          );
+
+        console.info(
+          'Sifra video QA passed:',
+          visualQa
+        );
       }finally{
         if(
           typeof validationInput.dispose===
