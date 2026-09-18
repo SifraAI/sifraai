@@ -512,6 +512,14 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   overflow-wrap:anywhere;
 }
 .assistant-text strong{font-weight:700}
+.assistant-text.streaming{
+  min-height:1.8em;
+}
+.stream-error-note{
+  margin-top:8px;
+  color:var(--danger);
+  font-size:13px;
+}
 .thinking{color:var(--muted)}
 .thinking-shimmer{
   display:inline-block;
@@ -1163,37 +1171,296 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
   }
 
   async function requestAI(images){
-    const pending=addAssistantMessage('',{thinking:true});
+    const row=addAssistantMessage('',{thinking:true});
+    const content=row.querySelector('.assistant-text');
+
+    let fullText='';
+    let renderQueued=false;
+    let firstToken=false;
+    let completed=false;
+
+    function nearBottom(){
+      return (
+        chat.scrollHeight -
+        chat.scrollTop -
+        chat.clientHeight
+      ) < 220;
+    }
+
+    function renderStream(){
+      renderQueued=false;
+
+      content.innerHTML=
+        formatAnswer(fullText);
+
+      if(nearBottom()){
+        chat.scrollTop=
+          chat.scrollHeight;
+      }
+    }
+
+    function queueRender(){
+      if(renderQueued)return;
+      renderQueued=true;
+      requestAnimationFrame(renderStream);
+    }
+
+    function beginStreaming(){
+      if(firstToken)return;
+      firstToken=true;
+      content.classList.remove('thinking');
+      content.classList.add('streaming');
+      content.innerHTML='';
+    }
+
+    function parseEventBlock(block){
+      let eventName='message';
+      const dataLines=[];
+
+      block.split('\n').forEach(function(line){
+        if(line.startsWith('event:')){
+          eventName=
+            line.slice(6).trim();
+        }else if(line.startsWith('data:')){
+          dataLines.push(
+            line.slice(5).trimStart()
+          );
+        }
+      });
+
+      if(!dataLines.length)return;
+
+      let data={};
+
+      try{
+        data=JSON.parse(
+          dataLines.join('\n')
+        );
+      }catch(error){
+        return;
+      }
+
+      if(eventName==='token'){
+        const token=
+          typeof data.text==='string'
+            ? data.text
+            : '';
+
+        if(!token)return;
+
+        beginStreaming();
+        fullText+=token;
+        queueRender();
+        return;
+      }
+
+      if(eventName==='done'){
+        completed=true;
+        return;
+      }
+
+      if(eventName==='error'){
+        const streamError=
+          new Error(
+            data.error ||
+            'החיבור למודל נקטע. נסה שוב.'
+          );
+
+        streamError.streamError=true;
+        throw streamError;
+      }
+    }
+
     try{
       const response=await fetch('/api/chat',{
         method:'POST',
-        headers:{'Content-Type':'application/json'},
+        headers:{
+          'Content-Type':'application/json'
+        },
         body:JSON.stringify({
-          messages:state.messages.slice(-16),
-          images:images.map(function(item){return {dataUrl:item.dataUrl}})
+          messages:
+            state.messages.slice(-16),
+          images:images.map(function(item){
+            return {
+              dataUrl:item.dataUrl
+            };
+          })
         })
       });
-      let data={};try{data=await response.json()}catch(error){}
-      const remaining=response.headers.get('RateLimit-Remaining');
+
+      const remaining=
+        response.headers.get(
+          'RateLimit-Remaining'
+        );
+
       if(remaining!==null){
-        const left=Math.max(0,Math.min(150,Number(remaining)));
+        const left=Math.max(
+          0,
+          Math.min(
+            150,
+            Number(remaining)
+          )
+        );
+
         if(Number.isFinite(left)){
           const used=150-left;
-          dailyUsage.textContent=used+' / 150';
-          dailyUsageFill.style.width=Math.min(100,(used/150)*100)+'%';
+
+          dailyUsage.textContent=
+            used+' / 150';
+
+          dailyUsageFill.style.width=
+            Math.min(
+              100,
+              (used/150)*100
+            )+'%';
         }
       }
-      pending.remove();
+
       if(!response.ok){
-        if(response.status===429&&data.retryAfter)throw new Error('שלחת יותר מדי הודעות. נסה שוב בעוד '+data.retryAfter+' שניות.');
-        throw new Error(data.error||'לא הצלחתי לקבל תשובה כרגע.');
+        let data={};
+
+        try{
+          data=await response.json();
+        }catch(error){}
+
+        if(
+          response.status===429 &&
+          data.retryAfter
+        ){
+          throw new Error(
+            'שלחת יותר מדי הודעות. נסה שוב בעוד '+
+            data.retryAfter+
+            ' שניות.'
+          );
+        }
+
+        throw new Error(
+          data.error ||
+          'לא הצלחתי לקבל תשובה כרגע.'
+        );
       }
-      if(!data.answer)throw new Error('השרת החזיר תשובה ריקה.');
-      state.messages.push({role:'assistant',content:data.answer});
-      addAssistantMessage(data.answer);
+
+      if(!response.body){
+        throw new Error(
+          'הדפדפן לא קיבל זרם תשובה.'
+        );
+      }
+
+      const reader=
+        response.body.getReader();
+
+      const decoder=
+        new TextDecoder();
+
+      let buffer='';
+
+      while(true){
+        const result=
+          await reader.read();
+
+        if(result.done)break;
+
+        buffer+=decoder.decode(
+          result.value,
+          {stream:true}
+        );
+
+        buffer=
+          buffer.replace(/\r\n/g,'\n');
+
+        let boundary;
+
+        while(
+          (boundary=
+            buffer.indexOf('\n\n')
+          )!==-1
+        ){
+          const block=
+            buffer.slice(0,boundary);
+
+          buffer=
+            buffer.slice(boundary+2);
+
+          parseEventBlock(block);
+        }
+      }
+
+      buffer+=decoder.decode();
+      buffer=
+        buffer.replace(/\r\n/g,'\n');
+
+      if(buffer.trim()){
+        parseEventBlock(buffer);
+      }
+
+      if(renderQueued){
+        renderStream();
+      }
+
+      if(!fullText.trim()){
+        throw new Error(
+          'השרת החזיר תשובה ריקה.'
+        );
+      }
+
+      content.classList.remove(
+        'streaming'
+      );
+
+      state.messages.push({
+        role:'assistant',
+        content:fullText
+      });
+
+      row.appendChild(
+        actionBar(fullText)
+      );
+
+      if(!completed){
+        console.warn(
+          'Sifra stream ended without an explicit done event'
+        );
+      }
+
+      return fullText;
     }catch(error){
-      pending.remove();
-      addAssistantMessage(error.message||'לא הצלחתי לקבל תשובה.',{error:true});
+      if(renderQueued){
+        renderStream();
+      }
+
+      if(fullText.trim()){
+        content.classList.remove(
+          'streaming',
+          'thinking'
+        );
+
+        const note=
+          document.createElement('div');
+
+        note.className=
+          'stream-error-note';
+
+        note.textContent=
+          error.message ||
+          'החיבור נקטע. נסה שוב.';
+
+        row.appendChild(note);
+      }else{
+        content.classList.remove(
+          'streaming',
+          'thinking'
+        );
+
+        content.classList.add(
+          'error'
+        );
+
+        content.textContent=
+          error.message ||
+          'לא הצלחתי לקבל תשובה.';
+      }
+
+      throw error;
     }
   }
 
@@ -1220,11 +1487,23 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
     await new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve)})});
     await animateUserFlight(sourceRect,row);
-    await requestAI(images);
 
-    state.busy=false;updateButtons();
-    chat.scrollTo({top:chat.scrollHeight,behavior:'smooth'});
-    chatInput.focus();
+    try{
+      await requestAI(images);
+    }catch(error){
+      console.warn(
+        'Sifra request failed:',
+        error?.message || error
+      );
+    }finally{
+      state.busy=false;
+      updateButtons();
+      chat.scrollTo({
+        top:chat.scrollHeight,
+        behavior:'smooth'
+      });
+      chatInput.focus();
+    }
   }
 
   async function retryLastAnswer(){
@@ -1235,7 +1514,15 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       if(rows.length)rows[rows.length-1].remove();
     }
     if(!state.messages.length||state.messages[state.messages.length-1].role!=='user')return;
-    state.busy=true;updateButtons();await requestAI([]);state.busy=false;updateButtons();chat.scrollTo({top:chat.scrollHeight,behavior:'smooth'});
+    state.busy=true;updateButtons();
+    try{
+      await requestAI([]);
+    }catch(error){
+      console.warn('Retry failed:',error?.message||error);
+    }finally{
+      state.busy=false;updateButtons();
+      chat.scrollTo({top:chat.scrollHeight,behavior:'smooth'});
+    }
   }
 
   homeInput.addEventListener('input',function(){resizeTextarea(homeInput);updateButtons()});
