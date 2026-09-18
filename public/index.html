@@ -682,6 +682,41 @@ html[data-theme="dark"] .viz-card{
   display:block;
   color:var(--text);
 }
+.viz-params{
+  display:flex;
+  flex-wrap:wrap;
+  gap:9px;
+  padding:11px 14px 13px;
+  border-top:1px solid var(--line);
+  background:color-mix(in srgb,var(--surface) 92%,var(--bg));
+  direction:ltr;
+}
+.viz-param{
+  flex:1 1 180px;
+  min-width:160px;
+  padding:8px 10px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:var(--bg);
+}
+.viz-param-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:7px;
+  color:var(--text);
+  font-size:12px;
+}
+.viz-param-name{font-weight:700;direction:ltr}
+.viz-param-value{
+  color:var(--muted);
+  font-variant-numeric:tabular-nums;
+}
+.viz-param input[type="range"]{
+  width:100%;
+  accent-color:var(--text);
+}
 .viz-axis-label{
   fill:currentColor;
   opacity:.55;
@@ -1811,26 +1846,35 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       .replace(/π/g,'pi')
       .replace(/^\s*(?:y|f\s*\(\s*x\s*\))\s*=\s*/i,'');
 
-    expression=expression.replace(
-      /\bln\s*\(/gi,
-      'log('
-    );
+    expression=expression
+      .replace(/\bln\s*\(/gi,'log(')
+      .replace(/\b([abcmkn])x\b/gi,'$1*x');
 
     const names=
       expression.match(/[A-Za-z_]+/g)||[];
 
-    const allowed=new Set([
-      'x','pi','e',
+    const functions=new Set([
       'sin','cos','tan',
       'asin','acos','atan',
       'sqrt','abs','log','exp',
       'floor','ceil'
     ]);
 
+    const constants=new Set([
+      'x','pi','e'
+    ]);
+
+    const parameters=new Set([
+      'a','b','c','m','k','n'
+    ]);
+
     if(
       names.some(function(name){
-        return !allowed.has(
-          name.toLowerCase()
+        const value=name.toLowerCase();
+        return !(
+          functions.has(value)||
+          constants.has(value)||
+          parameters.has(value)
         );
       })
     ){
@@ -1849,7 +1893,23 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       );
     }
 
-    return expression;
+    const usedParameters=
+      Array.from(
+        new Set(
+          names
+            .map(function(name){
+              return name.toLowerCase();
+            })
+            .filter(function(name){
+              return parameters.has(name);
+            })
+        )
+      ).slice(0,3);
+
+    return {
+      expression:expression,
+      parameters:usedParameters
+    };
   }
 
   function renderEquationViz(target,payload){
@@ -1863,84 +1923,206 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
     try{
       if(!window.math){
-        throw new Error('מנוע הגרפים עדיין נטען');
+        throw new Error(
+          'מנוע הגרפים עדיין נטען'
+        );
       }
 
-      const expression=
+      const normalized=
         normalizeEquation(payload);
+
+      const expression=
+        normalized.expression;
+
+      const parameters=
+        normalized.parameters;
 
       const compiled=
         window.math.compile(expression);
 
-      const points=[];
-      const ys=[];
+      const values={};
 
-      for(let i=0;i<=420;i+=1){
-        const x=-10+(20*i/420);
-        let y=NaN;
+      parameters.forEach(function(name){
+        values[name]=
+          name==='b'||name==='c'
+            ? 0
+            : 1;
+      });
 
-        try{
-          y=Number(
-            compiled.evaluate({x:x})
-          );
-        }catch(error){}
+      const plotHost=
+        document.createElement('div');
 
-        if(
-          Number.isFinite(y)&&
-          Math.abs(y)<1e6
-        ){
-          ys.push(y);
-          points.push([x,y]);
-        }else{
-          points.push([x,NaN]);
+      shell.body.appendChild(plotHost);
+
+      function draw(){
+        plotHost.innerHTML='';
+
+        const points=[];
+        const ys=[];
+
+        for(let i=0;i<=420;i+=1){
+          const x=-10+(20*i/420);
+          let y=NaN;
+
+          try{
+            y=Number(
+              compiled.evaluate(
+                Object.assign(
+                  {x:x},
+                  values
+                )
+              )
+            );
+          }catch(error){}
+
+          if(
+            Number.isFinite(y)&&
+            Math.abs(y)<1e6
+          ){
+            ys.push(y);
+            points.push([x,y]);
+          }else{
+            points.push([x,NaN]);
+          }
         }
-      }
 
-      if(ys.length<3){
-        throw new Error(
-          'לא ניתן לצייר את הפונקציה'
+        if(ys.length<3){
+          const message=
+            document.createElement('div');
+
+          message.className='viz-error';
+          message.textContent=
+            'לא ניתן לצייר את הפונקציה עם הערכים האלה.';
+
+          plotHost.appendChild(message);
+          return;
+        }
+
+        let low=percentile(ys,.04);
+        let high=percentile(ys,.96);
+
+        if(!(high>low)){
+          low-=1;
+          high+=1;
+        }
+
+        const span=Math.max(
+          2,
+          high-low
+        );
+
+        low-=span*.12;
+        high+=span*.12;
+
+        if(low>0&&low<span*.7)low=0;
+        if(high<0&&Math.abs(high)<span*.7)high=0;
+
+        plotHost.appendChild(
+          buildPlotSvg(
+            points,
+            {
+              xMin:-10,
+              xMax:10,
+              yMin:low,
+              yMax:high,
+              connect:true,
+              points:false,
+              label:'גרף '+payload
+            }
+          )
         );
       }
 
-      let low=percentile(ys,.04);
-      let high=percentile(ys,.96);
+      draw();
 
-      if(!(high>low)){
-        low-=1;
-        high+=1;
+      if(parameters.length){
+        const controls=
+          document.createElement('div');
+
+        controls.className=
+          'viz-params';
+
+        parameters.forEach(function(name){
+          const item=
+            document.createElement('label');
+
+          item.className='viz-param';
+
+          const head=
+            document.createElement('div');
+
+          head.className=
+            'viz-param-head';
+
+          const paramName=
+            document.createElement('span');
+
+          paramName.className=
+            'viz-param-name';
+
+          paramName.textContent=name;
+
+          const value=
+            document.createElement('span');
+
+          value.className=
+            'viz-param-value';
+
+          value.textContent=
+            niceNumber(values[name]);
+
+          const input=
+            document.createElement('input');
+
+          input.type='range';
+          input.min='-5';
+          input.max='5';
+          input.step='.1';
+          input.value=
+            String(values[name]);
+
+          input.addEventListener(
+            'input',
+            function(){
+              values[name]=
+                Number(input.value);
+
+              value.textContent=
+                niceNumber(
+                  values[name]
+                );
+
+              draw();
+            }
+          );
+
+          head.append(
+            paramName,
+            value
+          );
+
+          item.append(
+            head,
+            input
+          );
+
+          controls.appendChild(item);
+        });
+
+        shell.card.appendChild(
+          controls
+        );
       }
-
-      const span=Math.max(
-        2,
-        high-low
-      );
-
-      low-=span*.12;
-      high+=span*.12;
-
-      if(low>0&&low<span*.7)low=0;
-      if(high<0&&Math.abs(high)<span*.7)high=0;
-
-      shell.body.appendChild(
-        buildPlotSvg(
-          points,
-          {
-            xMin:-10,
-            xMax:10,
-            yMin:low,
-            yMax:high,
-            connect:true,
-            points:false,
-            label:'גרף '+payload
-          }
-        )
-      );
     }catch(error){
-      const message=document.createElement('div');
+      const message=
+        document.createElement('div');
+
       message.className='viz-error';
+
       message.textContent=
         error.message||
         'לא הצלחתי להציג את הגרף.';
+
       shell.body.appendChild(message);
     }
   }
