@@ -6117,8 +6117,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
     const transition=
       Math.min(
-        .38,
-        stepSeconds*.20
+        .26,
+        stepSeconds*.12
       );
 
     const p=
@@ -6154,7 +6154,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       step,
       alpha,
       offsetY,
-      scale
+      scale,
+      showNote
     ){
       if(!step||alpha<=0)return;
 
@@ -6187,7 +6188,10 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       ctx.restore();
 
-      if(step.note){
+      if(
+        step.note&&
+        showNote!==false
+      ){
         ctx.save();
         ctx.globalAlpha=alpha;
         ctx.direction='rtl';
@@ -6196,8 +6200,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         ctx.font=
           '500 '+
           Math.max(
-            20,
-            element.size*.46
+            24,
+            element.size*.50
           )+
           'px Huninn, Arial';
 
@@ -6287,22 +6291,25 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       drawStep(
         element.steps[index-1],
         1-eased,
-        -18*eased,
-        1-.03*eased
+        -42*eased,
+        1-.04*eased,
+        false
       );
 
       drawStep(
         element.steps[index],
         eased,
-        24*(1-eased),
-        .96+.04*eased
+        42*(1-eased),
+        .97+.03*eased,
+        true
       );
     }else{
       drawStep(
         element.steps[index],
         1,
         0,
-        1
+        1,
+        true
       );
     }
 
