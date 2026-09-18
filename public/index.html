@@ -3676,6 +3676,207 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     return lines;
   }
 
+  async function lessonFormulaBitmap(formula,color,size){
+    if(
+      !formula||
+      !window.katex||
+      !window.html2canvas
+    ){
+      return null;
+    }
+
+    const host=document.createElement('div');
+    host.setAttribute('aria-hidden','true');
+    host.style.position='fixed';
+    host.style.left='-20000px';
+    host.style.top='0';
+    host.style.zIndex='-1000';
+    host.style.pointerEvents='none';
+    host.style.direction='ltr';
+    host.style.whiteSpace='nowrap';
+    host.style.padding='18px 22px';
+    host.style.background='transparent';
+    host.style.color=color;
+    host.style.fontSize=Math.max(22,size)+'px';
+    host.style.lineHeight='1.15';
+
+    document.body.appendChild(host);
+
+    try{
+      window.katex.render(
+        String(formula),
+        host,
+        {
+          throwOnError:false,
+          displayMode:true,
+          strict:'ignore',
+          trust:false,
+          output:'html'
+        }
+      );
+
+      await document.fonts.ready;
+
+      const canvas=
+        await window.html2canvas(
+          host,
+          {
+            backgroundColor:null,
+            scale:2,
+            logging:false,
+            useCORS:true
+          }
+        );
+
+      return {
+        canvas:canvas,
+        width:canvas.width/2,
+        height:canvas.height/2
+      };
+    }catch(error){
+      console.warn(
+        'Lesson KaTeX raster failed:',
+        formula,
+        error
+      );
+      return null;
+    }finally{
+      host.remove();
+    }
+  }
+
+  async function prepareLessonAssets(lesson){
+    if(lesson._assetsReady)return;
+
+    const jobs=[];
+
+    lesson.scenes.forEach(function(scene){
+      const palette=lessonPalette(scene);
+
+      scene.elements.forEach(function(element){
+        if(
+          element.type==='formula'&&
+          element.text
+        ){
+          jobs.push(async function(){
+            element._formulaBitmap=
+              await lessonFormulaBitmap(
+                element.text,
+                lessonColor(
+                  element.color,
+                  palette
+                ),
+                element.size
+              );
+          });
+        }
+
+        if(
+          element.type==='equation-sequence'
+        ){
+          element.steps.forEach(function(step){
+            if(!step.formula)return;
+
+            jobs.push(async function(){
+              step._formulaBitmap=
+                await lessonFormulaBitmap(
+                  step.formula,
+                  lessonColor(
+                    element.color,
+                    palette
+                  ),
+                  element.size
+                );
+            });
+          });
+        }
+      });
+    });
+
+    for(let i=0;i<jobs.length;i+=3){
+      await Promise.all(
+        jobs
+          .slice(i,i+3)
+          .map(function(job){
+            return job();
+          })
+      );
+    }
+
+    lesson._assetsReady=true;
+  }
+
+  function lessonDrawFormulaAsset(
+    ctx,
+    asset,
+    text,
+    element,
+    palette,
+    maxWidth,
+    maxHeight
+  ){
+    if(asset&&asset.canvas){
+      const fit=Math.min(
+        1,
+        maxWidth/Math.max(1,asset.width),
+        maxHeight/Math.max(1,asset.height)
+      );
+
+      const drawW=asset.width*fit;
+      const drawH=asset.height*fit;
+
+      let left=0;
+
+      if(element.align==='center'){
+        left=-drawW/2;
+      }else if(element.align==='right'){
+        left=-drawW;
+      }
+
+      ctx.drawImage(
+        asset.canvas,
+        left,
+        0,
+        drawW,
+        drawH
+      );
+
+      return {
+        width:drawW,
+        height:drawH
+      };
+    }
+
+    ctx.fillStyle=
+      lessonColor(
+        element.color,
+        palette
+      );
+
+    ctx.font=
+      '700 '+
+      element.size+
+      'px Huninn, Arial';
+
+    ctx.direction='ltr';
+    ctx.textAlign=element.align;
+    ctx.textBaseline='top';
+    ctx.fillText(
+      text,
+      0,
+      0,
+      maxWidth
+    );
+
+    return {
+      width:Math.min(
+        maxWidth,
+        ctx.measureText(text).width
+      ),
+      height:element.size*1.15
+    };
+  }
+
   function lessonTextAnchor(element,width){
     const x=element.x*width;
 
@@ -3723,23 +3924,91 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     ctx.textBaseline='top';
 
     if(isFormula){
-      const measure=ctx.measureText(text).width;
-      const boxW=Math.min(maxWidth,Math.max(measure+50,180));
-      const boxH=fontSize+34;
+      const asset=
+        element._formulaBitmap||null;
+
+      const rawW=
+        asset?.width||
+        Math.min(
+          maxWidth,
+          ctx.measureText(text).width
+        );
+
+      const rawH=
+        asset?.height||
+        fontSize*1.15;
+
+      const fit=Math.min(
+        1,
+        (maxWidth-44)/
+          Math.max(1,rawW)
+      );
+
+      const contentW=rawW*fit;
+      const contentH=rawH*fit;
+      const boxW=Math.min(
+        maxWidth,
+        Math.max(
+          contentW+46,
+          190
+        )
+      );
+
+      const boxH=Math.max(
+        fontSize+34,
+        contentH+24
+      );
+
       let bx=0;
 
-      if(element.align==='center')bx=-boxW/2;
-      else if(element.align==='right')bx=-boxW;
+      if(element.align==='center'){
+        bx=-boxW/2;
+      }else if(element.align==='right'){
+        bx=-boxW;
+      }
 
-      roundedRect(ctx,bx,-13,boxW,boxH,16);
-      ctx.fillStyle=palette.dark?'rgba(255,255,255,.055)':'rgba(0,0,0,.035)';
+      roundedRect(
+        ctx,
+        bx,
+        -10,
+        boxW,
+        boxH,
+        16
+      );
+
+      ctx.fillStyle=
+        palette.dark
+          ? 'rgba(255,255,255,.055)'
+          : 'rgba(0,0,0,.035)';
+
       ctx.fill();
-      ctx.strokeStyle=palette.subtle2;
+
+      ctx.strokeStyle=
+        palette.subtle2;
+
       ctx.lineWidth=1;
       ctx.stroke();
 
-      ctx.fillStyle=lessonColor(element.color,palette);
-      ctx.fillText(text,0,0,maxWidth);
+      ctx.save();
+      ctx.translate(
+        0,
+        Math.max(
+          0,
+          (boxH-contentH)/2-10
+        )
+      );
+
+      lessonDrawFormulaAsset(
+        ctx,
+        asset,
+        text,
+        element,
+        palette,
+        boxW-34,
+        boxH-18
+      );
+
+      ctx.restore();
       ctx.restore();
       return;
     }
@@ -3843,13 +4112,84 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     }
 
     if(element.label&&progress>.65){
-      ctx.font='600 23px Huninn, Arial';
-      ctx.direction='rtl';
+      const vx=ex-x1;
+      const vy=ey-y1;
+      const length=Math.max(
+        1,
+        Math.hypot(vx,vy)
+      );
+
+      let nx=-vy/length;
+      let ny=vx/length;
+
+      if(ny>0){
+        nx*=-1;
+        ny*=-1;
+      }
+
+      const offset=31;
+      const labelX=
+        (x1+ex)/2+
+        nx*offset;
+
+      const labelY=
+        (y1+ey)/2+
+        ny*offset;
+
+      ctx.font='600 22px Huninn, Arial';
+      ctx.direction=
+        containsHebrew(element.label)
+          ? 'rtl'
+          : 'ltr';
       ctx.textAlign='center';
+      ctx.textBaseline='middle';
+
+      const metrics=
+        ctx.measureText(
+          element.label
+        );
+
+      const pillW=
+        Math.min(
+          width*.42,
+          metrics.width+24
+        );
+
+      const pillH=38;
+
+      roundedRect(
+        ctx,
+        labelX-pillW/2,
+        labelY-pillH/2,
+        pillW,
+        pillH,
+        999
+      );
+
+      ctx.fillStyle=
+        palette.dark
+          ? 'rgba(11,12,15,.90)'
+          : 'rgba(251,251,251,.92)';
+
+      ctx.fill();
+
+      ctx.strokeStyle=
+        palette.subtle2;
+
+      ctx.lineWidth=1;
+      ctx.stroke();
+
+      ctx.fillStyle=
+        lessonColor(
+          element.color,
+          palette
+        );
+
       ctx.fillText(
         element.label,
-        (x1+ex)/2,
-        (y1+ey)/2-16
+        labelX,
+        labelY+1,
+        pillW-16
       );
     }
 
@@ -4331,6 +4671,574 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     ctx.restore();
   }
 
+  function lessonDrawEquationSequence(
+    ctx,
+    element,
+    palette,
+    width,
+    height,
+    localTime
+  ){
+    if(!element.steps.length)return;
+
+    const elapsed=
+      localTime-element.at;
+
+    if(elapsed<0)return;
+
+    const stepSeconds=
+      Math.max(
+        .8,
+        element.stepSeconds
+      );
+
+    const rawIndex=
+      Math.floor(
+        elapsed/stepSeconds
+      );
+
+    const index=
+      clamp(
+        rawIndex,
+        0,
+        element.steps.length-1
+      );
+
+    const within=
+      Math.max(
+        0,
+        elapsed-index*stepSeconds
+      );
+
+    const transition=
+      Math.min(
+        .38,
+        stepSeconds*.20
+      );
+
+    const p=
+      index>0
+        ? clamp(
+            within/transition,
+            0,
+            1
+          )
+        : clamp(
+            elapsed/
+              Math.max(.22,element.duration),
+            0,
+            1
+          );
+
+    const eased=
+      easeOutCubic(p);
+
+    const centerX=
+      element.x*width;
+
+    const centerY=
+      element.y*height;
+
+    const maxWidth=
+      element.w*width;
+
+    const maxHeight=
+      element.h*height*.56;
+
+    function drawStep(
+      step,
+      alpha,
+      offsetY,
+      scale
+    ){
+      if(!step||alpha<=0)return;
+
+      ctx.save();
+      ctx.globalAlpha=alpha;
+      ctx.translate(
+        centerX,
+        centerY+offsetY
+      );
+      ctx.scale(scale,scale);
+
+      const proxy=
+        Object.assign(
+          {},
+          element,
+          {
+            align:'center'
+          }
+        );
+
+      lessonDrawFormulaAsset(
+        ctx,
+        step._formulaBitmap,
+        step.formula,
+        proxy,
+        palette,
+        maxWidth,
+        maxHeight
+      );
+
+      ctx.restore();
+
+      if(step.note){
+        ctx.save();
+        ctx.globalAlpha=alpha;
+        ctx.direction='rtl';
+        ctx.textAlign='center';
+        ctx.textBaseline='top';
+        ctx.font=
+          '500 '+
+          Math.max(
+            20,
+            element.size*.46
+          )+
+          'px Huninn, Arial';
+
+        ctx.fillStyle=
+          palette.muted;
+
+        const noteY=
+          centerY+
+          maxHeight*.43+
+          26+
+          offsetY*.35;
+
+        ctx.fillText(
+          step.note,
+          centerX,
+          noteY,
+          maxWidth*.92
+        );
+
+        ctx.restore();
+      }
+    }
+
+    if(index>0&&within<transition){
+      drawStep(
+        element.steps[index-1],
+        1-eased,
+        -18*eased,
+        1-.03*eased
+      );
+
+      drawStep(
+        element.steps[index],
+        eased,
+        24*(1-eased),
+        .96+.04*eased
+      );
+    }else{
+      drawStep(
+        element.steps[index],
+        1,
+        0,
+        1
+      );
+    }
+
+    const dotsY=
+      centerY+
+      element.h*height/2-
+      16;
+
+    const total=
+      element.steps.length;
+
+    const gap=16;
+    const start=
+      centerX-
+      ((total-1)*gap)/2;
+
+    ctx.save();
+
+    element.steps.forEach(
+      function(_step,stepIndex){
+        ctx.beginPath();
+        ctx.arc(
+          start+stepIndex*gap,
+          dotsY,
+          stepIndex===index?4.5:3,
+          0,
+          Math.PI*2
+        );
+
+        ctx.fillStyle=
+          stepIndex===index
+            ? palette.accent
+            : palette.subtle2;
+
+        ctx.fill();
+      }
+    );
+
+    ctx.restore();
+  }
+
+  function lessonDrawRectangle(
+    ctx,
+    element,
+    palette,
+    width,
+    height,
+    localTime
+  ){
+    const motion=
+      lessonElementMotion(
+        element,
+        localTime
+      );
+
+    if(motion.alpha<=0)return;
+
+    const boxW=
+      element.w*width;
+
+    const boxH=
+      element.h*height;
+
+    const left=
+      element.x*width-
+      boxW/2;
+
+    const top=
+      element.y*height-
+      boxH/2;
+
+    const progress=
+      element.animation==='draw'
+        ? motion.draw
+        : 1;
+
+    ctx.save();
+    ctx.globalAlpha=
+      motion.alpha;
+
+    roundedRect(
+      ctx,
+      left,
+      top,
+      boxW,
+      boxH,
+      14
+    );
+
+    ctx.fillStyle=
+      palette.dark
+        ? 'rgba(255,255,255,.035)'
+        : 'rgba(0,0,0,.025)';
+
+    ctx.fill();
+
+    ctx.strokeStyle=
+      lessonColor(
+        element.color,
+        palette
+      );
+
+    ctx.lineWidth=3;
+    ctx.stroke();
+
+    if(
+      element.rows>0&&
+      element.cols>0
+    ){
+      const rows=
+        Math.min(
+          12,
+          element.rows
+        );
+
+      const cols=
+        Math.min(
+          16,
+          element.cols
+        );
+
+      const total=
+        rows*cols;
+
+      const visible=
+        Math.ceil(
+          total*progress
+        );
+
+      let count=0;
+
+      for(let r=0;r<rows;r+=1){
+        for(let col=0;col<cols;col+=1){
+          const x=
+            left+
+            col*boxW/cols;
+
+          const y=
+            top+
+            r*boxH/rows;
+
+          const cw=
+            boxW/cols;
+
+          const ch=
+            boxH/rows;
+
+          if(count<visible){
+            ctx.fillStyle=
+              palette.dark
+                ? 'rgba(145,165,255,.20)'
+                : 'rgba(89,109,255,.12)';
+
+            ctx.fillRect(
+              x+1,
+              y+1,
+              cw-2,
+              ch-2
+            );
+          }
+
+          ctx.strokeStyle=
+            palette.subtle2;
+
+          ctx.lineWidth=1;
+
+          ctx.strokeRect(
+            x,
+            y,
+            cw,
+            ch
+          );
+
+          count+=1;
+        }
+      }
+    }
+
+    ctx.strokeStyle=
+      palette.accent;
+
+    ctx.fillStyle=
+      palette.text;
+
+    ctx.lineWidth=2;
+    ctx.font='600 22px Huninn, Arial';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+
+    if(element.widthLabel){
+      const y=top-28;
+
+      ctx.beginPath();
+      ctx.moveTo(left,y);
+      ctx.lineTo(
+        left+boxW*progress,
+        y
+      );
+      ctx.stroke();
+
+      if(progress>.9){
+        ctx.fillText(
+          element.widthLabel,
+          left+boxW/2,
+          y-15
+        );
+      }
+    }
+
+    if(element.heightLabel){
+      const x=left-30;
+
+      ctx.beginPath();
+      ctx.moveTo(x,top);
+      ctx.lineTo(
+        x,
+        top+boxH*progress
+      );
+      ctx.stroke();
+
+      if(progress>.9){
+        ctx.save();
+        ctx.translate(
+          x-18,
+          top+boxH/2
+        );
+        ctx.rotate(-Math.PI/2);
+
+        ctx.fillText(
+          element.heightLabel,
+          0,
+          0
+        );
+
+        ctx.restore();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function lessonDrawSummary(
+    ctx,
+    element,
+    palette,
+    width,
+    height,
+    localTime
+  ){
+    if(!element.summaryItems.length)return;
+
+    const base=
+      localTime-element.at;
+
+    if(base<0)return;
+
+    const items=
+      element.summaryItems.slice(0,6);
+
+    const cols=
+      items.length<=2
+        ? items.length
+        : 2;
+
+    const rows=
+      Math.ceil(
+        items.length/cols
+      );
+
+    const totalW=
+      element.w*width;
+
+    const totalH=
+      element.h*height;
+
+    const gapX=18;
+    const gapY=16;
+
+    const cardW=
+      (totalW-gapX*(cols-1))/
+      cols;
+
+    const cardH=
+      (totalH-gapY*(rows-1))/
+      rows;
+
+    const left=
+      element.x*width-
+      totalW/2;
+
+    const top=
+      element.y*height-
+      totalH/2;
+
+    items.forEach(
+      function(item,index){
+        const reveal=
+          clamp(
+            (
+              base-
+              index*.26
+            )/
+            .42,
+            0,
+            1
+          );
+
+        if(reveal<=0)return;
+
+        const eased=
+          easeOutCubic(
+            reveal
+          );
+
+        const col=
+          index%cols;
+
+        const row=
+          Math.floor(
+            index/cols
+          );
+
+        const x=
+          left+
+          col*(cardW+gapX);
+
+        const y=
+          top+
+          row*(cardH+gapY)+
+          (1-eased)*18;
+
+        ctx.save();
+        ctx.globalAlpha=eased;
+
+        roundedRect(
+          ctx,
+          x,
+          y,
+          cardW,
+          cardH,
+          16
+        );
+
+        ctx.fillStyle=
+          palette.dark
+            ? 'rgba(255,255,255,.055)'
+            : 'rgba(0,0,0,.035)';
+
+        ctx.fill();
+
+        ctx.strokeStyle=
+          palette.subtle2;
+
+        ctx.lineWidth=1;
+        ctx.stroke();
+
+        ctx.direction='rtl';
+        ctx.textAlign='right';
+        ctx.textBaseline='top';
+
+        ctx.fillStyle=
+          palette.muted;
+
+        ctx.font=
+          '600 '+
+          Math.max(
+            17,
+            element.size*.46
+          )+
+          'px Huninn, Arial';
+
+        ctx.fillText(
+          item.label,
+          x+cardW-18,
+          y+16,
+          cardW-36
+        );
+
+        ctx.fillStyle=
+          index===items.length-1
+            ? '#49c47c'
+            : palette.text;
+
+        ctx.font=
+          '700 '+
+          Math.max(
+            23,
+            element.size*.70
+          )+
+          'px Huninn, Arial';
+
+        ctx.fillText(
+          item.value,
+          x+cardW-18,
+          y+50,
+          cardW-36
+        );
+
+        ctx.restore();
+      }
+    );
+  }
+
   function lessonDrawScene(ctx,scene,localTime,width,height,options){
     const palette=lessonPalette(scene);
     const alpha=options?.alpha??1;
@@ -4400,6 +5308,12 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         lessonDrawFraction(ctx,element,palette,width,height,localTime);
       }else if(element.type==='counter'){
         lessonDrawCounter(ctx,element,palette,width,height,localTime);
+      }else if(element.type==='equation-sequence'){
+        lessonDrawEquationSequence(ctx,element,palette,width,height,localTime);
+      }else if(element.type==='rectangle'){
+        lessonDrawRectangle(ctx,element,palette,width,height,localTime);
+      }else if(element.type==='summary'){
+        lessonDrawSummary(ctx,element,palette,width,height,localTime);
       }
     });
 
