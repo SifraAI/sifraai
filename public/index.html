@@ -4209,7 +4209,11 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     }
 
     scenes.forEach(function(scene,index){
-      lessonAutoComposeScene(scene);
+      lessonAutoComposeScene(
+        scene,
+        index,
+        scenes.length
+      );
 
       for(let pass=0;pass<5;pass+=1){
         resolveLessonSceneLayout(scene,index);
@@ -4375,8 +4379,14 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     return w*h;
   }
 
-  function lessonAutoComposeScene(scene){
+  function lessonAutoComposeScene(scene,sceneIndex,totalScenes){
     const elements=scene.elements||[];
+
+    elements.forEach(function(element){
+      delete element._hiddenByLayout;
+      element._layoutLocked=false;
+      element._layoutPriority=50;
+    });
 
     const title=
       elements.find(function(element){
@@ -4424,44 +4434,151 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         );
       });
 
-    if(title){
-      title.x=.91;
-      title.y=.105;
-      title.w=.80;
-      title.align='right';
-      title.size=clamp(
-        title.size,
-        40,
-        58
-      );
-      title.at=Math.min(
-        title.at,
-        .12
-      );
-      title._layoutPriority=100;
-      title._layoutLocked=true;
+    const isIntro=
+      sceneIndex===0;
+
+    const isLast=
+      Number.isFinite(totalScenes)&&
+      sceneIndex===totalScenes-1;
+
+    function lock(element,priority){
+      if(!element)return;
+      element._layoutLocked=true;
+      element._layoutPriority=priority;
     }
 
-    if(summary){
+    function hideExtra(list,keep){
+      list.slice(keep).forEach(function(element){
+        element._hiddenByLayout=true;
+      });
+    }
+
+    if(
+      isIntro&&
+      !summary
+    ){
+      scene._layoutKind='intro';
+
+      if(title){
+        title.x=.5;
+        title.y=.20;
+        title.w=.76;
+        title.align='center';
+        title.size=clamp(
+          title.size,
+          54,
+          68
+        );
+        title.at=Math.min(
+          title.at,
+          .08
+        );
+        lock(title,100);
+      }
+
+      copy.slice(0,1).forEach(function(element){
+        element.x=.5;
+        element.y=title?.text
+          ? .38
+          : .30;
+        element.w=.68;
+        element.align='center';
+        element.size=clamp(
+          element.size,
+          27,
+          34
+        );
+        element.at=Math.min(
+          element.at,
+          .42
+        );
+        lock(element,82);
+      });
+
+      formulas.slice(0,1).forEach(function(element){
+        element.x=.5;
+        element.y=copy.length
+          ? .57
+          : title?.text
+            ? .48
+            : .40;
+        element.w=.62;
+        element.align='center';
+        element.size=clamp(
+          element.size,
+          54,
+          68
+        );
+        element.at=Math.min(
+          element.at,
+          .75
+        );
+        lock(element,90);
+      });
+
+      small.slice(0,1).forEach(function(element){
+        element.x=.5;
+        element.y=.74;
+        element.w=.22;
+        element.h=.075;
+        element.size=clamp(
+          element.size,
+          20,
+          24
+        );
+        element.at=Math.min(
+          element.at,
+          1.05
+        );
+        lock(element,70);
+      });
+
+      hideExtra(copy,1);
+      hideExtra(formulas,1);
+      hideExtra(small,1);
+
+      primary.forEach(function(element){
+        element._hiddenByLayout=true;
+      });
+    }else if(summary){
+      scene._layoutKind='summary';
+
+      if(title){
+        title.x=.5;
+        title.y=.14;
+        title.w=.78;
+        title.align='center';
+        title.size=clamp(
+          title.size,
+          48,
+          60
+        );
+        title.at=Math.min(
+          title.at,
+          .08
+        );
+        lock(title,100);
+      }
+
       summary.x=.5;
       summary.y=title?.text
-        ? .59
+        ? .55
         : .50;
-      summary.w=.82;
+      summary.w=.78;
       summary.h=title?.text
-        ? .46
-        : .58;
+        ? .50
+        : .60;
       summary.align='center';
-      summary.size=Math.max(
-        30,
-        summary.size
+      summary.size=clamp(
+        summary.size,
+        32,
+        40
       );
       summary.at=Math.min(
         summary.at,
         .18
       );
-      summary._layoutPriority=95;
-      summary._layoutLocked=true;
+      lock(summary,96);
 
       elements.forEach(function(element){
         if(
@@ -4472,304 +4589,404 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
             'highlight'
           ].includes(element.type)
         ){
-          element.at=Math.max(
-            element.at,
-            summary.at+.35
-          );
+          element._hiddenByLayout=true;
         }
       });
+    }else if(sequence){
+      scene._layoutKind='sequence';
 
-      return;
-    }
+      if(title){
+        title.x=.88;
+        title.y=.12;
+        title.w=.72;
+        title.align='right';
+        title.size=clamp(
+          title.size,
+          46,
+          58
+        );
+        title.at=Math.min(
+          title.at,
+          .08
+        );
+        lock(title,100);
+      }
 
-    if(sequence){
       sequence.x=.5;
       sequence.y=title?.text
-        ? .59
-        : .48;
-      sequence.w=.80;
+        ? .52
+        : .47;
+      sequence.w=.76;
       sequence.h=title?.text
-        ? .40
-        : .44;
+        ? .43
+        : .48;
       sequence.align='center';
       sequence.size=clamp(
         sequence.size,
-        44,
-        60
+        56,
+        72
       );
       sequence.at=Math.min(
         sequence.at,
-        .18
+        .16
       );
-      sequence._layoutPriority=92;
-      sequence._layoutLocked=true;
+      lock(sequence,96);
 
-      copy.slice(0,1).forEach(function(element){
-        element.x=.88;
-        element.y=.735;
-        element.w=.70;
-        element.align='right';
-        element.size=clamp(
-          element.size,
-          22,
-          28
-        );
-      });
-
-      copy.slice(1).forEach(function(element){
+      copy.forEach(function(element){
         element._hiddenByLayout=true;
       });
 
       formulas.forEach(function(element){
         element._hiddenByLayout=true;
       });
+
+      small.slice(0,1).forEach(function(element){
+        element.x=.15;
+        element.y=.17;
+        element.w=.18;
+        element.h=.07;
+        element.size=clamp(
+          element.size,
+          19,
+          23
+        );
+        lock(element,65);
+      });
+
+      hideExtra(small,1);
     }else if(primary.length===1){
+      scene._layoutKind='visual';
+
       const visual=primary[0];
-      const hasSideCopy=
-        formulas.length>0||
-        copy.length>0;
+      const supportFormula=
+        formulas[0]||null;
+      const supportCopy=
+        copy[0]||null;
 
-      if(hasSideCopy){
-        visual.x=.31;
-        visual.y=title?.text
-          ? .60
-          : .52;
-        visual.w=
-          visual.type==='numberline'
-            ? .48
-            : .50;
-        visual.h=
-          visual.type==='numberline'
-            ? .22
-            : title?.text
-              ? .44
-              : .52;
+      if(title){
+        title.x=.88;
+        title.y=.11;
+        title.w=.72;
+        title.align='right';
+        title.size=clamp(
+          title.size,
+          46,
+          58
+        );
+        title.at=Math.min(
+          title.at,
+          .08
+        );
+        lock(title,100);
+      }
 
-        let sideY=title?.text
-          ? .38
-          : .25;
+      const sideBySide=
+        visual.type==='graph'&&
+        (supportFormula||supportCopy);
 
-        formulas.slice(0,2).forEach(function(element,index){
-          element.x=.91;
-          element.y=
-            sideY+
-            index*.19;
-          element.w=.42;
-          element.align='right';
-          element.size=clamp(
-            element.size,
-            38,
-            50
+      if(sideBySide){
+        visual.x=.32;
+        visual.y=.53;
+        visual.w=.52;
+        visual.h=.52;
+        lock(visual,94);
+
+        if(supportFormula){
+          supportFormula.x=.89;
+          supportFormula.y=.36;
+          supportFormula.w=.36;
+          supportFormula.align='right';
+          supportFormula.size=clamp(
+            supportFormula.size,
+            44,
+            58
           );
-        });
+          lock(supportFormula,82);
+        }
 
-        sideY+=
-          formulas.length
-            ? Math.min(2,formulas.length)*.21
-            : 0;
-
-        copy.slice(0,2).forEach(function(element,index){
-          element.x=.91;
-          element.y=
-            Math.min(
-              .72,
-              Math.max(
-                title?.text
-                  ? .58
-                  : .43,
-                sideY+
-                index*.15
-              )
-            );
-          element.w=.42;
-          element.align='right';
-          element.size=clamp(
-            element.size,
-            22,
-            27
+        if(supportCopy){
+          supportCopy.x=.89;
+          supportCopy.y=supportFormula
+            ? .57
+            : .43;
+          supportCopy.w=.36;
+          supportCopy.align='right';
+          supportCopy.size=clamp(
+            supportCopy.size,
+            24,
+            30
           );
-        });
-
-        copy.slice(2).forEach(function(element){
-          element._hiddenByLayout=true;
-        });
-
-        formulas.slice(2).forEach(function(element){
-          element._hiddenByLayout=true;
-        });
+          lock(supportCopy,74);
+        }
       }else{
+        if(supportCopy){
+          supportCopy.x=.86;
+          supportCopy.y=title?.text
+            ? .24
+            : .19;
+          supportCopy.w=.68;
+          supportCopy.align='right';
+          supportCopy.size=clamp(
+            supportCopy.size,
+            25,
+            31
+          );
+          lock(supportCopy,78);
+        }
+
         visual.x=.5;
         visual.y=title?.text
-          ? .60
+          ? .57
           : .50;
+
         visual.w=
           visual.type==='numberline'
-            ? .78
-            : .72;
+            ? .76
+            : visual.type==='fraction'
+              ? .62
+              : .66;
+
         visual.h=
           visual.type==='numberline'
             ? .22
-            : title?.text
-              ? .46
-              : .58;
+            : visual.type==='fraction'
+              ? .42
+              : .50;
+
+        lock(visual,94);
+
+        if(supportFormula){
+          supportFormula.x=.5;
+          supportFormula.y=.76;
+          supportFormula.w=.58;
+          supportFormula.align='center';
+          supportFormula.size=clamp(
+            supportFormula.size,
+            42,
+            54
+          );
+          lock(supportFormula,80);
+        }
       }
 
       visual.at=Math.min(
         visual.at,
-        .20
+        .18
       );
-      visual._layoutPriority=90;
-      visual._layoutLocked=true;
+
+      hideExtra(primary,1);
+      hideExtra(formulas,1);
+      hideExtra(copy,1);
+      hideExtra(small,1);
     }else if(primary.length>=2){
+      scene._layoutKind='split-visual';
+
+      if(title){
+        title.x=.88;
+        title.y=.11;
+        title.w=.72;
+        title.align='right';
+        title.size=clamp(
+          title.size,
+          46,
+          58
+        );
+        title.at=Math.min(
+          title.at,
+          .08
+        );
+        lock(title,100);
+      }
+
       const shown=
         primary.slice(0,2);
 
-      shown[0].x=.28;
-      shown[1].x=.72;
+      shown[0].x=.29;
+      shown[1].x=.71;
 
       shown.forEach(function(element){
         element.y=title?.text
-          ? .60
+          ? .55
           : .50;
-        element.w=.41;
+        element.w=.38;
         element.h=
           element.type==='numberline'
             ? .22
-            : title?.text
-              ? .44
-              : .49;
+            : .44;
         element.at=Math.min(
           element.at,
-          .22
+          .18
         );
-        element._layoutPriority=88;
-        element._layoutLocked=true;
-      });
-
-      primary.slice(2).forEach(function(element){
-        element._hiddenByLayout=true;
+        lock(element,92);
       });
 
       formulas.slice(0,1).forEach(function(element){
         element.x=.5;
-        element.y=.78;
-        element.w=.66;
+        element.y=.77;
+        element.w=.58;
         element.align='center';
         element.size=clamp(
           element.size,
-          36,
-          46
+          40,
+          50
         );
+        lock(element,78);
       });
 
-      formulas.slice(1).forEach(function(element){
-        element._hiddenByLayout=true;
-      });
+      hideExtra(primary,2);
+      hideExtra(formulas,1);
 
       copy.forEach(function(element){
         element._hiddenByLayout=true;
       });
+
+      small.forEach(function(element){
+        element._hiddenByLayout=true;
+      });
     }else if(formulas.length){
-      if(formulas.length===1){
-        const element=formulas[0];
+      scene._layoutKind='formula';
+
+      if(title){
+        title.x=.5;
+        title.y=.15;
+        title.w=.76;
+        title.align='center';
+        title.size=clamp(
+          title.size,
+          48,
+          60
+        );
+        title.at=Math.min(
+          title.at,
+          .08
+        );
+        lock(title,100);
+      }
+
+      const mainFormula=
+        formulas[0];
+
+      mainFormula.x=.5;
+      mainFormula.y=title?.text
+        ? .42
+        : .34;
+      mainFormula.w=.68;
+      mainFormula.align='center';
+      mainFormula.size=clamp(
+        mainFormula.size,
+        54,
+        68
+      );
+      mainFormula.at=Math.min(
+        mainFormula.at,
+        .20
+      );
+      lock(mainFormula,94);
+
+      copy.slice(0,1).forEach(function(element){
         element.x=.5;
-        element.y=title?.text
-          ? .46
-          : .38;
-        element.w=.72;
+        element.y=.62;
+        element.w=.68;
         element.align='center';
         element.size=clamp(
           element.size,
-          42,
-          58
+          25,
+          31
         );
         element.at=Math.min(
           element.at,
-          .20
+          .55
         );
-        element._layoutPriority=82;
-        element._layoutLocked=true;
+        lock(element,78);
+      });
 
-        copy.slice(0,1).forEach(function(textElement){
-          textElement.x=.88;
-          textElement.y=.67;
-          textElement.w=.70;
-          textElement.align='right';
-          textElement.size=clamp(
-            textElement.size,
-            22,
-            28
-          );
-        });
-
-        copy.slice(1).forEach(function(textElement){
-          textElement._hiddenByLayout=true;
-        });
-      }else{
-        formulas.slice(0,3).forEach(function(element,index){
-          element.x=.5;
-          element.y=
-            .28+
-            index*.19;
-          element.w=.70;
-          element.align='center';
-          element.size=clamp(
-            element.size,
-            38,
-            50
-          );
-        });
-
-        formulas.slice(3).forEach(function(element){
-          element._hiddenByLayout=true;
-        });
-
-        copy.forEach(function(element){
-          element._hiddenByLayout=true;
-        });
-      }
-    }else if(copy.length){
-      copy.slice(0,3).forEach(function(element,index){
-        element.x=.88;
-        element.y=
-          .28+
-          index*.17;
-        element.w=.72;
-        element.align='right';
+      small.slice(0,1).forEach(function(element){
+        element.x=.5;
+        element.y=.74;
+        element.w=.20;
+        element.h=.07;
         element.size=clamp(
           element.size,
-          23,
-          30
+          20,
+          24
+        );
+        lock(element,70);
+      });
+
+      hideExtra(formulas,1);
+      hideExtra(copy,1);
+      hideExtra(small,1);
+    }else if(copy.length){
+      scene._layoutKind='text';
+
+      if(title){
+        title.x=.5;
+        title.y=.22;
+        title.w=.76;
+        title.align='center';
+        title.size=clamp(
+          title.size,
+          50,
+          62
+        );
+        title.at=Math.min(
+          title.at,
+          .08
+        );
+        lock(title,100);
+      }
+
+      copy.slice(0,2).forEach(function(element,index){
+        element.x=.5;
+        element.y=
+          (title?.text
+            ? .43
+            : .31)+
+          index*.17;
+        element.w=.70;
+        element.align='center';
+        element.size=clamp(
+          element.size,
+          27,
+          34
         );
         element.at=Math.min(
           element.at,
-          .18+
-          index*.24
+          .35+
+          index*.30
         );
+        lock(element,82-index);
       });
 
-      copy.slice(3).forEach(function(element){
-        element._hiddenByLayout=true;
+      hideExtra(copy,2);
+
+      small.slice(0,1).forEach(function(element){
+        element.x=.5;
+        element.y=.73;
+        element.w=.22;
+        element.h=.075;
+        element.size=clamp(
+          element.size,
+          20,
+          24
+        );
+        lock(element,70);
       });
+
+      hideExtra(small,1);
     }
 
-    small.slice(0,2).forEach(function(element,index){
-      element.x=
-        .12+
-        index*.15;
-      element.y=.14;
-      element.w=.16;
-      element.h=.08;
-      element.size=clamp(
-        element.size,
-        18,
-        24
-      );
-    });
-
-    small.slice(2).forEach(function(element){
-      element._hiddenByLayout=true;
-    });
+    if(
+      isLast&&
+      scene._layoutKind!=='summary'&&
+      small.length
+    ){
+      small[0].x=.5;
+      small[0].y=.74;
+      small[0].w=.22;
+      small[0].h=.075;
+      lock(small[0],72);
+    }
 
     scene.elements=
       elements.filter(function(element){
