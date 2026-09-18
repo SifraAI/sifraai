@@ -5,7 +5,26 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <title>Sifra — AI למתמטיקה</title>
-<link rel="stylesheet" href="/style.css">
+<style>
+:root{--bg:#fff;--soft:#f6f6f6;--soft2:#f1f1f1;--line:#e6e6e6;--text:#171717;--muted:#777;--danger:#b91c1c;--side:248px}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:Inter,Arial,"Noto Sans Hebrew",sans-serif;background:#fff;color:var(--text);overflow:hidden}
+button,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:default}.app{height:100dvh;display:grid;grid-template-columns:minmax(0,1fr) var(--side);direction:ltr}
+.side{direction:rtl;background:#fafafa;border-left:1px solid var(--line);display:flex;flex-direction:column;padding:12px;min-width:0;z-index:20}
+.logo{font-size:20px;font-weight:800;padding:7px 8px 18px;display:flex;gap:9px;align-items:center;direction:ltr}.mark{width:30px;height:30px;border-radius:10px;background:#111;color:#fff;display:grid;place-items:center;font-family:Georgia,serif;font-size:20px}
+.new{border:1px solid var(--line);background:#fff;border-radius:11px;padding:11px;font-weight:650}.new:hover,.item:hover{background:#f0f0f0}.label{font-size:12px;color:#999;margin:24px 8px 8px}.item{border:0;background:transparent;text-align:right;padding:9px;border-radius:9px;color:#444}.history{display:flex;flex-direction:column}.account{margin-top:auto;border-top:1px solid var(--line);padding:14px 7px;color:#555;font-size:13px}
+.main{direction:rtl;position:relative;display:flex;flex-direction:column;min-width:0;height:100dvh;overflow:hidden;background:#fff}.top{height:58px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;flex:none;border-bottom:1px solid transparent}.top b{font-size:14px}.status{font-size:12px;color:#8a8a8a;display:flex;align-items:center;gap:7px}.status-dot{width:7px;height:7px;background:#16a34a;border-radius:50%}
+.home-wrap{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:24px 16px 120px}.center{width:min(760px,100%);transform:translateY(-24px)}h1{text-align:center;font-size:38px;letter-spacing:-1.5px;margin:0 0 25px}.sub{text-align:center;color:#888;font-size:13px;margin-bottom:10px}.dot{display:inline-block;width:7px;height:7px;background:#16a34a;border-radius:50%;margin-left:7px}
+.box{border:1px solid #e2e2e2;background:#f6f6f6;border-radius:22px;padding:17px;box-shadow:0 12px 35px #0000000a;transition:.18s}.box:focus-within,.box.drag{background:#fff;box-shadow:0 15px 40px #00000010;border-color:#d5d5d5}textarea{width:100%;height:90px;resize:none;border:0;outline:0;background:transparent;font-size:18px;line-height:1.6;color:#171717}textarea::placeholder{color:#aaa}
+.actions{display:flex;justify-content:space-between;align-items:center;gap:10px}.action-left{display:flex;align-items:center;gap:4px}.plus{border:0;background:transparent;width:38px;height:38px;border-radius:10px;font-size:23px;color:#666;display:grid;place-items:center}.plus:hover{background:#eee}.send{width:39px;height:39px;border:0;border-radius:50%;background:#111;color:#fff;font-size:20px;display:grid;place-items:center}.send:disabled{opacity:.25}.send.busy{opacity:.55}
+.attachments{display:none;gap:8px;flex-wrap:wrap;margin:4px 0 12px}.attachments.on{display:flex}.attachment{position:relative;width:72px;height:72px;border:1px solid #ddd;border-radius:12px;overflow:hidden;background:#fff}.attachment img{width:100%;height:100%;object-fit:cover}.attachment button{position:absolute;top:4px;left:4px;width:22px;height:22px;border:0;border-radius:50%;background:#111;color:#fff;display:grid;place-items:center;font-size:15px;line-height:1}.attachment-loading{display:grid;place-items:center;width:72px;height:72px;border:1px dashed #ccc;border-radius:12px;color:#888;font-size:11px;background:#fff}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}.q{border:1px solid var(--line);background:#fff;border-radius:13px;padding:13px;text-align:right;color:#555}.q:hover{background:#fafafa}.hint{font-size:11px;color:#aaa;text-align:center;margin-top:12px}
+.chat{display:none;flex:1;width:min(780px,calc(100% - 32px));margin:0 auto;overflow-y:auto;padding:28px 10px 150px;scrollbar-width:thin}.chat.on{display:block}.msg{margin:0 0 24px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}.user{background:#f2f2f2;border-radius:15px 15px 4px 15px;padding:11px 14px;margin-right:auto;width:max-content;max-width:80%}.user-images{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;direction:ltr}.user-images img{width:120px;max-height:150px;object-fit:cover;border-radius:10px;border:1px solid #ddd}.ai{padding-right:45px;position:relative;min-height:31px}.ai:before{content:"S";position:absolute;right:0;top:0;width:31px;height:31px;background:#111;color:#fff;border-radius:9px;display:grid;place-items:center;font-family:Georgia,serif;font-weight:700}.ai strong{font-weight:750}.thinking{color:#888}.error{color:var(--danger)}
+.bottom{display:none;position:absolute;bottom:0;left:0;right:0;padding:24px 20px 20px;background:linear-gradient(transparent,#fff 28%);pointer-events:none}.bottom.on{display:block}.bottom-stack{width:min(760px,100%);margin:auto;pointer-events:auto}.mini-attachments{padding:0 10px 8px}.mini{background:#f6f6f6;border:1px solid var(--line);border-radius:18px;padding:9px 10px;display:flex;gap:7px;align-items:end;box-shadow:0 8px 28px #0000000c}.mini textarea{height:42px;max-height:120px;font-size:15px;padding:8px 2px}.mini .plus{flex:none}.mini .send{flex:none}
+.menu{display:none;border:0;background:transparent;font-size:24px}.overlay{display:none;position:fixed;inset:0;background:#0003;z-index:15}.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:#111;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:min(420px,calc(100vw - 32px));text-align:center}.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:800px){.app{display:block}.side{position:fixed;right:0;top:0;bottom:0;width:min(82vw,290px);transform:translateX(105%);transition:.2s;box-shadow:-15px 0 40px #0002}.side.on{transform:none}.overlay.on{display:block}.menu{display:block}.home-wrap{padding-bottom:105px}.center{transform:translateY(-10px)}.quick{grid-template-columns:1fr}h1{font-size:30px}.top{padding:0 12px}.chat{width:100%;padding:20px 14px 145px}.bottom{padding:18px 12px 14px}.user{max-width:90%}}
+@media(max-width:520px){.sub{font-size:12px}.box{padding:14px;border-radius:19px}textarea{font-size:16px}.quick .q:nth-child(4){display:none}.status span:last-child{display:none}.user-images img{width:96px;max-height:120px}}
+
+</style>
 
 </head>
 <body>
@@ -66,7 +85,135 @@
   <div class="account">Sifra · גרסת בטא</div>
 </aside>
 </div>
-<script src="/app.js" defer></script>
+<script>
+const $=s=>document.querySelector(s);
+const input=$('#input'),send=$('#send'),chat=$('#chat'),home=$('#home'),homeWrap=$('#homeWrap'),bottom=$('#bottom'),follow=$('#follow'),send2=$('#send2'),side=$('#side'),overlay=$('#overlay'),file=$('#file'),attachments=$('#attachments'),miniAttachments=$('#miniAttachments'),box=$('#box'),miniBox=$('#miniBox'),toast=$('#toast');
+const state={messages:[],images:[],busy:false};
+const MAX_IMAGES=2;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function showToast(text){toast.textContent=text;toast.classList.add('on');clearTimeout(showToast.t);showToast.t=setTimeout(()=>toast.classList.remove('on'),2600)}
+function resize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px'}
+function updateButtons(){const hasText=input.value.trim()||state.images.length;send.disabled=state.busy||!hasText;send2.disabled=state.busy||!(follow.value.trim()||state.images.length)}
+input.addEventListener('input',()=>{resize(input);updateButtons()});follow.addEventListener('input',()=>{resize(follow);updateButtons()});
+
+document.querySelectorAll('.q').forEach(x=>x.onclick=()=>{input.value=x.textContent;resize(input);updateButtons();input.focus()});
+
+function renderAttachments(){
+  for(const target of [attachments,miniAttachments]){
+    target.innerHTML='';
+    target.classList.toggle('on',state.images.length>0);
+    state.images.forEach((img,i)=>{
+      const wrap=document.createElement('div');wrap.className='attachment';
+      const image=document.createElement('img');image.src=img.dataUrl;image.alt='תמונה מצורפת';
+      const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','הסר תמונה');
+      remove.onclick=()=>{state.images.splice(i,1);renderAttachments();updateButtons()};
+      wrap.append(image,remove);target.appendChild(wrap);
+    });
+  }
+}
+
+function blobToDataUrl(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(blob)})}
+async function compressImage(fileObj){
+  if(!/^image\/(png|jpeg|webp)$/.test(fileObj.type))throw new Error('אפשר להעלות PNG, JPG או WebP בלבד');
+  if(fileObj.size>10*1024*1024)throw new Error('התמונה גדולה מדי');
+  const bitmap=await createImageBitmap(fileObj);
+  const maxSide=1500,scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
+  const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+  const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
+  let quality=.82;
+  let blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',quality));
+  while(blob&&blob.size>1350000&&quality>.5){quality-=.1;blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',quality))}
+  if(!blob||blob.size>1500000)throw new Error('לא הצלחתי להקטין את התמונה מספיק');
+  return {dataUrl:await blobToDataUrl(blob),name:fileObj.name||'image.jpg'};
+}
+
+async function addFiles(fileList){
+  const list=[...fileList].slice(0,MAX_IMAGES-state.images.length);
+  if(!list.length){if(state.images.length>=MAX_IMAGES)showToast(`אפשר לצרף עד ${MAX_IMAGES} תמונות`);return}
+  try{
+    for(const f of list){state.images.push(await compressImage(f));renderAttachments();updateButtons()}
+  }catch(e){showToast(e.message||'לא הצלחתי לצרף את התמונה')}
+  file.value='';
+}
+
+function openPicker(){if(state.images.length>=MAX_IMAGES)return showToast(`אפשר לצרף עד ${MAX_IMAGES} תמונות`);file.click()}
+$('#attach').onclick=openPicker;$('#attach2').onclick=openPicker;file.onchange=()=>addFiles(file.files);
+
+document.addEventListener('paste',e=>{const imgs=[...(e.clipboardData?.files||[])].filter(x=>x.type.startsWith('image/'));if(imgs.length){e.preventDefault();addFiles(imgs)}});
+for(const target of [box,miniBox]){
+  target.addEventListener('dragover',e=>{e.preventDefault();target.classList.add('drag')});
+  target.addEventListener('dragleave',()=>target.classList.remove('drag'));
+  target.addEventListener('drop',e=>{e.preventDefault();target.classList.remove('drag');addFiles([...e.dataTransfer.files].filter(x=>x.type.startsWith('image/')))})
+}
+
+function formatAnswer(text){
+  return esc(text)
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br>');
+}
+
+function addMessage(text,type,images=[]){
+  const d=document.createElement('div');d.className='msg '+type;
+  if(images.length){const gallery=document.createElement('div');gallery.className='user-images';images.forEach(src=>{const i=document.createElement('img');i.src=src;i.alt='תמונה שצורפה';gallery.appendChild(i)});d.appendChild(gallery)}
+  const content=document.createElement('div');content.innerHTML=formatAnswer(text);d.appendChild(content);chat.appendChild(d);return d;
+}
+
+function enterChat(){
+  if(chat.classList.contains('on'))return false;
+  home.style.display='none';homeWrap.style.display='none';chat.classList.add('on');bottom.classList.add('on');chat.scrollTop=0;return true;
+}
+
+async function askServer(images){
+  const pending=addMessage('חושב…','ai thinking');
+  try{
+    const r=await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:state.messages.slice(-16),images:images.map(x=>({dataUrl:x.dataUrl}))})
+    });
+    let j={};try{j=await r.json()}catch{}
+    pending.remove();
+    if(!r.ok){
+      if(r.status===429&&j.retryAfter)throw new Error(`שלחת יותר מדי הודעות. נסה שוב בעוד ${j.retryAfter} שניות.`);
+      throw new Error(j.error||'לא הצלחתי לקבל תשובה כרגע.');
+    }
+    if(!j.answer)throw new Error('השרת החזיר תשובה ריקה.');
+    state.messages.push({role:'assistant',content:j.answer});
+    addMessage(j.answer,'ai');
+  }catch(e){pending.remove();addMessage(e.message||'לא הצלחתי לקבל תשובה.','ai error')}
+}
+
+async function submit(el){
+  if(state.busy)return;
+  const text=el.value.trim()||(state.images.length?'פתור את התרגיל שבתמונה והסבר שלב-שלב.':'');
+  if(!text)return;
+
+  state.busy=true;updateButtons();send.classList.add('busy');send2.classList.add('busy');
+  const first=enterChat();
+  const images=state.images.splice(0);renderAttachments();
+  addMessage(text,'user',images.map(x=>x.dataUrl));
+  state.messages.push({role:'user',content:text});
+  el.value='';resize(el);
+  if(first)chat.scrollTop=0;else chat.scrollTop=chat.scrollHeight;
+
+  await askServer(images);
+  state.busy=false;send.classList.remove('busy');send2.classList.remove('busy');updateButtons();
+  chat.scrollTo({top:chat.scrollHeight,behavior:'smooth'});
+  follow.focus();
+}
+
+send.onclick=()=>submit(input);send2.onclick=()=>submit(follow);
+[input,follow].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit(el)}}));
+
+$('#new').onclick=()=>{
+  state.messages=[];state.images=[];state.busy=false;chat.innerHTML='';chat.classList.remove('on');bottom.classList.remove('on');home.style.display='';homeWrap.style.display='flex';input.value='';follow.value='';renderAttachments();updateButtons();side.classList.remove('on');overlay.classList.remove('on');setTimeout(()=>input.focus(),50)
+};
+function closeMenu(){side.classList.remove('on');overlay.classList.remove('on')}
+$('#menu').onclick=()=>{side.classList.add('on');overlay.classList.add('on')};overlay.onclick=closeMenu;
+updateButtons();
+
+</script>
 
 </body>
 </html>
