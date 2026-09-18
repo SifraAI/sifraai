@@ -4463,13 +4463,13 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       if(title){
         title.x=.5;
-        title.y=.20;
-        title.w=.76;
+        title.y=.16;
+        title.w=.82;
         title.align='center';
         title.size=clamp(
           title.size,
-          54,
-          68
+          58,
+          72
         );
         title.at=Math.min(
           title.at,
@@ -4500,16 +4500,16 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       formulas.slice(0,1).forEach(function(element){
         element.x=.5;
         element.y=copy.length
-          ? .57
+          ? .55
           : title?.text
-            ? .48
+            ? .45
             : .40;
         element.w=.62;
         element.align='center';
         element.size=clamp(
           element.size,
-          54,
-          68
+          62,
+          76
         );
         element.at=Math.min(
           element.at,
@@ -4547,8 +4547,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       if(title){
         title.x=.5;
-        title.y=.14;
-        title.w=.78;
+        title.y=.11;
+        title.w=.82;
         title.align='center';
         title.size=clamp(
           title.size,
@@ -4564,17 +4564,17 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       summary.x=.5;
       summary.y=title?.text
-        ? .55
+        ? .54
         : .50;
-      summary.w=.78;
+      summary.w=.84;
       summary.h=title?.text
-        ? .50
-        : .60;
+        ? .56
+        : .64;
       summary.align='center';
       summary.size=clamp(
         summary.size,
-        32,
-        40
+        36,
+        44
       );
       summary.at=Math.min(
         summary.at,
@@ -4599,8 +4599,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       if(title){
         title.x=.88;
-        title.y=.12;
-        title.w=.72;
+        title.y=.105;
+        title.w=.78;
         title.align='right';
         title.size=clamp(
           title.size,
@@ -4616,17 +4616,17 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       sequence.x=.5;
       sequence.y=title?.text
-        ? .52
-        : .47;
-      sequence.w=.76;
+        ? .49
+        : .46;
+      sequence.w=.82;
       sequence.h=title?.text
-        ? .43
-        : .48;
+        ? .46
+        : .50;
       sequence.align='center';
       sequence.size=clamp(
         sequence.size,
-        56,
-        72
+        62,
+        78
       );
       sequence.at=Math.min(
         sequence.at,
@@ -4687,36 +4687,36 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         (supportFormula||supportCopy);
 
       if(sideBySide){
-        visual.x=.32;
-        visual.y=.53;
-        visual.w=.52;
-        visual.h=.52;
+        visual.x=.34;
+        visual.y=.54;
+        visual.w=.56;
+        visual.h=.56;
         lock(visual,94);
 
         if(supportFormula){
-          supportFormula.x=.89;
-          supportFormula.y=.36;
-          supportFormula.w=.36;
+          supportFormula.x=.90;
+          supportFormula.y=.35;
+          supportFormula.w=.38;
           supportFormula.align='right';
           supportFormula.size=clamp(
             supportFormula.size,
-            44,
-            58
+            48,
+            62
           );
           lock(supportFormula,82);
         }
 
         if(supportCopy){
-          supportCopy.x=.89;
+          supportCopy.x=.90;
           supportCopy.y=supportFormula
-            ? .57
-            : .43;
-          supportCopy.w=.36;
+            ? .56
+            : .40;
+          supportCopy.w=.38;
           supportCopy.align='right';
           supportCopy.size=clamp(
             supportCopy.size,
-            24,
-            30
+            26,
+            32
           );
           lock(supportCopy,74);
         }
@@ -4738,22 +4738,22 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
         visual.x=.5;
         visual.y=title?.text
-          ? .57
-          : .50;
+          ? .52
+          : .49;
 
         visual.w=
           visual.type==='numberline'
-            ? .76
+            ? .82
             : visual.type==='fraction'
-              ? .62
-              : .66;
+              ? .70
+              : .74;
 
         visual.h=
           visual.type==='numberline'
-            ? .22
+            ? .24
             : visual.type==='fraction'
-              ? .42
-              : .50;
+              ? .48
+              : .56;
 
         lock(visual,94);
 
@@ -4850,8 +4850,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       if(title){
         title.x=.5;
-        title.y=.15;
-        title.w=.76;
+        title.y=.12;
+        title.w=.80;
         title.align='center';
         title.size=clamp(
           title.size,
@@ -4870,14 +4870,14 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       mainFormula.x=.5;
       mainFormula.y=title?.text
-        ? .42
-        : .34;
-      mainFormula.w=.68;
+        ? .43
+        : .38;
+      mainFormula.w=.76;
       mainFormula.align='center';
       mainFormula.size=clamp(
         mainFormula.size,
-        54,
-        68
+        64,
+        80
       );
       mainFormula.at=Math.min(
         mainFormula.at,
@@ -4887,13 +4887,13 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       copy.slice(0,1).forEach(function(element){
         element.x=.5;
-        element.y=.62;
-        element.w=.68;
+        element.y=.61;
+        element.w=.72;
         element.align='center';
         element.size=clamp(
           element.size,
-          25,
-          31
+          28,
+          34
         );
         element.at=Math.min(
           element.at,
@@ -4923,13 +4923,13 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       if(title){
         title.x=.5;
-        title.y=.22;
-        title.w=.76;
+        title.y=.16;
+        title.w=.82;
         title.align='center';
         title.size=clamp(
           title.size,
-          50,
-          62
+          54,
+          66
         );
         title.at=Math.min(
           title.at,
@@ -4942,15 +4942,15 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         element.x=.5;
         element.y=
           (title?.text
-            ? .41
-            : .30)+
-          index*.19;
-        element.w=.66;
+            ? .36
+            : .28)+
+          index*.22;
+        element.w=.76;
         element.align='center';
         element.size=clamp(
           element.size,
-          29,
-          36
+          32,
+          40
         );
         element._card=true;
         element.at=Math.min(
@@ -6095,8 +6095,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       const boxW=Math.min(
         maxWidth,
         Math.max(
-          contentW+46,
-          190
+          contentW+64,
+          260
         )
       );
 
