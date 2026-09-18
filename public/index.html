@@ -3142,12 +3142,24 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     // while inside JSON strings, leaving structural JSON untouched.
     const latexCommands=new Set([
       'frac','dfrac','tfrac','sqrt','cdot','times','pm','mp','div',
-      'leq','le','geq','ge','neq','approx','equiv','infty','pi',
-      'theta','alpha','beta','gamma','delta','sin','cos','tan','log',
-      'ln','exp','sum','prod','int','lim','left','right','begin','end',
-      'text','mathrm','mathbf','vec','overline','underline','hat','bar',
-      'angle'
-    ]);
+      'leq','le','geq','ge','neq','ne','approx','equiv','infty','pi',
+      'theta','alpha','beta','gamma','delta','epsilon','varepsilon',
+      'zeta','eta','vartheta','iota','kappa','lambda','mu','nu','xi',
+      'rho','varrho','sigma','varsigma','tau','upsilon','phi','varphi',
+      'chi','psi','omega','sin','cos','tan','cot','sec','csc','arcsin',
+      'arccos','arctan','log','ln','exp','sum','prod','int','iint','iiint',
+      'oint','lim','left','right','begin','end','text','mathrm','mathbf',
+      'mathit','mathbb','mathcal','mathsf','mathtt','operatorname','vec',
+      'overline','underline','hat','bar','angle','degree','partial','nabla',
+      'forall','exists','in','notin','subset','supset','subseteq','supseteq',
+      'cup','cap','to','rightarrow','leftarrow','leftrightarrow','Rightarrow',
+      'Leftarrow','Leftrightarrow','therefore','because','dots','ldots',
+      'cdots','vdots','ddots','quad','qquad','hspace','vspace','phantom',
+      'overbrace','underbrace','overset','underset','cases','matrix',
+      'pmatrix','bmatrix','vmatrix','smallmatrix'
+    ].map(function(command){
+      return command.toLowerCase();
+    }));
 
     let normalized='';
     let inString=false;
@@ -3170,7 +3182,15 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         while(j<text.length&&text[j]==='\\')j+=1;
 
         const commandMatch=text.slice(j).match(/^([A-Za-z]+)/);
-        if(commandMatch&&latexCommands.has(commandMatch[1])){
+        if(
+          commandMatch&&
+          latexCommands.has(
+            commandMatch[1].toLowerCase()
+          )
+        ){
+          // JSON source must contain exactly two slashes so JSON.parse
+          // produces exactly one LaTeX slash. This repairs \frac,
+          // \\frac, \\\frac, etc. to one consistent representation.
           normalized+='\\\\';
           i=j;
           continue;
@@ -3180,7 +3200,9 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         // \q, escape the slash instead of letting JSON.parse fail.
         const run=text.slice(i,j);
         const next=text[j]||'';
-        if(run.length===1&&!/["\\/bfnrtu]/.test(next)){
+        if(!/["\\/bfnrtu]/.test(next)){
+          // Unknown non-JSON escapes are almost always model-generated
+          // LaTeX. Collapse any odd/messy slash run to one literal slash.
           normalized+='\\\\';
         }else{
           normalized+=run;
@@ -3215,8 +3237,11 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       if(value&&!candidates.includes(value))candidates.push(value);
     }
 
-    addCandidate(original);
+    // Always try the repaired version first. Raw JSON containing a
+    // single LaTeX command such as "\\frac" can technically parse as
+    // JSON's \f escape and silently corrupt the formula.
     addCandidate(repairLessonJsonText(original));
+    addCandidate(original);
 
     // If the model wrapped the object in accidental prose/code fencing,
     // keep only the complete outer JSON object as another safe attempt.
@@ -3224,8 +3249,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     const lastBrace=original.lastIndexOf('}');
     if(firstBrace>=0&&lastBrace>firstBrace){
       const sliced=original.slice(firstBrace,lastBrace+1);
-      addCandidate(sliced);
       addCandidate(repairLessonJsonText(sliced));
+      addCandidate(sliced);
     }
 
     let lastError=null;
@@ -3244,6 +3269,17 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       length:original.length
     });
     throw new Error('מבנה הסרטון שה-AI יצר לא היה תקין');
+  }
+
+  function repairLessonFormulaValue(value){
+    return String(value??'')
+      .replace(/\f(?=rac\b)/gi,'\\frac')
+      .replace(/\t(?=(?:heta|ext|imes)\b)/gi,function(match){
+        return match==='\t'?'\\t':match;
+      })
+      .replace(/\b(?=eta\b)/gi,'\\b')
+      .replace(/\r(?=ho\b)/gi,'\\r')
+      .replace(/\n(?=(?:e|eq|abla|u)\b)/gi,'\\n');
   }
 
   function normalizeLesson(raw){
@@ -3379,7 +3415,9 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           type:type,
           text:
             type==='formula'
-              ? String(rawElement.text||'').slice(0,420)
+              ? repairLessonFormulaValue(
+                  String(rawElement.text||'').slice(0,420)
+                )
               : lessonLocalizeText(
                   String(rawElement.text||'').slice(0,420),
                   fallbackLabel
@@ -3415,7 +3453,9 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           steps:Array.isArray(rawElement.steps)
             ? rawElement.steps.slice(0,8).map(function(step,stepIndex){
                 return {
-                  formula:String(step?.formula||'').slice(0,220),
+                  formula:repairLessonFormulaValue(
+                    String(step?.formula||'').slice(0,220)
+                  ),
                   note:lessonLocalizeText(
                     String(step?.note||'').slice(0,150),
                     'שלב '+(stepIndex+1)
