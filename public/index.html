@@ -3059,6 +3059,74 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     return fallback;
   }
 
+  function lessonLocalizeText(value,fallback){
+    let text=String(value??'')
+      .replace(/\s+/g,' ')
+      .trim();
+
+    if(!text)return '';
+
+    const exact=new Map([
+      ['Can you solve these?','מוכנים לפתור?'],
+      ['Pause before each answer!','עצרו רגע לפני כל תשובה!'],
+      ['Subtract 5 from both sides','מחסרים 5 משני האגפים'],
+      ['Divide both sides by 3','מחלקים את שני האגפים ב־3'],
+      ['Arithmetic','חשבון'],
+      ['Equation','משוואה'],
+      ['Fraction','שבר'],
+      ['Area','שטח'],
+      ['Summary','סיכום'],
+      ['Check','בדיקה']
+    ]);
+
+    if(exact.has(text)){
+      return exact.get(text);
+    }
+
+    text=text
+      .replace(/^Problem\s+(\d+)$/i,'תרגיל $1')
+      .replace(/^Answer\s*:\s*/i,'תשובה: ')
+      .replace(/^Step\s+(\d+)$/i,'שלב $1')
+      .replace(/^cm\s*(\d+(?:\.\d+)?)$/i,'$1 ס״מ')
+      .replace(/^(\d+(?:\.\d+)?)\s*cm$/i,'$1 ס״מ')
+      .replace(/\bProblem\b/gi,'תרגיל')
+      .replace(/\bAnswer\b/gi,'תשובה')
+      .replace(/\bStep\b/gi,'שלב')
+      .replace(/\bSummary\b/gi,'סיכום')
+      .replace(/\bArithmetic\b/gi,'חשבון')
+      .replace(/\bEquation\b/gi,'משוואה')
+      .replace(/\bFraction\b/gi,'שבר')
+      .replace(/\bArea\b/gi,'שטח')
+      .replace(/\bCheck\b/gi,'בדיקה');
+
+    const hebrewCount=
+      (text.match(/[\u0590-\u05ff]/g)||[]).length;
+
+    const latinWords=
+      text.match(/[A-Za-z]{2,}/g)||[];
+
+    if(
+      latinWords.length&&
+      hebrewCount===0
+    ){
+      return fallback||'הסבר';
+    }
+
+    return text;
+  }
+
+  function lessonMinFontSize(type){
+    if(type==='title')return 38;
+    if(type==='formula')return 40;
+    if(type==='equation-sequence')return 44;
+    if(type==='summary')return 28;
+    if(type==='counter')return 34;
+    if(type==='badge')return 20;
+    if(type==='bullets')return 22;
+    if(type==='text')return 22;
+    return 18;
+  }
+
   function normalizeLesson(raw){
     const data=
       typeof raw==='string'
@@ -3166,32 +3234,64 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       const elements=rawElements.map(function(rawElement){
         const type=String(rawElement.type||'text').toLowerCase();
+        const fallbackLabel=
+          type==='title'
+            ? 'שלב '+(index+1)
+            : type==='badge'
+              ? 'הדגשה'
+              : type==='text'
+                ? 'נמשיך לפתרון.'
+                : '';
+
         const element={
           type:type,
-          text:String(rawElement.text||'').slice(0,420),
+          text:
+            type==='formula'
+              ? String(rawElement.text||'').slice(0,420)
+              : lessonLocalizeText(
+                  String(rawElement.text||'').slice(0,420),
+                  fallbackLabel
+                ),
           items:Array.isArray(rawElement.items)
-            ? rawElement.items.slice(0,5).map(function(item){return String(item).slice(0,160)})
+            ? rawElement.items.slice(0,5).map(function(item,itemIndex){
+                if(item&&typeof item==='object'){
+                  return item;
+                }
+                return lessonLocalizeText(
+                  String(item).slice(0,160),
+                  'שלב '+(itemIndex+1)
+                );
+              })
             : [],
           summaryItems:Array.isArray(rawElement.items)
-            ? rawElement.items.slice(0,6).map(function(item,index){
+            ? rawElement.items.slice(0,6).map(function(item,itemIndex){
                 if(item&&typeof item==='object'){
                   return {
-                    label:String(item.label||('פריט '+(index+1))).slice(0,80),
+                    label:lessonLocalizeText(
+                      String(item.label||('תוצאה '+(itemIndex+1))).slice(0,80),
+                      'תוצאה '+(itemIndex+1)
+                    ),
                     value:String(item.value||'').slice(0,150)
                   };
                 }
                 return {
-                  label:'פריט '+(index+1),
+                  label:'תוצאה '+(itemIndex+1),
                   value:String(item||'').slice(0,150)
                 };
               })
             : [],
           steps:Array.isArray(rawElement.steps)
-            ? rawElement.steps.slice(0,8).map(function(step,index){
+            ? rawElement.steps.slice(0,8).map(function(step,stepIndex){
                 return {
                   formula:String(step?.formula||'').slice(0,220),
-                  note:String(step?.note||'').slice(0,150),
-                  label:String(step?.label||('שלב '+(index+1))).slice(0,80)
+                  note:lessonLocalizeText(
+                    String(step?.note||'').slice(0,150),
+                    'שלב '+(stepIndex+1)
+                  ),
+                  label:lessonLocalizeText(
+                    String(step?.label||('שלב '+(stepIndex+1))).slice(0,80),
+                    'שלב '+(stepIndex+1)
+                  )
                 };
               })
             : [],
@@ -3206,8 +3306,14 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
             : [],
           numerator:Number(rawElement.numerator),
           denominator:Number(rawElement.denominator),
-          widthLabel:String(rawElement.widthLabel||'').slice(0,80),
-          heightLabel:String(rawElement.heightLabel||'').slice(0,80),
+          widthLabel:lessonLocalizeText(
+            String(rawElement.widthLabel||'').slice(0,80),
+            ''
+          ),
+          heightLabel:lessonLocalizeText(
+            String(rawElement.heightLabel||'').slice(0,80),
+            ''
+          ),
           rows:clamp(Math.floor(Number(rawElement.rows)||0),0,20),
           cols:clamp(Math.floor(Number(rawElement.cols)||0),0,20),
           x:clamp(Number(rawElement.x??.5),0,1),
@@ -3222,7 +3328,10 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           color:lessonSafeColor(rawElement.color,'text'),
           fill:lessonSafeColor(rawElement.fill,'transparent'),
           stroke:lessonSafeColor(rawElement.stroke,'text'),
-          label:String(rawElement.label||'').slice(0,100),
+          label:lessonLocalizeText(
+            String(rawElement.label||'').slice(0,100),
+            'הסבר'
+          ),
           at:clamp(Number(rawElement.at??0),0,30),
           duration:clamp(Number(rawElement.duration??.65),.12,8),
           animation:[
@@ -3250,6 +3359,11 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
               ]
             : null
         };
+
+        element.size=Math.max(
+          element.size,
+          lessonMinFontSize(type)
+        );
 
         return element;
       });
@@ -3928,7 +4042,10 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     const duration=scenes.reduce(function(sum,scene){return sum+scene.seconds},0);
 
     return {
-      title:String(data.title||'סרטון הסבר').slice(0,100),
+      title:lessonLocalizeText(
+        String(data.title||'סרטון הסבר').slice(0,100),
+        'סרטון הסבר במתמטיקה'
+      ),
       duration:duration,
       scenes:scenes,
       _formulaAssets:new Map(),
