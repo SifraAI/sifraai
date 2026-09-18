@@ -161,6 +161,8 @@ const SYSTEM_PROMPT = String.raw`
 - השתמש בצבעים עם משמעות: accent לפעולה הנוכחית, green לתשובה/אימות, red לטעות, yellow להערה חשובה.
 - נוסחאות בסרטון יכולות להיות LaTeX בלי $ ובלי $$, לדוגמה "\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}". ה-renderer ירנדר KaTeX אמיתי.
 - אל תכניס Markdown או HTML בתוך JSON של video.lesson.
+- video.lesson חייב להכיל JSON תקני לחלוטין: רק מרכאות כפולות, ללא trailing commas, ללא הערות, וללא code fences.
+- בתוך מחרוזת JSON כל backslash של LaTeX חייב להיות escaped כ-\\. לדוגמה כתוב "\\frac{3}{4}" ולא "\frac{3}{4}", ו-"3\\cdot5" ולא "3\cdot5".
 
 סוגי elements בסרטון:
 - type:"title" — כותרת.
