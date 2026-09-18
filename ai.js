@@ -176,7 +176,9 @@ const SYSTEM_PROMPT = String.raw`
 - נוסחאות בסרטון יכולות להיות LaTeX בלי $ ובלי $$, לדוגמה "\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}". ה-renderer ירנדר KaTeX אמיתי.
 - אל תכניס Markdown או HTML בתוך JSON של video.lesson.
 - video.lesson חייב להכיל JSON תקני לחלוטין: רק מרכאות כפולות, ללא trailing commas, ללא הערות, וללא code fences.
-- בתוך מחרוזת JSON כל backslash של LaTeX חייב להיות escaped כ-\\. לדוגמה כתוב "\\frac{3}{4}" ולא "\frac{3}{4}", ו-"3\\cdot5" ולא "3\cdot5".
+- בתוך מחרוזת JSON כל backslash של LaTeX חייב להיות escaped בדיוק כ-\\. לדוגמה כתוב "\\frac{3}{4}" ולא "\frac{3}{4}" ולא "\\\frac{3}{4}".
+- אל תשתמש ב-\\qquad בתוך נוסחת video.lesson רק כדי ליצור רווח. אם יש שני רעיונות שונים, פצל אותם ל-elements נפרדים. אם צריך אי-שוויון כתוב למשל "a\\ne0".
+- בתוך text / badge / title השתמש בסימני Unicode כגון Δ, π, √, ≤, ≥ במקום פקודות LaTeX. פקודות LaTeX מיועדות ל-formula ול-equation-sequence בלבד.
 
 סוגי elements בסרטון:
 - type:"title" — כותרת.
