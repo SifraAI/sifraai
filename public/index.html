@@ -3127,11 +3127,143 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     return 18;
   }
 
+  function repairLessonJsonText(raw){
+    let text=String(raw||'')
+      .trim()
+      .replace(/^\`\`\`(?:json|javascript|js)?\s*/i,'')
+      .replace(/\s*\`\`\`$/,'')
+      .replace(/[“”]/g,'"')
+      .replace(/[‘’]/g,"'")
+      .replace(/\u00a0/g,' ');
+
+    const latexCommands=
+      '(?:frac|dfrac|tfrac|sqrt|cdot|times|pm|mp|div|leq|le|geq|ge|neq|approx|equiv|infty|pi|theta|alpha|beta|gamma|delta|sin|cos|tan|log|ln|exp|sum|prod|int|lim|left|right|begin|end|text|mathrm|mathbf|vec|overline|underline|hat|bar|angle)';
+
+    text=text.replace(
+      new RegExp(
+        '(^|[^\\\\])\\\\('+
+        latexCommands+
+        ')\\b',
+        'g'
+      ),
+      function(_match,prefix,command){
+        return prefix+'\\\\\\\\'+command;
+      }
+    );
+
+    text=text.replace(
+      /,\s*([}\]])/g,
+      '$1'
+    );
+
+    let out='';
+    let inString=false;
+    let escaped=false;
+
+    for(let i=0;i<text.length;i+=1){
+      const ch=text[i];
+
+      if(!inString){
+        out+=ch;
+        if(ch==='"')inString=true;
+        continue;
+      }
+
+      if(escaped){
+        out+=ch;
+        escaped=false;
+        continue;
+      }
+
+      if(ch==='\\'){
+        out+=ch;
+        escaped=true;
+        continue;
+      }
+
+      if(ch==='"'){
+        out+=ch;
+        inString=false;
+        continue;
+      }
+
+      if(ch==='\n'){
+        out+='\\n';
+        continue;
+      }
+
+      if(ch==='\r'){
+        out+='\\r';
+        continue;
+      }
+
+      if(ch==='\t'){
+        out+='\\t';
+        continue;
+      }
+
+      out+=ch;
+    }
+
+    return out;
+  }
+
+  function parseLessonPayload(raw){
+    if(
+      raw&&
+      typeof raw==='object'
+    ){
+      return raw;
+    }
+
+    const original=
+      String(raw||'').trim();
+
+    if(!original){
+      throw new Error(
+        'נתוני הסרטון ריקים'
+      );
+    }
+
+    const attempts=[
+      original,
+      repairLessonJsonText(original)
+    ];
+
+    let lastError=null;
+
+    for(const candidate of attempts){
+      try{
+        const parsed=
+          JSON.parse(candidate);
+
+        if(
+          parsed&&
+          typeof parsed==='object'
+        ){
+          return parsed;
+        }
+      }catch(error){
+        lastError=error;
+      }
+    }
+
+    console.error(
+      'Sifra lesson JSON parse failed:',
+      {
+        error:lastError,
+        sample:original.slice(0,1600)
+      }
+    );
+
+    throw new Error(
+      'מבנה הסרטון שה-AI יצר לא היה תקין'
+    );
+  }
+
   function normalizeLesson(raw){
     const data=
-      typeof raw==='string'
-        ? JSON.parse(raw)
-        : raw;
+      parseLessonPayload(raw);
 
     const sourceScenes=
       Array.isArray(data.scenes)
@@ -3221,7 +3353,13 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       return elements;
     }
 
-    const scenes=sourceScenes.map(function(scene,index){
+    const scenes=sourceScenes.map(function(sceneValue,index){
+      const scene=
+        sceneValue&&
+        typeof sceneValue==='object'
+          ? sceneValue
+          : {};
+
       const background=
         typeof scene.background==='string'
           ? {color:scene.background,pattern:'none'}
@@ -3232,7 +3370,16 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           ? scene.elements.slice(0,9)
           : legacyElements(scene,index);
 
-      const elements=rawElements.map(function(rawElement){
+      const elements=rawElements.map(function(rawElementValue){
+        const rawElement=
+          rawElementValue&&
+          typeof rawElementValue==='object'
+            ? rawElementValue
+            : {
+                type:'text',
+                text:String(rawElementValue||'')
+              };
+
         const type=String(rawElement.type||'text').toLowerCase();
         const fallbackLabel=
           type==='title'
@@ -7527,6 +7674,12 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     try{
       lesson=normalizeLesson(payload);
     }catch(error){
+      console.error(
+        'Sifra lesson normalization failed:',
+        error,
+        String(payload||'').slice(0,1800)
+      );
+
       const shell=vizCard(
         'סרטון הסבר',
         'הנתונים אינם תקינים',
