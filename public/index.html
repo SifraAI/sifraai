@@ -4753,12 +4753,12 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           supportCopy.y=supportFormula
             ? .56
             : .40;
-          supportCopy.w=.38;
+          supportCopy.w=.40;
           supportCopy.align='right';
           supportCopy.size=clamp(
             supportCopy.size,
-            26,
-            32
+            30,
+            36
           );
           lock(supportCopy,74);
         }
@@ -6770,76 +6770,251 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     const motion=lessonElementMotion(element,localTime);
     if(motion.alpha<=0)return;
 
-    const expression=element.expression||element.text;
-    const rangeMatch=String(expression).match(
+    const expression=
+      String(
+        element.expression||
+        element.text||
+        ''
+      )
+      .replace(/−/g,'-')
+      .trim();
+
+    const rangeMatch=expression.match(
       /^\s*(-?\d+(?:\.\d+)?)\s*(<=|<)\s*x\s*(<=|<)\s*(-?\d+(?:\.\d+)?)\s*$/i
     );
-    const oneMatch=String(expression).match(
+
+    const oneMatch=expression.match(
       /^\s*x\s*(>=|>|<=|<)\s*(-?\d+(?:\.\d+)?)\s*$/i
     );
 
-    if(!rangeMatch&&!oneMatch)return;
+    const equalityMatch=expression.match(
+      /^\s*x\s*=\s*(-?\d+(?:\.\d+)?)\s*$/i
+    );
+
+    if(
+      !rangeMatch&&
+      !oneMatch&&
+      !equalityMatch
+    )return;
 
     const boxW=element.w*width;
     const x0=element.x*width-boxW/2;
     const x1=element.x*width+boxW/2;
     const y=element.y*height;
 
-    let min=-5,max=5,marks=[],segment=[x0,x1];
+    let min=-5;
+    let max=5;
+    let marks=[];
+    let segment=null;
+
+    function makePos(value){
+      return x0+
+        (value-min)/
+        (max-min)*
+        boxW;
+    }
 
     if(rangeMatch){
       const a=Number(rangeMatch[1]);
       const b=Number(rangeMatch[4]);
       const span=Math.max(4,b-a);
-      min=a-span*.7;
-      max=b+span*.7;
-      const pos=function(v){return x0+(v-min)/(max-min)*boxW};
-      segment=[pos(a),pos(b)];
-      marks=[
-        {x:pos(a),closed:rangeMatch[2]==='<='},
-        {x:pos(b),closed:rangeMatch[3]==='<='}
+
+      min=a-span*.72;
+      max=b+span*.72;
+
+      segment=[
+        makePos(a),
+        makePos(b)
       ];
-    }else{
+
+      marks=[
+        {
+          value:a,
+          x:makePos(a),
+          closed:
+            rangeMatch[2]==='<='
+        },
+        {
+          value:b,
+          x:makePos(b),
+          closed:
+            rangeMatch[3]==='<='
+        }
+      ];
+    }else if(oneMatch){
       const op=oneMatch[1];
       const value=Number(oneMatch[2]);
+
       min=value-6;
       max=value+6;
-      const pos=function(v){return x0+(v-min)/(max-min)*boxW};
-      const vx=pos(value);
-      segment=op.startsWith('>')?[vx,x1]:[x0,vx];
-      marks=[{x:vx,closed:op==='>='||op==='<='}];
+
+      const vx=makePos(value);
+
+      segment=
+        op.startsWith('>')
+          ? [vx,x1]
+          : [x0,vx];
+
+      marks=[
+        {
+          value:value,
+          x:vx,
+          closed:
+            op==='>='||
+            op==='<='
+        }
+      ];
+    }else{
+      const value=
+        Number(
+          equalityMatch[1]
+        );
+
+      min=value-5;
+      max=value+5;
+
+      marks=[
+        {
+          value:value,
+          x:makePos(value),
+          closed:true,
+          equality:true
+        }
+      ];
     }
 
     ctx.save();
     ctx.globalAlpha=motion.alpha;
-    ctx.strokeStyle=palette.subtle2;
-    ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();
-
-    const progress=element.animation==='draw'?motion.draw:1;
-    ctx.strokeStyle=palette.accent;
-    ctx.lineWidth=7;
     ctx.lineCap='round';
+
+    // baseline
+    ctx.strokeStyle=
+      palette.subtle2;
+    ctx.lineWidth=2;
     ctx.beginPath();
-    ctx.moveTo(segment[0],y);
-    ctx.lineTo(segment[0]+(segment[1]-segment[0])*progress,y);
+    ctx.moveTo(x0,y);
+    ctx.lineTo(x1,y);
     ctx.stroke();
 
-    if(progress>.82){
+    // readable ticks
+    const tickCount=6;
+    ctx.font='600 18px Huninn, Arial';
+    ctx.textAlign='center';
+    ctx.textBaseline='top';
+    ctx.direction='ltr';
+
+    for(let i=0;i<=tickCount;i+=1){
+      const ratio=i/tickCount;
+      const tx=
+        x0+
+        ratio*boxW;
+
+      const value=
+        min+
+        ratio*(max-min);
+
+      ctx.strokeStyle=
+        palette.subtle2;
+      ctx.lineWidth=1.5;
+
+      ctx.beginPath();
+      ctx.moveTo(tx,y-7);
+      ctx.lineTo(tx,y+7);
+      ctx.stroke();
+
+      ctx.fillStyle=
+        palette.muted;
+
+      ctx.fillText(
+        niceNumber(value),
+        tx,
+        y+16
+      );
+    }
+
+    const progress=
+      element.animation==='draw'
+        ? motion.draw
+        : 1;
+
+    if(segment){
+      ctx.strokeStyle=
+        palette.accent;
+      ctx.lineWidth=7;
+
+      ctx.beginPath();
+      ctx.moveTo(
+        segment[0],
+        y
+      );
+      ctx.lineTo(
+        segment[0]+
+        (segment[1]-segment[0])*
+        progress,
+        y
+      );
+      ctx.stroke();
+    }
+
+    if(progress>.72){
       marks.forEach(function(mark){
+        const reveal=
+          clamp(
+            (progress-.72)/.28,
+            0,
+            1
+          );
+
+        const radius=
+          8+
+          easeOutCubic(reveal)*2;
+
         ctx.beginPath();
-        ctx.arc(mark.x,y,9,0,Math.PI*2);
-        ctx.fillStyle=mark.closed?palette.accent:palette.background;
+        ctx.arc(
+          mark.x,
+          y,
+          radius,
+          0,
+          Math.PI*2
+        );
+
+        ctx.fillStyle=
+          mark.closed
+            ? palette.accent
+            : palette.background;
+
         ctx.fill();
-        ctx.strokeStyle=palette.accent;
+
+        ctx.strokeStyle=
+          palette.accent;
         ctx.lineWidth=3;
         ctx.stroke();
+
+        const label=
+          mark.equality
+            ? 'x = '+niceNumber(mark.value)
+            : niceNumber(mark.value);
+
+        ctx.font=
+          '700 22px Huninn, Arial';
+
+        ctx.fillStyle=
+          palette.text;
+
+        ctx.textAlign='center';
+        ctx.textBaseline='bottom';
+        ctx.direction='ltr';
+
+        ctx.fillText(
+          label,
+          mark.x,
+          y-18
+        );
       });
     }
 
     ctx.restore();
   }
-
   function lessonDrawBars(ctx,element,palette,width,height,localTime){
     const motion=lessonElementMotion(element,localTime);
     if(motion.alpha<=0||!element.values.length)return;
@@ -7697,9 +7872,37 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       element.x*width-
       totalW/2;
 
-    const top=
+    let top=
       element.y*height-
       totalH/2;
+
+    if(
+      element._showHeading
+    ){
+      ctx.save();
+      ctx.globalAlpha=
+        clamp(
+          base/.38,
+          0,
+          1
+        );
+      ctx.direction='rtl';
+      ctx.textAlign='center';
+      ctx.textBaseline='top';
+      ctx.fillStyle=palette.text;
+      ctx.font='700 46px Huninn, Arial';
+      ctx.fillText(
+        'סיכום',
+        element.x*width,
+        Math.max(
+          54,
+          top-66
+        )
+      );
+      ctx.restore();
+
+      top+=18;
+    }
 
     items.forEach(
       function(item,index){
