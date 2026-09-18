@@ -3964,12 +3964,12 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       if(
         passive&&
-        scene.seconds>6.2
+        scene.seconds>4.8
       ){
         reclaimedTime+=
-          scene.seconds-6.2;
+          scene.seconds-4.8;
 
-        scene.seconds=6.2;
+        scene.seconds=4.8;
       }
     });
 
@@ -4214,6 +4214,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         index,
         scenes.length
       );
+
+      fitSceneTiming(scene);
 
       for(let pass=0;pass<5;pass+=1){
         resolveLessonSceneLayout(scene,index);
@@ -4940,16 +4942,17 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         element.x=.5;
         element.y=
           (title?.text
-            ? .43
-            : .31)+
-          index*.17;
-        element.w=.70;
+            ? .41
+            : .30)+
+          index*.19;
+        element.w=.66;
         element.align='center';
         element.size=clamp(
           element.size,
-          27,
-          34
+          29,
+          36
         );
+        element._card=true;
         element.at=Math.min(
           element.at,
           .35+
@@ -6162,9 +6165,76 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     const lines=wrapCanvasLines(ctx,text,maxWidth);
     const lineHeight=fontSize*(isTitle?1.16:1.42);
     const maxLines=isTitle?3:6;
+    const shown=
+      lines.slice(
+        0,
+        maxLines
+      );
 
-    lines.slice(0,maxLines).forEach(function(line,index){
-      ctx.fillText(line,0,index*lineHeight,maxWidth);
+    if(
+      element._card&&
+      !isTitle
+    ){
+      const contentH=
+        Math.max(
+          lineHeight,
+          shown.length*
+          lineHeight
+        );
+
+      const cardW=
+        Math.min(
+          maxWidth+54,
+          width*.72
+        );
+
+      const cardH=
+        contentH+38;
+
+      let cardX=0;
+
+      if(element.align==='center'){
+        cardX=-cardW/2;
+      }else if(element.align==='right'){
+        cardX=-cardW;
+      }
+
+      roundedRect(
+        ctx,
+        cardX,
+        -16,
+        cardW,
+        cardH,
+        18
+      );
+
+      ctx.fillStyle=
+        palette.dark
+          ? 'rgba(255,255,255,.045)'
+          : 'rgba(0,0,0,.028)';
+
+      ctx.fill();
+
+      ctx.strokeStyle=
+        palette.subtle2;
+
+      ctx.lineWidth=1;
+      ctx.stroke();
+
+      ctx.fillStyle=
+        lessonColor(
+          element.color,
+          palette
+        );
+    }
+
+    shown.forEach(function(line,index){
+      ctx.fillText(
+        line,
+        0,
+        index*lineHeight,
+        maxWidth
+      );
     });
 
     ctx.restore();
@@ -6965,6 +7035,70 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
     const maxHeight=
       element.h*height*.56;
+
+    const panelW=
+      Math.min(
+        maxWidth+72,
+        width*.84
+      );
+
+    const panelH=
+      Math.min(
+        element.h*height+
+        18,
+        height*.52
+      );
+
+    const panelX=
+      centerX-
+      panelW/2;
+
+    const panelY=
+      centerY-
+      panelH*.43;
+
+    ctx.save();
+
+    const panelReveal=
+      easeOutCubic(
+        clamp(
+          elapsed/
+          Math.max(
+            .28,
+            element.duration
+          ),
+          0,
+          1
+        )
+      );
+
+    ctx.globalAlpha=
+      .18+
+      .82*panelReveal;
+
+    roundedRect(
+      ctx,
+      panelX,
+      panelY,
+      panelW,
+      panelH,
+      22
+    );
+
+    ctx.fillStyle=
+      palette.dark
+        ? 'rgba(255,255,255,.035)'
+        : 'rgba(0,0,0,.022)';
+
+    ctx.fill();
+
+    ctx.strokeStyle=
+      palette.subtle2;
+
+    ctx.lineWidth=1;
+    ctx.stroke();
+
+    ctx.restore();
 
     function drawStep(
       step,
