@@ -3266,6 +3266,181 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       };
     });
 
+    scenes.forEach(function(scene){
+      const hasSequence=
+        scene.elements.some(function(element){
+          return element.type==='equation-sequence';
+        });
+
+      const blockingVisual=
+        scene.elements.some(function(element){
+          return [
+            'graph','bars','fraction',
+            'rectangle','numberline'
+          ].includes(element.type);
+        });
+
+      const formulas=
+        scene.elements
+          .filter(function(element){
+            return (
+              element.type==='formula'&&
+              /[=<>±+\-×*/]/.test(element.text)
+            );
+          })
+          .sort(function(a,b){
+            return a.at-b.at;
+          });
+
+      if(
+        !hasSequence&&
+        !blockingVisual&&
+        formulas.length>=3
+      ){
+        const xs=formulas.map(function(element){
+          return element.x;
+        });
+
+        const minX=Math.min.apply(null,xs);
+        const maxX=Math.max.apply(null,xs);
+
+        if(maxX-minX<=.22){
+          const centerX=
+            formulas.reduce(function(sum,element){
+              return sum+element.x;
+            },0)/formulas.length;
+
+          const centerY=
+            clamp(
+              formulas.reduce(function(sum,element){
+                return sum+element.y;
+              },0)/formulas.length,
+              .30,
+              .58
+            );
+
+          const maxW=
+            Math.max.apply(
+              null,
+              formulas.map(function(element){
+                return element.w;
+              })
+            );
+
+          const maxSize=
+            Math.max.apply(
+              null,
+              formulas.map(function(element){
+                return element.size;
+              })
+            );
+
+          const firstAt=
+            Math.min.apply(
+              null,
+              formulas.map(function(element){
+                return element.at;
+              })
+            );
+
+          const orderedNotes=
+            scene.elements
+              .filter(function(element){
+                return (
+                  element.type==='text'&&
+                  element.text
+                );
+              })
+              .sort(function(a,b){
+                return a.at-b.at;
+              });
+
+          const steps=formulas.map(function(element,index){
+            const nearby=
+              orderedNotes.find(function(textElement){
+                return (
+                  textElement.at>=element.at-.65&&
+                  textElement.at<=element.at+1.25
+                );
+              });
+
+            return {
+              formula:element.text,
+              note:nearby?.text||'',
+              label:'שלב '+(index+1)
+            };
+          });
+
+          const sequence={
+            type:'equation-sequence',
+            text:'',
+            items:[],
+            summaryItems:[],
+            steps:steps,
+            stepSeconds:clamp(
+              scene.seconds/
+                Math.max(1,steps.length),
+              1.2,
+              3.8
+            ),
+            equation:'',
+            expression:'',
+            labels:[],
+            values:[],
+            numerator:NaN,
+            denominator:NaN,
+            widthLabel:'',
+            heightLabel:'',
+            rows:0,
+            cols:0,
+            x:centerX,
+            y:centerY,
+            w:Math.max(.58,maxW),
+            h:.48,
+            r:.08,
+            size:Math.max(38,maxSize),
+            align:'center',
+            color:formulas[formulas.length-1].color||'text',
+            fill:'transparent',
+            stroke:'text',
+            label:'',
+            at:Math.min(.2,firstAt),
+            duration:.5,
+            animation:'fade',
+            toX:null,
+            toY:null,
+            from:null,
+            to:null
+          };
+
+          const formulaSet=
+            new Set(formulas);
+
+          const noteSet=
+            new Set(
+              orderedNotes.filter(function(textElement){
+                return formulas.some(function(formula){
+                  return (
+                    textElement.at>=formula.at-.65&&
+                    textElement.at<=formula.at+1.25
+                  );
+                });
+              })
+            );
+
+          scene.elements=
+            scene.elements.filter(function(element){
+              return (
+                !formulaSet.has(element)&&
+                !noteSet.has(element)
+              );
+            });
+
+          scene.elements.push(sequence);
+        }
+      }
+    });
+
     const drawPreferred=new Set([
       'arrow','line','graph',
       'numberline','bars',
@@ -3472,6 +3647,43 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
               excess/receivers.length
             );
         });
+      }
+    }
+
+    const finalScene=
+      scenes[scenes.length-1];
+
+    const finalHasSummary=
+      finalScene&&
+      finalScene.elements.some(function(element){
+        return element.type==='summary';
+      });
+
+    if(
+      finalHasSummary&&
+      finalScene.seconds<4.5
+    ){
+      let need=4.5-finalScene.seconds;
+
+      for(
+        let i=scenes.length-2;
+        i>=0&&need>.01;
+        i-=1
+      ){
+        const donor=scenes[i];
+        const available=Math.max(
+          0,
+          donor.seconds-4.2
+        );
+
+        const take=Math.min(
+          need,
+          available
+        );
+
+        donor.seconds-=take;
+        finalScene.seconds+=take;
+        need-=take;
       }
     }
 
@@ -3983,6 +4195,26 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
                     palette
                   ),
                   element.size
+                );
+            });
+          });
+        }
+
+        if(
+          element.type==='summary'
+        ){
+          element.summaryItems.forEach(function(item){
+            if(!item.value)return;
+
+            jobs.push(async function(){
+              item._formulaBitmap=
+                await lessonFormulaBitmap(
+                  item.value,
+                  palette.text,
+                  Math.max(
+                    24,
+                    element.size*.70
+                  )
                 );
             });
           });
@@ -5416,20 +5648,57 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
             ? '#49c47c'
             : palette.text;
 
-        ctx.font=
-          '700 '+
-          Math.max(
-            23,
-            element.size*.70
-          )+
-          'px Huninn, Arial';
+        if(
+          item._formulaBitmap&&
+          item._formulaBitmap.canvas
+        ){
+          const asset=
+            item._formulaBitmap;
 
-        ctx.fillText(
-          item.value,
-          x+cardW-18,
-          y+50,
-          cardW-36
-        );
+          const maxW=
+            cardW-36;
+
+          const maxH=
+            Math.max(
+              28,
+              cardH-62
+            );
+
+          const fit=Math.min(
+            1,
+            maxW/asset.width,
+            maxH/asset.height
+          );
+
+          const drawW=
+            asset.width*fit;
+
+          const drawH=
+            asset.height*fit;
+
+          ctx.drawImage(
+            asset.canvas,
+            x+cardW-18-drawW,
+            y+52,
+            drawW,
+            drawH
+          );
+        }else{
+          ctx.font=
+            '700 '+
+            Math.max(
+              23,
+              element.size*.70
+            )+
+            'px Huninn, Arial';
+
+          ctx.fillText(
+            item.value,
+            x+cardW-18,
+            y+50,
+            cardW-36
+          );
+        }
 
         ctx.restore();
       }
@@ -5760,12 +6029,20 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           fastStart:'in-memory'
         });
 
+      const probeQuality=
+        new Quality({
+          quantizer:20,
+          bitrate:10_000_000
+        });
+
       const avcCodec=
         await getFirstEncodableVideoCodec(
           ['avc'],
           {
             width:width,
-            height:height
+            height:height,
+            frameRate:fps,
+            quality:probeQuality
           }
         );
 
@@ -5775,7 +6052,9 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           format.getSupportedVideoCodecs(),
           {
             width:width,
-            height:height
+            height:height,
+            frameRate:fps,
+            quality:probeQuality
           }
         );
 
@@ -5792,14 +6071,50 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         target:target
       });
 
+      const encodingConfig={
+        codec:codec,
+        quality:new Quality({
+          quantizer:20,
+          bitrate:10_000_000
+        }),
+        keyFrameInterval:2,
+        latencyMode:'quality',
+        contentHint:'detail',
+        hardwareAcceleration:'no-preference'
+      };
+
+      if(
+        codec==='avc'&&
+        window.VideoEncoder&&
+        typeof window.VideoEncoder.isConfigSupported==='function'
+      ){
+        try{
+          const avcSupport=
+            await window.VideoEncoder.isConfigSupported({
+              codec:'avc1.42001f',
+              width:width,
+              height:height,
+              bitrate:10_000_000,
+              framerate:fps,
+              latencyMode:'quality',
+              hardwareAcceleration:'no-preference'
+            });
+
+          if(avcSupport.supported){
+            encodingConfig.fullCodecString=
+              'avc1.42001f';
+          }
+        }catch(error){
+          console.warn(
+            'AVC baseline probe failed:',
+            error
+          );
+        }
+      }
+
       const source=new CanvasSource(
         canvas,
-        {
-          codec:codec,
-          quality:new Quality({
-            bitrate:8_500_000
-          })
-        }
+        encodingConfig
       );
 
       output.addVideoTrack(
