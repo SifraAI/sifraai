@@ -13,6 +13,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjs@14.6.0/lib/browser/math.js"></script>
 <style>
 :root{
   --bg:#fcfcfc;
@@ -606,8 +607,8 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   background:color-mix(in srgb,var(--surface-hover) 72%,transparent);
 }
 .assistant-text .math-display .katex-display{margin:0}
-.assistant-text .math-inline .katex{font-size:1.16em}
-.assistant-text .math-display .katex{font-size:1.38em}
+.assistant-text .math-inline .katex{font-size:1.30em}
+.assistant-text .math-display .katex{font-size:1.68em}
 .stream-fade{
   animation:streamFadeIn .17s cubic-bezier(.2,.75,.25,1) both;
 }
@@ -615,6 +616,131 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   from{opacity:.28;filter:blur(1.35px)}
   to{opacity:1;filter:blur(0)}
 }
+
+.sifra-viz{
+  width:100%;
+  display:flex;
+  justify-content:center;
+  margin:1.2em 0 1.35em;
+  direction:ltr;
+}
+.viz-card{
+  width:min(690px,100%);
+  overflow:hidden;
+  border:1px solid var(--line-strong);
+  border-radius:18px;
+  background:var(--surface);
+  box-shadow:0 8px 28px rgba(0,0,0,.055);
+}
+html[data-theme="dark"] .viz-card{
+  box-shadow:0 10px 30px rgba(0,0,0,.20);
+}
+.viz-head{
+  min-height:54px;
+  padding:10px 14px;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.viz-head-copy{
+  min-width:0;
+  direction:rtl;
+  text-align:right;
+}
+.viz-title{
+  color:var(--text);
+  font-size:14px;
+  font-weight:700;
+}
+.viz-subtitle{
+  margin-top:3px;
+  color:var(--muted);
+  font-size:12px;
+  direction:ltr;
+  unicode-bidi:isolate;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.viz-badge{
+  flex:none;
+  padding:5px 8px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  color:var(--muted);
+  font-size:10px;
+  background:var(--bg);
+}
+.viz-body{
+  padding:14px;
+}
+.viz-plot{
+  width:100%;
+  min-height:310px;
+  display:block;
+  color:var(--text);
+}
+.viz-axis-label{
+  fill:currentColor;
+  opacity:.55;
+  font-size:11px;
+  font-family:"Huninn",sans-serif;
+}
+.viz-error{
+  padding:28px 18px;
+  text-align:center;
+  direction:rtl;
+  color:var(--muted);
+  font-size:13px;
+}
+.viz-steps{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:8px;
+  direction:rtl;
+  padding:8px 2px;
+}
+.viz-step{
+  min-width:110px;
+  max-width:180px;
+  padding:11px 13px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--bg);
+  color:var(--text);
+  text-align:center;
+  direction:rtl;
+  line-height:1.35;
+  font-size:13px;
+}
+.viz-arrow{
+  color:var(--muted);
+  font-size:18px;
+  line-height:1;
+}
+.viz-numberline{
+  width:100%;
+  min-height:140px;
+  display:block;
+  color:var(--text);
+}
+.viz-triangle{
+  width:100%;
+  min-height:300px;
+  display:block;
+  color:var(--text);
+}
+@media(max-width:560px){
+  .viz-body{padding:10px}
+  .viz-plot{min-height:250px}
+  .viz-card{border-radius:15px}
+  .viz-step{min-width:90px;max-width:145px}
+}
+
 .assistant-text.streaming{
   min-height:1.8em;
 }
@@ -1309,8 +1435,64 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
     return {markdown:output,math:math};
   }
+  function stashVisuals(source){
+    const visuals=[];
+    let markdown=String(source);
+
+    const specs=[
+      {tag:'chart.equation',type:'equation'},
+      {tag:'chart.points',type:'points'},
+      {tag:'diagram.numberline',type:'numberline'},
+      {tag:'diagram.steps',type:'steps'},
+      {tag:'diagram.triangle',type:'triangle'}
+    ];
+
+    specs.forEach(function(spec){
+      const escaped=spec.tag.replace('.', '\\.');
+      const regex=new RegExp(
+        '<'+escaped+'>\\s*([\\s\\S]*?)\\s*</'+escaped+'>',
+        'gi'
+      );
+
+      markdown=markdown.replace(
+        regex,
+        function(_match,payload){
+          const token='SIFRAVIZTOKEN'+visuals.length+'END';
+          visuals.push({
+            token:token,
+            type:spec.type,
+            payload:String(payload).trim()
+          });
+          return '\n\n'+token+'\n\n';
+        }
+      );
+    });
+
+    const incomplete=markdown.search(
+      /<(?:chart|diagram)\.[a-z]+>[\s\S]*$/i
+    );
+
+    if(incomplete!==-1){
+      markdown=markdown.slice(0,incomplete);
+    }
+
+    return {
+      markdown:markdown,
+      visuals:visuals
+    };
+  }
+
+  function vizPlaceholder(item){
+    return '<div class="sifra-viz" data-viz-type="'+
+      item.type+
+      '" data-viz-payload="'+
+      encodeURIComponent(item.payload)+
+      '"></div>';
+  }
+
   function formatAnswer(text){
-    const stashed=stashMath(String(text));
+    const visuals=stashVisuals(String(text));
+    const stashed=stashMath(visuals.markdown);
     let html='';
 
     if(window.marked&&typeof window.marked.parse==='function'){
@@ -1340,8 +1522,830 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       html=html.split(item.token).join(rendered);
     });
 
+    visuals.visuals.forEach(function(item){
+      const rendered=vizPlaceholder(item);
+      html=html
+        .split('<p>'+item.token+'</p>')
+        .join(rendered);
+      html=html
+        .split(item.token)
+        .join(rendered);
+    });
+
     return html;
   }
+
+  function vizCard(title,subtitle,badge){
+    const card=document.createElement('div');
+    card.className='viz-card';
+
+    const head=document.createElement('div');
+    head.className='viz-head';
+
+    const copy=document.createElement('div');
+    copy.className='viz-head-copy';
+
+    const titleEl=document.createElement('div');
+    titleEl.className='viz-title';
+    titleEl.textContent=title;
+
+    const subtitleEl=document.createElement('div');
+    subtitleEl.className='viz-subtitle';
+    subtitleEl.textContent=subtitle||'';
+
+    copy.append(titleEl,subtitleEl);
+
+    const badgeEl=document.createElement('div');
+    badgeEl.className='viz-badge';
+    badgeEl.textContent=badge||'Sifra Visual';
+
+    head.append(copy,badgeEl);
+
+    const body=document.createElement('div');
+    body.className='viz-body';
+
+    card.append(head,body);
+
+    return {card:card,body:body};
+  }
+
+  function svgNode(name,attrs){
+    const node=document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      name
+    );
+
+    Object.entries(attrs||{}).forEach(function(entry){
+      node.setAttribute(
+        entry[0],
+        String(entry[1])
+      );
+    });
+
+    return node;
+  }
+
+  function niceNumber(value){
+    if(!Number.isFinite(value))return '';
+    if(Math.abs(value)>=1000||(
+      Math.abs(value)>0&&
+      Math.abs(value)<.01
+    )){
+      return value.toExponential(1);
+    }
+    return String(
+      Math.round(value*100)/100
+    );
+  }
+
+  function percentile(values,p){
+    if(!values.length)return 0;
+    const sorted=values.slice().sort(function(a,b){return a-b});
+    const index=Math.max(
+      0,
+      Math.min(
+        sorted.length-1,
+        Math.floor(
+          (sorted.length-1)*p
+        )
+      )
+    );
+    return sorted[index];
+  }
+
+  function buildPlotSvg(points,options){
+    const width=660;
+    const height=330;
+    const pad={left:48,right:20,top:20,bottom:36};
+    const plotW=width-pad.left-pad.right;
+    const plotH=height-pad.top-pad.bottom;
+
+    let xMin=options.xMin;
+    let xMax=options.xMax;
+    let yMin=options.yMin;
+    let yMax=options.yMax;
+
+    if(!(xMax>xMin)){xMin=-10;xMax=10}
+    if(!(yMax>yMin)){yMin=-10;yMax=10}
+
+    const svg=svgNode('svg',{
+      viewBox:'0 0 '+width+' '+height,
+      class:'viz-plot',
+      role:'img',
+      'aria-label':options.label||'גרף'
+    });
+
+    function px(x){
+      return pad.left+
+        ((x-xMin)/(xMax-xMin))*plotW;
+    }
+
+    function py(y){
+      return pad.top+
+        (1-(y-yMin)/(yMax-yMin))*plotH;
+    }
+
+    const grid=svgNode('g',{
+      stroke:'currentColor',
+      'stroke-opacity':'.09',
+      'stroke-width':'1'
+    });
+
+    for(let i=0;i<=10;i+=1){
+      const gx=pad.left+(plotW*i/10);
+      const gy=pad.top+(plotH*i/10);
+
+      grid.append(
+        svgNode('line',{
+          x1:gx,y1:pad.top,
+          x2:gx,y2:pad.top+plotH
+        }),
+        svgNode('line',{
+          x1:pad.left,y1:gy,
+          x2:pad.left+plotW,y2:gy
+        })
+      );
+    }
+
+    svg.appendChild(grid);
+
+    const axes=svgNode('g',{
+      stroke:'currentColor',
+      'stroke-opacity':'.42',
+      'stroke-width':'1.2'
+    });
+
+    const xAxisY=
+      yMin<=0&&yMax>=0
+        ? py(0)
+        : pad.top+plotH;
+
+    const yAxisX=
+      xMin<=0&&xMax>=0
+        ? px(0)
+        : pad.left;
+
+    axes.append(
+      svgNode('line',{
+        x1:pad.left,
+        y1:xAxisY,
+        x2:pad.left+plotW,
+        y2:xAxisY
+      }),
+      svgNode('line',{
+        x1:yAxisX,
+        y1:pad.top,
+        x2:yAxisX,
+        y2:pad.top+plotH
+      })
+    );
+
+    svg.appendChild(axes);
+
+    const labels=svgNode('g',{
+      class:'viz-axis-label'
+    });
+
+    [
+      [pad.left,pad.top+plotH+22,niceNumber(xMin),'start'],
+      [pad.left+plotW,pad.top+plotH+22,niceNumber(xMax),'end'],
+      [pad.left-7,pad.top+8,niceNumber(yMax),'end'],
+      [pad.left-7,pad.top+plotH,niceNumber(yMin),'end']
+    ].forEach(function(item){
+      const text=svgNode('text',{
+        x:item[0],
+        y:item[1],
+        'text-anchor':item[3]
+      });
+      text.textContent=item[2];
+      labels.appendChild(text);
+    });
+
+    svg.appendChild(labels);
+
+    if(options.connect){
+      let d='';
+      let drawing=false;
+      let previousY=null;
+
+      points.forEach(function(point){
+        const x=point[0];
+        const y=point[1];
+
+        if(
+          !Number.isFinite(x)||
+          !Number.isFinite(y)||
+          y<yMin-(yMax-yMin)*2||
+          y>yMax+(yMax-yMin)*2
+        ){
+          drawing=false;
+          previousY=null;
+          return;
+        }
+
+        const sx=px(x);
+        const sy=py(y);
+
+        if(
+          previousY!==null&&
+          Math.abs(sy-previousY)>plotH*1.25
+        ){
+          drawing=false;
+        }
+
+        d+=
+          (drawing?' L ':' M ')+
+          sx.toFixed(2)+' '+
+          sy.toFixed(2);
+
+        drawing=true;
+        previousY=sy;
+      });
+
+      const path=svgNode('path',{
+        d:d.trim(),
+        fill:'none',
+        stroke:'currentColor',
+        'stroke-width':'2.6',
+        'stroke-linecap':'round',
+        'stroke-linejoin':'round'
+      });
+
+      svg.appendChild(path);
+    }
+
+    if(options.points){
+      const dots=svgNode('g',{
+        fill:'currentColor'
+      });
+
+      points.slice(0,220).forEach(function(point){
+        if(
+          !Number.isFinite(point[0])||
+          !Number.isFinite(point[1])||
+          point[0]<xMin||
+          point[0]>xMax||
+          point[1]<yMin||
+          point[1]>yMax
+        )return;
+
+        dots.appendChild(
+          svgNode('circle',{
+            cx:px(point[0]),
+            cy:py(point[1]),
+            r:'4.3'
+          })
+        );
+      });
+
+      svg.appendChild(dots);
+    }
+
+    return svg;
+  }
+
+  function normalizeEquation(raw){
+    let expression=String(raw)
+      .trim()
+      .replace(/−/g,'-')
+      .replace(/π/g,'pi')
+      .replace(/^\s*(?:y|f\s*\(\s*x\s*\))\s*=\s*/i,'');
+
+    expression=expression.replace(
+      /\bln\s*\(/gi,
+      'log('
+    );
+
+    const names=
+      expression.match(/[A-Za-z_]+/g)||[];
+
+    const allowed=new Set([
+      'x','pi','e',
+      'sin','cos','tan',
+      'asin','acos','atan',
+      'sqrt','abs','log','exp',
+      'floor','ceil'
+    ]);
+
+    if(
+      names.some(function(name){
+        return !allowed.has(
+          name.toLowerCase()
+        );
+      })
+    ){
+      throw new Error(
+        'הביטוי מכיל פעולה שאינה נתמכת'
+      );
+    }
+
+    if(
+      !/^[0-9A-Za-z_+\-*/^().,\s]+$/.test(
+        expression
+      )
+    ){
+      throw new Error(
+        'הביטוי אינו נתמך'
+      );
+    }
+
+    return expression;
+  }
+
+  function renderEquationViz(target,payload){
+    const shell=vizCard(
+      'גרף פונקציה',
+      payload,
+      'Function'
+    );
+
+    target.appendChild(shell.card);
+
+    try{
+      if(!window.math){
+        throw new Error('מנוע הגרפים עדיין נטען');
+      }
+
+      const expression=
+        normalizeEquation(payload);
+
+      const compiled=
+        window.math.compile(expression);
+
+      const points=[];
+      const ys=[];
+
+      for(let i=0;i<=420;i+=1){
+        const x=-10+(20*i/420);
+        let y=NaN;
+
+        try{
+          y=Number(
+            compiled.evaluate({x:x})
+          );
+        }catch(error){}
+
+        if(
+          Number.isFinite(y)&&
+          Math.abs(y)<1e6
+        ){
+          ys.push(y);
+          points.push([x,y]);
+        }else{
+          points.push([x,NaN]);
+        }
+      }
+
+      if(ys.length<3){
+        throw new Error(
+          'לא ניתן לצייר את הפונקציה'
+        );
+      }
+
+      let low=percentile(ys,.04);
+      let high=percentile(ys,.96);
+
+      if(!(high>low)){
+        low-=1;
+        high+=1;
+      }
+
+      const span=Math.max(
+        2,
+        high-low
+      );
+
+      low-=span*.12;
+      high+=span*.12;
+
+      if(low>0&&low<span*.7)low=0;
+      if(high<0&&Math.abs(high)<span*.7)high=0;
+
+      shell.body.appendChild(
+        buildPlotSvg(
+          points,
+          {
+            xMin:-10,
+            xMax:10,
+            yMin:low,
+            yMax:high,
+            connect:true,
+            points:false,
+            label:'גרף '+payload
+          }
+        )
+      );
+    }catch(error){
+      const message=document.createElement('div');
+      message.className='viz-error';
+      message.textContent=
+        error.message||
+        'לא הצלחתי להציג את הגרף.';
+      shell.body.appendChild(message);
+    }
+  }
+
+  function renderPointsViz(target,payload){
+    const shell=vizCard(
+      'נקודות במערכת צירים',
+      'נתונים ויזואליים',
+      'Points'
+    );
+
+    target.appendChild(shell.card);
+
+    try{
+      const parsed=JSON.parse(payload);
+      const raw=Array.isArray(parsed)
+        ? parsed
+        : parsed.points;
+
+      if(!Array.isArray(raw)){
+        throw new Error(
+          'פורמט הנקודות אינו תקין'
+        );
+      }
+
+      const points=raw
+        .slice(0,220)
+        .map(function(point){
+          return [
+            Number(point?.[0]),
+            Number(point?.[1])
+          ];
+        })
+        .filter(function(point){
+          return (
+            Number.isFinite(point[0])&&
+            Number.isFinite(point[1])
+          );
+        });
+
+      if(!points.length){
+        throw new Error(
+          'אין נקודות להצגה'
+        );
+      }
+
+      const xs=points.map(function(p){return p[0]});
+      const ys=points.map(function(p){return p[1]});
+
+      let xMin=Math.min.apply(null,xs);
+      let xMax=Math.max.apply(null,xs);
+      let yMin=Math.min.apply(null,ys);
+      let yMax=Math.max.apply(null,ys);
+
+      const xSpan=Math.max(2,xMax-xMin);
+      const ySpan=Math.max(2,yMax-yMin);
+
+      xMin-=xSpan*.15;
+      xMax+=xSpan*.15;
+      yMin-=ySpan*.15;
+      yMax+=ySpan*.15;
+
+      shell.body.appendChild(
+        buildPlotSvg(
+          points,
+          {
+            xMin:xMin,
+            xMax:xMax,
+            yMin:yMin,
+            yMax:yMax,
+            connect:Boolean(
+              parsed?.connect
+            ),
+            points:true,
+            label:'נקודות במערכת צירים'
+          }
+        )
+      );
+    }catch(error){
+      const message=document.createElement('div');
+      message.className='viz-error';
+      message.textContent=
+        error.message||
+        'לא הצלחתי להציג את הנקודות.';
+      shell.body.appendChild(message);
+    }
+  }
+
+  function renderNumberlineViz(target,payload){
+    const shell=vizCard(
+      'ציר מספרים',
+      payload,
+      'Number line'
+    );
+
+    target.appendChild(shell.card);
+
+    const svg=svgNode('svg',{
+      viewBox:'0 0 660 150',
+      class:'viz-numberline',
+      role:'img',
+      'aria-label':'ציר מספרים '+payload
+    });
+
+    const y=76;
+    const left=44;
+    const right=616;
+
+    svg.appendChild(
+      svgNode('line',{
+        x1:left,y1:y,
+        x2:right,y2:y,
+        stroke:'currentColor',
+        'stroke-width':'2',
+        'stroke-opacity':'.55'
+      })
+    );
+
+    const rangeMatch=
+      payload.match(
+        /^\s*(-?\d+(?:\.\d+)?)\s*(<=|<)\s*x\s*(<=|<)\s*(-?\d+(?:\.\d+)?)\s*$/i
+      );
+
+    const oneMatch=
+      payload.match(
+        /^\s*x\s*(>=|>|<=|<)\s*(-?\d+(?:\.\d+)?)\s*$/i
+      );
+
+    let min=-5;
+    let max=5;
+    let marks=[];
+
+    if(rangeMatch){
+      const a=Number(rangeMatch[1]);
+      const b=Number(rangeMatch[4]);
+      const span=Math.max(4,b-a);
+      min=a-span*.7;
+      max=b+span*.7;
+      marks=[
+        {value:a,closed:rangeMatch[2]==='<='},
+        {value:b,closed:rangeMatch[3]==='<='}
+      ];
+    }else if(oneMatch){
+      const value=Number(oneMatch[2]);
+      min=value-6;
+      max=value+6;
+      marks=[
+        {
+          value:value,
+          closed:
+            oneMatch[1]==='>='||
+            oneMatch[1]==='<='
+        }
+      ];
+    }else{
+      const error=document.createElement('div');
+      error.className='viz-error';
+      error.textContent='לא הצלחתי לקרוא את האי-שוויון.';
+      shell.body.appendChild(error);
+      return;
+    }
+
+    function xPos(value){
+      return left+
+        ((value-min)/(max-min))*
+        (right-left);
+    }
+
+    for(let i=0;i<=10;i+=1){
+      const value=min+((max-min)*i/10);
+      const x=xPos(value);
+
+      svg.appendChild(
+        svgNode('line',{
+          x1:x,y1:y-6,
+          x2:x,y2:y+6,
+          stroke:'currentColor',
+          'stroke-opacity':'.38'
+        })
+      );
+
+      if(i%2===0){
+        const label=svgNode('text',{
+          x:x,
+          y:y+25,
+          'text-anchor':'middle',
+          class:'viz-axis-label'
+        });
+        label.textContent=niceNumber(value);
+        svg.appendChild(label);
+      }
+    }
+
+    if(rangeMatch){
+      const a=Number(rangeMatch[1]);
+      const b=Number(rangeMatch[4]);
+
+      svg.appendChild(
+        svgNode('line',{
+          x1:xPos(a),
+          y1:y,
+          x2:xPos(b),
+          y2:y,
+          stroke:'currentColor',
+          'stroke-width':'6',
+          'stroke-linecap':'round'
+        })
+      );
+    }else{
+      const op=oneMatch[1];
+      const value=Number(oneMatch[2]);
+
+      svg.appendChild(
+        svgNode('line',{
+          x1:
+            op.startsWith('>')
+              ? xPos(value)
+              : left,
+          y1:y,
+          x2:
+            op.startsWith('>')
+              ? right
+              : xPos(value),
+          y2:y,
+          stroke:'currentColor',
+          'stroke-width':'6',
+          'stroke-linecap':'round'
+        })
+      );
+    }
+
+    marks.forEach(function(mark){
+      svg.appendChild(
+        svgNode('circle',{
+          cx:xPos(mark.value),
+          cy:y,
+          r:'7',
+          fill:mark.closed
+            ? 'currentColor'
+            : 'var(--surface)',
+          stroke:'currentColor',
+          'stroke-width':'2.4'
+        })
+      );
+    });
+
+    shell.body.appendChild(svg);
+  }
+
+  function renderStepsViz(target,payload){
+    const shell=vizCard(
+      'תהליך פתרון',
+      'שלבים מרכזיים',
+      'Steps'
+    );
+
+    target.appendChild(shell.card);
+
+    const steps=payload
+      .split(/\s*(?:->|→)\s*/)
+      .map(function(step){
+        return step.trim();
+      })
+      .filter(Boolean)
+      .slice(0,8);
+
+    if(!steps.length){
+      const error=document.createElement('div');
+      error.className='viz-error';
+      error.textContent='אין שלבים להצגה.';
+      shell.body.appendChild(error);
+      return;
+    }
+
+    const row=document.createElement('div');
+    row.className='viz-steps';
+
+    steps.forEach(function(step,index){
+      const box=document.createElement('div');
+      box.className='viz-step';
+      box.textContent=step;
+      row.appendChild(box);
+
+      if(index<steps.length-1){
+        const arrow=document.createElement('div');
+        arrow.className='viz-arrow';
+        arrow.textContent='←';
+        row.appendChild(arrow);
+      }
+    });
+
+    shell.body.appendChild(row);
+  }
+
+  function renderTriangleViz(target,payload){
+    const shell=vizCard(
+      'משולש סכמטי',
+      'השרטוט אינו בהכרח בקנה מידה',
+      'Geometry'
+    );
+
+    target.appendChild(shell.card);
+
+    try{
+      const data=JSON.parse(payload);
+
+      const A=String(data.A||'A');
+      const B=String(data.B||'B');
+      const C=String(data.C||'C');
+
+      const svg=svgNode('svg',{
+        viewBox:'0 0 600 320',
+        class:'viz-triangle',
+        role:'img',
+        'aria-label':'משולש סכמטי'
+      });
+
+      const points={
+        A:[300,38],
+        B:[82,270],
+        C:[518,270]
+      };
+
+      svg.appendChild(
+        svgNode('path',{
+          d:'M 300 38 L 82 270 L 518 270 Z',
+          fill:'none',
+          stroke:'currentColor',
+          'stroke-width':'3',
+          'stroke-linejoin':'round'
+        })
+      );
+
+      [
+        [A,300,25,'middle'],
+        [B,65,288,'end'],
+        [C,535,288,'start']
+      ].forEach(function(item){
+        const text=svgNode('text',{
+          x:item[1],
+          y:item[2],
+          'text-anchor':item[3],
+          fill:'currentColor',
+          'font-size':'18',
+          'font-weight':'700'
+        });
+        text.textContent=item[0];
+        svg.appendChild(text);
+      });
+
+      [
+        [data.AB,182,145],
+        [data.BC,300,294],
+        [data.CA,418,145]
+      ].forEach(function(item){
+        if(item[0]==null)return;
+        const text=svgNode('text',{
+          x:item[1],
+          y:item[2],
+          'text-anchor':'middle',
+          fill:'currentColor',
+          'font-size':'16'
+        });
+        text.textContent=String(item[0]);
+        svg.appendChild(text);
+      });
+
+      shell.body.appendChild(svg);
+    }catch(error){
+      const message=document.createElement('div');
+      message.className='viz-error';
+      message.textContent='לא הצלחתי להציג את המשולש.';
+      shell.body.appendChild(message);
+    }
+  }
+
+  function hydrateVisuals(root){
+    root.querySelectorAll(
+      '.sifra-viz:not([data-ready])'
+    ).forEach(function(target){
+      target.dataset.ready='1';
+
+      const type=target.dataset.vizType;
+      let payload='';
+
+      try{
+        payload=decodeURIComponent(
+          target.dataset.vizPayload||''
+        );
+      }catch(error){}
+
+      if(type==='equation'){
+        renderEquationViz(target,payload);
+      }else if(type==='points'){
+        renderPointsViz(target,payload);
+      }else if(type==='numberline'){
+        renderNumberlineViz(target,payload);
+      }else if(type==='steps'){
+        renderStepsViz(target,payload);
+      }else if(type==='triangle'){
+        renderTriangleViz(target,payload);
+      }
+    });
+  }
+
 
   function animateStreamTail(root){
     const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
@@ -1350,7 +2354,7 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     while((node=walker.nextNode())){
       if(!node.nodeValue||!node.nodeValue.trim())continue;
       const parent=node.parentElement;
-      if(parent&&parent.closest('.katex, code, pre, .math-inline, .math-display'))continue;
+      if(parent&&parent.closest('.katex, code, pre, .math-inline, .math-display, .sifra-viz'))continue;
       nodes.push(node);
     }
 
@@ -1536,7 +2540,10 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     const row=document.createElement('div');row.className='message-row assistant-row';
     const content=document.createElement('div');content.className='assistant-text';
     if(options&&options.thinking){content.classList.add('thinking');content.innerHTML='<span class="thinking-shimmer">חושב</span>'}
-    else content.innerHTML=formatAnswer(text);
+    else{
+      content.innerHTML=formatAnswer(text);
+      hydrateVisuals(content);
+    }
     if(options&&options.error)content.classList.add('error');
     row.appendChild(content);
     if(!(options&&(options.thinking||options.error)))row.appendChild(actionBar(text));
@@ -1669,6 +2676,7 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
     function renderVisible(){
       content.innerHTML=formatAnswer(visibleText);
+      hydrateVisuals(content);
       animateStreamTail(content);
       updateScrollButton();
     }
