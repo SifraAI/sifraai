@@ -3136,129 +3136,114 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       .replace(/[‘’]/g,"'")
       .replace(/\u00a0/g,' ');
 
-    const latexCommands=
-      '(?:frac|dfrac|tfrac|sqrt|cdot|times|pm|mp|div|leq|le|geq|ge|neq|approx|equiv|infty|pi|theta|alpha|beta|gamma|delta|sin|cos|tan|log|ln|exp|sum|prod|int|lim|left|right|begin|end|text|mathrm|mathbf|vec|overline|underline|hat|bar|angle)';
+    // Models occasionally emit 1 or 3 backslashes before a LaTeX command.
+    // JSON requires the source text to contain exactly two backslashes so
+    // JSON.parse produces one LaTeX backslash. Normalize those runs only
+    // while inside JSON strings, leaving structural JSON untouched.
+    const latexCommands=new Set([
+      'frac','dfrac','tfrac','sqrt','cdot','times','pm','mp','div',
+      'leq','le','geq','ge','neq','approx','equiv','infty','pi',
+      'theta','alpha','beta','gamma','delta','sin','cos','tan','log',
+      'ln','exp','sum','prod','int','lim','left','right','begin','end',
+      'text','mathrm','mathbf','vec','overline','underline','hat','bar',
+      'angle'
+    ]);
 
-    text=text.replace(
-      new RegExp(
-        '(^|[^\\\\])\\\\('+
-        latexCommands+
-        ')\\b',
-        'g'
-      ),
-      function(_match,prefix,command){
-        return prefix+'\\\\\\\\'+command;
-      }
-    );
-
-    text=text.replace(
-      /,\s*([}\]])/g,
-      '$1'
-    );
-
-    let out='';
+    let normalized='';
     let inString=false;
-    let escaped=false;
 
-    for(let i=0;i<text.length;i+=1){
+    for(let i=0;i<text.length;){
       const ch=text[i];
 
-      if(!inString){
-        out+=ch;
-        if(ch==='"')inString=true;
-        continue;
-      }
-
-      if(escaped){
-        out+=ch;
-        escaped=false;
-        continue;
-      }
-
-      if(ch==='\\'){
-        out+=ch;
-        escaped=true;
-        continue;
-      }
-
       if(ch==='"'){
-        out+=ch;
-        inString=false;
+        // A quote is structural unless escaped by an odd backslash run.
+        let slashCount=0;
+        for(let j=i-1;j>=0&&text[j]==='\\';j-=1)slashCount+=1;
+        if(slashCount%2===0)inString=!inString;
+        normalized+=ch;
+        i+=1;
         continue;
       }
 
-      if(ch==='\n'){
-        out+='\\n';
+      if(inString&&ch==='\\'){
+        let j=i;
+        while(j<text.length&&text[j]==='\\')j+=1;
+
+        const commandMatch=text.slice(j).match(/^([A-Za-z]+)/);
+        if(commandMatch&&latexCommands.has(commandMatch[1])){
+          normalized+='\\\\';
+          i=j;
+          continue;
+        }
+
+        // Preserve valid JSON escapes. For an invalid single escape such as
+        // \q, escape the slash instead of letting JSON.parse fail.
+        const run=text.slice(i,j);
+        const next=text[j]||'';
+        if(run.length===1&&!/["\\/bfnrtu]/.test(next)){
+          normalized+='\\\\';
+        }else{
+          normalized+=run;
+        }
+        i=j;
         continue;
       }
 
-      if(ch==='\r'){
-        out+='\\r';
-        continue;
+      if(inString&&ch==='\n'){
+        normalized+='\\n';
+      }else if(inString&&ch==='\r'){
+        normalized+='\\r';
+      }else if(inString&&ch==='\t'){
+        normalized+='\\t';
+      }else{
+        normalized+=ch;
       }
-
-      if(ch==='\t'){
-        out+='\\t';
-        continue;
-      }
-
-      out+=ch;
+      i+=1;
     }
 
-    return out;
+    return normalized.replace(/,\s*([}\]])/g,'$1');
   }
 
   function parseLessonPayload(raw){
-    if(
-      raw&&
-      typeof raw==='object'
-    ){
-      return raw;
+    if(raw&&typeof raw==='object')return raw;
+
+    const original=String(raw||'').trim();
+    if(!original)throw new Error('נתוני הסרטון ריקים');
+
+    const candidates=[];
+    function addCandidate(value){
+      if(value&&!candidates.includes(value))candidates.push(value);
     }
 
-    const original=
-      String(raw||'').trim();
+    addCandidate(original);
+    addCandidate(repairLessonJsonText(original));
 
-    if(!original){
-      throw new Error(
-        'נתוני הסרטון ריקים'
-      );
+    // If the model wrapped the object in accidental prose/code fencing,
+    // keep only the complete outer JSON object as another safe attempt.
+    const firstBrace=original.indexOf('{');
+    const lastBrace=original.lastIndexOf('}');
+    if(firstBrace>=0&&lastBrace>firstBrace){
+      const sliced=original.slice(firstBrace,lastBrace+1);
+      addCandidate(sliced);
+      addCandidate(repairLessonJsonText(sliced));
     }
-
-    const attempts=[
-      original,
-      repairLessonJsonText(original)
-    ];
 
     let lastError=null;
-
-    for(const candidate of attempts){
+    for(const candidate of candidates){
       try{
-        const parsed=
-          JSON.parse(candidate);
-
-        if(
-          parsed&&
-          typeof parsed==='object'
-        ){
-          return parsed;
-        }
+        const parsed=JSON.parse(candidate);
+        if(parsed&&typeof parsed==='object')return parsed;
       }catch(error){
         lastError=error;
       }
     }
 
-    console.error(
-      'Sifra lesson JSON parse failed:',
-      {
-        error:lastError,
-        sample:original.slice(0,1600)
-      }
-    );
-
-    throw new Error(
-      'מבנה הסרטון שה-AI יצר לא היה תקין'
-    );
+    console.error('Sifra lesson JSON parse failed:',{
+      error:lastError,
+      sample:original.slice(0,1600),
+      length:original.length
+    });
+    throw new Error('מבנה הסרטון שה-AI יצר לא היה תקין');
   }
 
   function normalizeLesson(raw){
@@ -8109,7 +8094,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     }
   }
 
-  function hydrateVisuals(root){
+  function hydrateVisuals(root,options){
+    const deferLessons=Boolean(options&&options.deferLessons);
     root.querySelectorAll(
       '.sifra-viz:not([data-ready])'
     ).forEach(function(target){
@@ -8153,6 +8139,10 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       }else if(type==='sequence'){
         renderSequenceViz(target,payload);
       }else if(type==='lesson'){
+        if(deferLessons){
+          delete target.dataset.ready;
+          return;
+        }
         renderLessonViz(target,payload);
       }
     });
@@ -8488,7 +8478,7 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
     function renderVisible(){
       content.innerHTML=formatAnswer(visibleText);
-      hydrateVisuals(content);
+      hydrateVisuals(content,{deferLessons:true});
       animateStreamTail(content);
       updateScrollButton();
     }
@@ -8635,6 +8625,10 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       if(!receivedText.trim())throw new Error('השרת החזיר תשובה ריקה.');
 
       content.classList.remove('streaming');
+      // Final authoritative render: now the full stream is present, so lesson
+      // JSON is parsed exactly once instead of on intermediate reveal bursts.
+      content.innerHTML=formatAnswer(receivedText);
+      hydrateVisuals(content);
       state.messages.push({role:'assistant',content:receivedText});
       row.appendChild(actionBar(receivedText));
       updateScrollButton();
