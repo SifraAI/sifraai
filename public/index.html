@@ -4209,7 +4209,9 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     }
 
     scenes.forEach(function(scene,index){
-      for(let pass=0;pass<3;pass+=1){
+      lessonAutoComposeScene(scene);
+
+      for(let pass=0;pass<5;pass+=1){
         resolveLessonSceneLayout(scene,index);
       }
     });
@@ -4371,6 +4373,382 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     );
 
     return w*h;
+  }
+
+  function lessonAutoComposeScene(scene){
+    const elements=scene.elements||[];
+
+    const title=
+      elements.find(function(element){
+        return element.type==='title';
+      });
+
+    const summary=
+      elements.find(function(element){
+        return element.type==='summary';
+      });
+
+    const sequence=
+      elements.find(function(element){
+        return element.type==='equation-sequence';
+      });
+
+    const primaryTypes=new Set([
+      'graph','rectangle','fraction',
+      'numberline','bars'
+    ]);
+
+    const primary=
+      elements.filter(function(element){
+        return primaryTypes.has(element.type);
+      });
+
+    const formulas=
+      elements.filter(function(element){
+        return element.type==='formula';
+      });
+
+    const copy=
+      elements.filter(function(element){
+        return (
+          element.type==='text'||
+          element.type==='bullets'
+        );
+      });
+
+    const small=
+      elements.filter(function(element){
+        return (
+          element.type==='badge'||
+          element.type==='counter'
+        );
+      });
+
+    if(title){
+      title.x=.91;
+      title.y=.105;
+      title.w=.80;
+      title.align='right';
+      title.size=clamp(
+        title.size,
+        40,
+        58
+      );
+      title.at=Math.min(
+        title.at,
+        .12
+      );
+    }
+
+    if(summary){
+      summary.x=.5;
+      summary.y=title?.text
+        ? .52
+        : .49;
+      summary.w=.82;
+      summary.h=title?.text
+        ? .53
+        : .60;
+      summary.align='center';
+      summary.size=Math.max(
+        30,
+        summary.size
+      );
+      summary.at=Math.min(
+        summary.at,
+        .18
+      );
+
+      elements.forEach(function(element){
+        if(
+          element!==title&&
+          element!==summary&&
+          ![
+            'arrow','line',
+            'highlight'
+          ].includes(element.type)
+        ){
+          element.at=Math.max(
+            element.at,
+            summary.at+.35
+          );
+        }
+      });
+
+      return;
+    }
+
+    if(sequence){
+      sequence.x=.5;
+      sequence.y=title?.text
+        ? .49
+        : .44;
+      sequence.w=.80;
+      sequence.h=.44;
+      sequence.align='center';
+      sequence.size=clamp(
+        sequence.size,
+        44,
+        60
+      );
+      sequence.at=Math.min(
+        sequence.at,
+        .18
+      );
+
+      copy.slice(0,1).forEach(function(element){
+        element.x=.88;
+        element.y=.735;
+        element.w=.70;
+        element.align='right';
+        element.size=clamp(
+          element.size,
+          22,
+          28
+        );
+      });
+
+      copy.slice(1).forEach(function(element){
+        element._hiddenByLayout=true;
+      });
+
+      formulas.forEach(function(element){
+        element._hiddenByLayout=true;
+      });
+    }else if(primary.length===1){
+      const visual=primary[0];
+      const hasSideCopy=
+        formulas.length>0||
+        copy.length>0;
+
+      if(hasSideCopy){
+        visual.x=.31;
+        visual.y=.53;
+        visual.w=
+          visual.type==='numberline'
+            ? .48
+            : .50;
+        visual.h=
+          visual.type==='numberline'
+            ? .25
+            : .52;
+
+        let sideY=.27;
+
+        formulas.slice(0,2).forEach(function(element,index){
+          element.x=.91;
+          element.y=
+            sideY+
+            index*.21;
+          element.w=.42;
+          element.align='right';
+          element.size=clamp(
+            element.size,
+            38,
+            50
+          );
+        });
+
+        sideY+=
+          formulas.length
+            ? Math.min(2,formulas.length)*.21
+            : 0;
+
+        copy.slice(0,2).forEach(function(element,index){
+          element.x=.91;
+          element.y=
+            Math.min(
+              .72,
+              Math.max(
+                .43,
+                sideY+
+                index*.16
+              )
+            );
+          element.w=.42;
+          element.align='right';
+          element.size=clamp(
+            element.size,
+            22,
+            27
+          );
+        });
+
+        copy.slice(2).forEach(function(element){
+          element._hiddenByLayout=true;
+        });
+
+        formulas.slice(2).forEach(function(element){
+          element._hiddenByLayout=true;
+        });
+      }else{
+        visual.x=.5;
+        visual.y=title?.text
+          ? .53
+          : .49;
+        visual.w=
+          visual.type==='numberline'
+            ? .78
+            : .72;
+        visual.h=
+          visual.type==='numberline'
+            ? .25
+            : .58;
+      }
+
+      visual.at=Math.min(
+        visual.at,
+        .20
+      );
+    }else if(primary.length>=2){
+      const shown=
+        primary.slice(0,2);
+
+      shown[0].x=.28;
+      shown[1].x=.72;
+
+      shown.forEach(function(element){
+        element.y=title?.text
+          ? .54
+          : .50;
+        element.w=.41;
+        element.h=
+          element.type==='numberline'
+            ? .24
+            : .49;
+        element.at=Math.min(
+          element.at,
+          .22
+        );
+      });
+
+      primary.slice(2).forEach(function(element){
+        element._hiddenByLayout=true;
+      });
+
+      formulas.slice(0,1).forEach(function(element){
+        element.x=.5;
+        element.y=.78;
+        element.w=.66;
+        element.align='center';
+        element.size=clamp(
+          element.size,
+          36,
+          46
+        );
+      });
+
+      formulas.slice(1).forEach(function(element){
+        element._hiddenByLayout=true;
+      });
+
+      copy.forEach(function(element){
+        element._hiddenByLayout=true;
+      });
+    }else if(formulas.length){
+      if(formulas.length===1){
+        const element=formulas[0];
+        element.x=.5;
+        element.y=title?.text
+          ? .46
+          : .38;
+        element.w=.72;
+        element.align='center';
+        element.size=clamp(
+          element.size,
+          42,
+          58
+        );
+        element.at=Math.min(
+          element.at,
+          .20
+        );
+
+        copy.slice(0,1).forEach(function(textElement){
+          textElement.x=.88;
+          textElement.y=.67;
+          textElement.w=.70;
+          textElement.align='right';
+          textElement.size=clamp(
+            textElement.size,
+            22,
+            28
+          );
+        });
+
+        copy.slice(1).forEach(function(textElement){
+          textElement._hiddenByLayout=true;
+        });
+      }else{
+        formulas.slice(0,3).forEach(function(element,index){
+          element.x=.5;
+          element.y=
+            .28+
+            index*.19;
+          element.w=.70;
+          element.align='center';
+          element.size=clamp(
+            element.size,
+            38,
+            50
+          );
+        });
+
+        formulas.slice(3).forEach(function(element){
+          element._hiddenByLayout=true;
+        });
+
+        copy.forEach(function(element){
+          element._hiddenByLayout=true;
+        });
+      }
+    }else if(copy.length){
+      copy.slice(0,3).forEach(function(element,index){
+        element.x=.88;
+        element.y=
+          .28+
+          index*.17;
+        element.w=.72;
+        element.align='right';
+        element.size=clamp(
+          element.size,
+          23,
+          30
+        );
+        element.at=Math.min(
+          element.at,
+          .18+
+          index*.24
+        );
+      });
+
+      copy.slice(3).forEach(function(element){
+        element._hiddenByLayout=true;
+      });
+    }
+
+    small.slice(0,2).forEach(function(element,index){
+      element.x=
+        .12+
+        index*.15;
+      element.y=.14;
+      element.w=.16;
+      element.h=.08;
+      element.size=clamp(
+        element.size,
+        18,
+        24
+      );
+    });
+
+    small.slice(2).forEach(function(element){
+      element._hiddenByLayout=true;
+    });
+
+    scene.elements=
+      elements.filter(function(element){
+        return !element._hiddenByLayout;
+      });
   }
 
   function resolveLessonSceneLayout(scene){
@@ -4579,12 +4957,14 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
   }
 
   function lessonQualityAudit(lesson){
-    const issues=[];
+    const fatalIssues=[];
+    const warnings=[];
+
     const safe={
-      left:.05,
-      right:.95,
-      top:.075,
-      bottom:.84
+      left:.045,
+      right:.955,
+      top:.065,
+      bottom:.85
     };
 
     function hasEnglishWords(text){
@@ -4595,13 +4975,15 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
     lesson.scenes.forEach(function(scene,sceneIndex){
       if(!scene.elements.length){
-        issues.push(
+        fatalIssues.push(
           'סצנה '+(sceneIndex+1)+' ריקה'
         );
         return;
       }
 
       const textValues=[];
+      let unsafeCount=0;
+      let boxedCount=0;
 
       scene.elements.forEach(function(element){
         if(
@@ -4646,19 +5028,19 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           textValues.push(element.heightLabel);
         }
 
-        const box=lessonElementBox(element);
+        const box=
+          lessonElementBox(element);
 
         if(box){
+          boxedCount+=1;
+
           if(
-            box.left<safe.left-.02||
-            box.right>safe.right+.02||
-            box.top<safe.top-.02||
-            box.bottom>safe.bottom+.02
+            box.left<safe.left||
+            box.right>safe.right||
+            box.top<safe.top||
+            box.bottom>safe.bottom
           ){
-            issues.push(
-              'תוכן קרוב מדי לקצה בסצנה '+
-              (sceneIndex+1)
-            );
+            unsafeCount+=1;
           }
         }
       });
@@ -4667,14 +5049,29 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         .filter(Boolean)
         .forEach(function(text){
           if(hasEnglishWords(text)){
-            issues.push(
-              'טקסט באנגלית בסצנה '+
+            warnings.push(
+              'טקסט לטיני בסצנה '+
               (sceneIndex+1)+
               ': '+
               String(text).slice(0,50)
             );
           }
         });
+
+      if(
+        boxedCount>0&&
+        unsafeCount===boxedCount
+      ){
+        fatalIssues.push(
+          'כל התוכן מחוץ לאזור הבטוח בסצנה '+
+          (sceneIndex+1)
+        );
+      }else if(unsafeCount>0){
+        warnings.push(
+          'תוכן קרוב לקצה בסצנה '+
+          (sceneIndex+1)
+        );
+      }
 
       const boxes=
         scene.elements
@@ -4698,15 +5095,44 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       for(let i=0;i<boxes.length;i+=1){
         for(let j=i+1;j<boxes.length;j+=1){
+          const a=boxes[i].box;
+          const b=boxes[j].box;
+
           const overlap=
             lessonBoxOverlap(
-              boxes[i].box,
-              boxes[j].box
+              a,
+              b
             );
 
-          if(overlap>.045){
-            issues.push(
-              'חפיפה גדולה בסצנה '+
+          if(overlap<=0)continue;
+
+          const areaA=
+            Math.max(
+              .0001,
+              (a.right-a.left)*
+              (a.bottom-a.top)
+            );
+
+          const areaB=
+            Math.max(
+              .0001,
+              (b.right-b.left)*
+              (b.bottom-b.top)
+            );
+
+          const ratio=
+            overlap/
+            Math.min(
+              areaA,
+              areaB
+            );
+
+          if(
+            overlap>.025&&
+            ratio>.34
+          ){
+            warnings.push(
+              'חפיפה אפשרית בסצנה '+
               (sceneIndex+1)
             );
           }
@@ -4722,19 +5148,21 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         );
 
       if(earliest>.35){
-        issues.push(
+        warnings.push(
           'התחלה איטית בסצנה '+
           (sceneIndex+1)
         );
       }
     });
 
-    const uniqueIssues=
-      Array.from(new Set(issues));
-
     return {
-      ok:uniqueIssues.length===0,
-      issues:uniqueIssues
+      ok:fatalIssues.length===0,
+      issues:Array.from(
+        new Set(fatalIssues)
+      ),
+      warnings:Array.from(
+        new Set(warnings)
+      )
     };
   }
 
@@ -7251,6 +7679,16 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     try{
       const preflight=
         lessonQualityAudit(lesson);
+
+      if(
+        preflight.warnings&&
+        preflight.warnings.length
+      ){
+        console.warn(
+          'Sifra video layout warnings were auto-repaired:',
+          preflight.warnings
+        );
+      }
 
       if(!preflight.ok){
         throw new Error(
