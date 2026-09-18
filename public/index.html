@@ -769,6 +769,307 @@ html[data-theme="dark"] .viz-card{
   display:block;
   color:var(--text);
 }
+.viz-angle,.viz-circle,.viz-bars{
+  width:100%;
+  min-height:250px;
+  display:block;
+  color:var(--text);
+}
+.viz-fraction{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex-wrap:wrap;
+  padding:24px 8px;
+}
+.viz-fraction-piece{
+  width:52px;
+  height:52px;
+  border-radius:12px;
+  border:1px solid var(--line-strong);
+  background:var(--bg);
+}
+.viz-fraction-piece.filled{
+  background:var(--text);
+}
+.viz-matrix-wrap{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+  padding:18px 8px 24px;
+  direction:ltr;
+}
+.viz-matrix-label{
+  font-size:24px;
+  font-weight:700;
+}
+.viz-matrix{
+  position:relative;
+  display:grid;
+  gap:8px 16px;
+  padding:12px 20px;
+  font-size:20px;
+  direction:ltr;
+}
+.viz-matrix:before,
+.viz-matrix:after{
+  content:"";
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:8px;
+  border-top:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+}
+.viz-matrix:before{
+  left:0;
+  border-left:2px solid currentColor;
+}
+.viz-matrix:after{
+  right:0;
+  border-right:2px solid currentColor;
+}
+.lesson-card{
+  width:min(760px,100%);
+  border:1px solid var(--line-strong);
+  border-radius:20px;
+  background:var(--surface);
+  overflow:hidden;
+  box-shadow:0 12px 34px rgba(0,0,0,.07);
+}
+html[data-theme="dark"] .lesson-card{
+  box-shadow:0 16px 40px rgba(0,0,0,.26);
+}
+.lesson-stage{
+  position:relative;
+  aspect-ratio:16/9;
+  min-height:300px;
+  overflow:hidden;
+  background:
+    radial-gradient(120% 90% at 82% 8%,rgba(120,160,255,.16),transparent 48%),
+    radial-gradient(90% 80% at 8% 100%,rgba(162,102,255,.16),transparent 52%),
+    #0e0f12;
+  color:#f7f7f7;
+}
+.lesson-stage-grid{
+  position:absolute;
+  inset:0;
+  opacity:.14;
+  background-image:
+    linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);
+  background-size:36px 36px;
+  mask-image:linear-gradient(to bottom,rgba(0,0,0,.72),transparent);
+}
+.lesson-page{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:8% 9%;
+  direction:rtl;
+  text-align:right;
+  opacity:1;
+  transform:translateY(0);
+  transition:opacity .34s ease,transform .34s cubic-bezier(.2,.8,.2,1);
+}
+.lesson-page.switching{
+  opacity:0;
+  transform:translateY(16px);
+}
+.lesson-brand{
+  position:absolute;
+  top:22px;
+  right:24px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:12px;
+  color:rgba(255,255,255,.72);
+}
+.lesson-brand-dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 0 0 4px rgba(255,255,255,.08);
+}
+.lesson-counter{
+  position:absolute;
+  top:22px;
+  left:24px;
+  color:rgba(255,255,255,.58);
+  font-size:11px;
+  font-variant-numeric:tabular-nums;
+}
+.lesson-title{
+  font-size:clamp(25px,4vw,42px);
+  line-height:1.15;
+  font-weight:700;
+  letter-spacing:-.02em;
+  margin-bottom:16px;
+}
+.lesson-body{
+  max-width:82%;
+  color:rgba(255,255,255,.80);
+  font-size:clamp(15px,2vw,20px);
+  line-height:1.7;
+}
+.lesson-formula{
+  direction:ltr;
+  unicode-bidi:isolate;
+  align-self:center;
+  margin-top:24px;
+  padding:13px 20px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:15px;
+  background:rgba(255,255,255,.06);
+  font-size:clamp(22px,3vw,34px);
+  font-weight:600;
+  text-align:center;
+  max-width:92%;
+  overflow-wrap:anywhere;
+}
+.lesson-bullets{
+  margin:18px 0 0;
+  padding:0 1.25em 0 0;
+  color:rgba(255,255,255,.84);
+  font-size:clamp(14px,1.8vw,19px);
+  line-height:1.6;
+}
+.lesson-stage-progress{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:4px;
+  background:rgba(255,255,255,.12);
+}
+.lesson-stage-progress > div{
+  height:100%;
+  width:0%;
+  background:#fff;
+  transition:width .12s linear;
+}
+.lesson-center-play{
+  position:absolute;
+  left:50%;
+  bottom:18px;
+  transform:translateX(-50%);
+  width:46px;
+  height:46px;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:rgba(15,15,18,.54);
+  backdrop-filter:blur(10px);
+  color:#fff;
+  z-index:5;
+}
+.lesson-center-play:hover{background:rgba(30,30,34,.76)}
+.lesson-render-overlay{
+  display:none;
+  position:absolute;
+  inset:0;
+  z-index:7;
+  background:rgba(8,9,12,.72);
+  backdrop-filter:blur(12px);
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:13px;
+}
+.lesson-render-overlay.show{display:flex}
+.lesson-render-percent{
+  font-size:42px;
+  font-weight:700;
+  letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;
+}
+.lesson-render-status{
+  color:rgba(255,255,255,.72);
+  font-size:13px;
+}
+.lesson-render-track{
+  width:min(300px,70%);
+  height:6px;
+  border-radius:99px;
+  background:rgba(255,255,255,.12);
+  overflow:hidden;
+}
+.lesson-render-track > div{
+  width:0%;
+  height:100%;
+  background:#fff;
+  border-radius:inherit;
+  transition:width .12s ease;
+}
+.lesson-video{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:#0e0f12;
+  z-index:6;
+}
+.lesson-toolbar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:12px;
+  border-top:1px solid var(--line);
+  direction:ltr;
+}
+.lesson-meta{
+  min-width:0;
+  flex:1;
+  direction:rtl;
+  text-align:right;
+}
+.lesson-meta-title{
+  font-size:14px;
+  font-weight:700;
+}
+.lesson-meta-sub{
+  margin-top:3px;
+  font-size:11px;
+  color:var(--muted);
+}
+.lesson-action{
+  height:38px;
+  border:1px solid var(--line-strong);
+  border-radius:10px;
+  background:var(--bg);
+  color:var(--text);
+  padding:0 13px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-size:12px;
+  text-decoration:none;
+}
+.lesson-action:hover{background:var(--surface-hover)}
+.lesson-action.primary{
+  background:var(--text);
+  color:var(--bg);
+  border-color:var(--text);
+}
+.lesson-action:disabled{
+  opacity:.45;
+  cursor:default;
+}
+@media(max-width:560px){
+  .lesson-stage{min-height:220px}
+  .lesson-page{padding:12% 8%}
+  .lesson-body{max-width:100%}
+  .lesson-toolbar{flex-wrap:wrap}
+  .lesson-meta{flex-basis:100%}
+}
 @media(max-width:560px){
   .viz-body{padding:10px}
   .viz-plot{min-height:250px}
@@ -1479,7 +1780,13 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       {tag:'chart.points',type:'points'},
       {tag:'diagram.numberline',type:'numberline'},
       {tag:'diagram.steps',type:'steps'},
-      {tag:'diagram.triangle',type:'triangle'}
+      {tag:'diagram.triangle',type:'triangle'},
+      {tag:'diagram.angle',type:'angle'},
+      {tag:'diagram.circle',type:'circle'},
+      {tag:'diagram.fraction',type:'fraction'},
+      {tag:'diagram.matrix',type:'matrix'},
+      {tag:'chart.bars',type:'bars'},
+      {tag:'video.lesson',type:'lesson'}
     ];
 
     specs.forEach(function(spec){
@@ -1504,7 +1811,7 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     });
 
     const incomplete=markdown.search(
-      /<(?:chart|diagram)\.[a-z]+>[\s\S]*$/i
+      /<(?:chart|diagram|video)\.[a-z]+>[\s\S]*$/i
     );
 
     if(incomplete!==-1){
@@ -2499,6 +2806,754 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     }
   }
 
+  function renderAngleViz(target,payload){
+    const shell=vizCard('זווית','המחשה סכמטית','Angle');
+    target.appendChild(shell.card);
+
+    try{
+      const data=JSON.parse(payload);
+      const degrees=Math.max(1,Math.min(359,Number(data.degrees)));
+      if(!Number.isFinite(degrees))throw new Error('זווית לא תקינה');
+
+      const svg=svgNode('svg',{
+        viewBox:'0 0 600 280',
+        class:'viz-angle',
+        role:'img',
+        'aria-label':'זווית '+degrees+' מעלות'
+      });
+
+      const cx=180,cy=220,r=145;
+      const rad=(-degrees*Math.PI)/180;
+      const x2=cx+r*Math.cos(rad);
+      const y2=cy+r*Math.sin(rad);
+
+      svg.append(
+        svgNode('line',{x1:cx,y1:cy,x2:cx+r,y2:cy,stroke:'currentColor','stroke-width':'3'}),
+        svgNode('line',{x1:cx,y1:cy,x2:x2,y2:y2,stroke:'currentColor','stroke-width':'3'})
+      );
+
+      const arcR=62;
+      const ax=cx+arcR*Math.cos(rad);
+      const ay=cy+arcR*Math.sin(rad);
+      const large=degrees>180?1:0;
+      const sweep=0;
+      svg.appendChild(svgNode('path',{
+        d:'M '+(cx+arcR)+' '+cy+' A '+arcR+' '+arcR+' 0 '+large+' '+sweep+' '+ax+' '+ay,
+        fill:'none',
+        stroke:'currentColor',
+        'stroke-width':'2.3',
+        'stroke-opacity':'.7'
+      }));
+
+      const label=svgNode('text',{
+        x:cx+86,
+        y:cy-46,
+        fill:'currentColor',
+        'font-size':'22',
+        'font-weight':'700'
+      });
+      label.textContent=String(data.label||degrees+'°');
+      svg.appendChild(label);
+      shell.body.appendChild(svg);
+    }catch(error){
+      const el=document.createElement('div');
+      el.className='viz-error';
+      el.textContent='לא הצלחתי להציג את הזווית.';
+      shell.body.appendChild(el);
+    }
+  }
+
+  function renderCircleViz(target,payload){
+    const shell=vizCard('מעגל','המחשה סכמטית','Circle');
+    target.appendChild(shell.card);
+
+    try{
+      const data=JSON.parse(payload);
+      const svg=svgNode('svg',{
+        viewBox:'0 0 600 300',
+        class:'viz-circle',
+        role:'img',
+        'aria-label':'מעגל'
+      });
+
+      const cx=300,cy=150,r=105;
+      svg.appendChild(svgNode('circle',{
+        cx:cx,cy:cy,r:r,
+        fill:'none',
+        stroke:'currentColor',
+        'stroke-width':'3'
+      }));
+      svg.appendChild(svgNode('circle',{
+        cx:cx,cy:cy,r:'4',fill:'currentColor'
+      }));
+
+      if(data.center){
+        const t=svgNode('text',{
+          x:cx+9,y:cy-9,fill:'currentColor','font-size':'18'
+        });
+        t.textContent=String(data.center);
+        svg.appendChild(t);
+      }
+
+      if(data.radius!=null){
+        svg.appendChild(svgNode('line',{
+          x1:cx,y1:cy,x2:cx+r,y2:cy,
+          stroke:'currentColor','stroke-width':'2','stroke-dasharray':'5 5'
+        }));
+        const rt=svgNode('text',{
+          x:cx+r/2,y:cy-10,fill:'currentColor','font-size':'17','text-anchor':'middle'
+        });
+        rt.textContent='r = '+String(data.radius);
+        svg.appendChild(rt);
+      }
+
+      if(data.diameter){
+        svg.appendChild(svgNode('line',{
+          x1:cx-r,y1:cy+38,x2:cx+r,y2:cy+38,
+          stroke:'currentColor','stroke-width':'2'
+        }));
+        const dt=svgNode('text',{
+          x:cx,y:cy+66,fill:'currentColor','font-size':'17','text-anchor':'middle'
+        });
+        dt.textContent=String(data.diameter);
+        svg.appendChild(dt);
+      }
+
+      shell.body.appendChild(svg);
+    }catch(error){
+      const el=document.createElement('div');
+      el.className='viz-error';
+      el.textContent='לא הצלחתי להציג את המעגל.';
+      shell.body.appendChild(el);
+    }
+  }
+
+  function renderFractionViz(target,payload){
+    const shell=vizCard('שבר','חלק מתוך שלם','Fraction');
+    target.appendChild(shell.card);
+
+    try{
+      const data=JSON.parse(payload);
+      const denominator=Math.max(1,Math.min(24,Math.floor(Number(data.denominator))));
+      const numerator=Math.max(0,Math.min(denominator,Math.floor(Number(data.numerator))));
+      if(!Number.isFinite(denominator)||!Number.isFinite(numerator))throw new Error();
+
+      const wrap=document.createElement('div');
+      wrap.className='viz-fraction';
+
+      for(let i=0;i<denominator;i+=1){
+        const piece=document.createElement('div');
+        piece.className='viz-fraction-piece'+(i<numerator?' filled':'');
+        wrap.appendChild(piece);
+      }
+
+      shell.body.appendChild(wrap);
+    }catch(error){
+      const el=document.createElement('div');
+      el.className='viz-error';
+      el.textContent='לא הצלחתי להציג את השבר.';
+      shell.body.appendChild(el);
+    }
+  }
+
+  function renderMatrixViz(target,payload){
+    const shell=vizCard('מטריצה','ייצוג ערכים','Matrix');
+    target.appendChild(shell.card);
+
+    try{
+      const data=JSON.parse(payload);
+      const rows=Array.isArray(data.rows)?data.rows.slice(0,5):[];
+      if(!rows.length)throw new Error();
+
+      const cols=Math.min(5,Math.max.apply(null,rows.map(function(row){return Array.isArray(row)?row.length:0})));
+      if(!cols)throw new Error();
+
+      const wrap=document.createElement('div');
+      wrap.className='viz-matrix-wrap';
+
+      if(data.label){
+        const label=document.createElement('div');
+        label.className='viz-matrix-label';
+        label.textContent=String(data.label)+' =';
+        wrap.appendChild(label);
+      }
+
+      const matrix=document.createElement('div');
+      matrix.className='viz-matrix';
+      matrix.style.gridTemplateColumns='repeat('+cols+',minmax(28px,auto))';
+
+      rows.forEach(function(row){
+        for(let i=0;i<cols;i+=1){
+          const cell=document.createElement('div');
+          cell.textContent=String(Array.isArray(row)&&row[i]!=null?row[i]:'');
+          matrix.appendChild(cell);
+        }
+      });
+
+      wrap.appendChild(matrix);
+      shell.body.appendChild(wrap);
+    }catch(error){
+      const el=document.createElement('div');
+      el.className='viz-error';
+      el.textContent='לא הצלחתי להציג את המטריצה.';
+      shell.body.appendChild(el);
+    }
+  }
+
+  function renderBarsViz(target,payload){
+    let data;
+    try{data=JSON.parse(payload)}catch(error){data=null}
+    const title=data&&data.title?String(data.title):'תרשים עמודות';
+    const shell=vizCard(title,'השוואת ערכים','Bars');
+    target.appendChild(shell.card);
+
+    try{
+      const labels=Array.isArray(data.labels)?data.labels.slice(0,10):[];
+      const values=Array.isArray(data.values)?data.values.slice(0,10).map(Number):[];
+      if(!labels.length||labels.length!==values.length||values.some(function(v){return !Number.isFinite(v)}))throw new Error();
+
+      const svg=svgNode('svg',{
+        viewBox:'0 0 660 310',
+        class:'viz-bars',
+        role:'img',
+        'aria-label':title
+      });
+
+      const max=Math.max(1,Math.max.apply(null,values));
+      const baseY=260;
+      const left=54;
+      const width=560;
+      const gap=12;
+      const barW=(width-gap*(values.length-1))/values.length;
+
+      svg.appendChild(svgNode('line',{
+        x1:left,y1:baseY,x2:left+width,y2:baseY,
+        stroke:'currentColor','stroke-opacity':'.3'
+      }));
+
+      values.forEach(function(value,index){
+        const h=(Math.max(0,value)/max)*190;
+        const x=left+index*(barW+gap);
+        const y=baseY-h;
+        svg.appendChild(svgNode('rect',{
+          x:x,y:y,width:barW,height:h,rx:'8',
+          fill:'currentColor','fill-opacity':'.88'
+        }));
+
+        const label=svgNode('text',{
+          x:x+barW/2,y:baseY+22,'text-anchor':'middle',
+          class:'viz-axis-label'
+        });
+        label.textContent=String(labels[index]);
+        svg.appendChild(label);
+
+        const val=svgNode('text',{
+          x:x+barW/2,y:y-8,'text-anchor':'middle',
+          class:'viz-axis-label'
+        });
+        val.textContent=niceNumber(value);
+        svg.appendChild(val);
+      });
+
+      shell.body.appendChild(svg);
+    }catch(error){
+      const el=document.createElement('div');
+      el.className='viz-error';
+      el.textContent='לא הצלחתי להציג את תרשים העמודות.';
+      shell.body.appendChild(el);
+    }
+  }
+
+  function normalizeLesson(raw){
+    const data=typeof raw==='string'?JSON.parse(raw):raw;
+    const pages=Array.isArray(data.pages)?data.pages.slice(0,8):[];
+    if(!pages.length)throw new Error('אין עמודים לסרטון');
+
+    const cleaned=pages.map(function(page,index){
+      return {
+        title:String(page.title||('שלב '+(index+1))).slice(0,90),
+        body:String(page.body||'').slice(0,280),
+        formula:String(page.formula||'').slice(0,140),
+        bullets:Array.isArray(page.bullets)?page.bullets.slice(0,4).map(function(item){return String(item).slice(0,120)}):[],
+        seconds:Math.max(2,Math.min(18,Number(page.seconds)||8))
+      };
+    });
+
+    let requested=Math.max(15,Math.min(60,Number(data.duration)||cleaned.reduce(function(sum,page){return sum+page.seconds},0)));
+    const sum=cleaned.reduce(function(total,page){return total+page.seconds},0);
+
+    if(sum>0){
+      const scale=requested/sum;
+      cleaned.forEach(function(page){page.seconds=Math.max(1.5,page.seconds*scale)});
+    }
+
+    return {
+      title:String(data.title||'סרטון הסבר').slice(0,100),
+      duration:requested,
+      pages:cleaned
+    };
+  }
+
+  function lessonTimeline(lesson){
+    let cursor=0;
+    return lesson.pages.map(function(page,index){
+      const start=cursor;
+      cursor+=page.seconds;
+      return {page:page,index:index,start:start,end:cursor};
+    });
+  }
+
+  function setLessonPreviewPage(card,lesson,index){
+    const stage=card.querySelector('.lesson-stage');
+    const pageEl=card.querySelector('.lesson-page');
+    if(!stage||!pageEl)return;
+
+    const page=lesson.pages[index]||lesson.pages[0];
+    pageEl.classList.add('switching');
+
+    setTimeout(function(){
+      pageEl.innerHTML='';
+
+      const title=document.createElement('div');
+      title.className='lesson-title';
+      title.textContent=page.title;
+      pageEl.appendChild(title);
+
+      if(page.body){
+        const body=document.createElement('div');
+        body.className='lesson-body';
+        body.textContent=page.body;
+        pageEl.appendChild(body);
+      }
+
+      if(page.formula){
+        const formula=document.createElement('div');
+        formula.className='lesson-formula';
+        formula.textContent=page.formula;
+        pageEl.appendChild(formula);
+      }
+
+      if(page.bullets.length){
+        const list=document.createElement('ul');
+        list.className='lesson-bullets';
+        page.bullets.forEach(function(item){
+          const li=document.createElement('li');
+          li.textContent=item;
+          list.appendChild(li);
+        });
+        pageEl.appendChild(list);
+      }
+
+      const counter=card.querySelector('.lesson-counter');
+      if(counter)counter.textContent=(index+1)+' / '+lesson.pages.length;
+      pageEl.classList.remove('switching');
+    },120);
+  }
+
+  function startLessonPreview(card,lesson){
+    if(card._lessonPlaying)return;
+    card._lessonPlaying=true;
+
+    const button=card.querySelector('.lesson-center-play');
+    if(button)button.textContent='❚❚';
+
+    const bar=card.querySelector('.lesson-stage-progress > div');
+    const timeline=lessonTimeline(lesson);
+    const started=performance.now();
+
+    function tick(now){
+      if(!card._lessonPlaying)return;
+      const elapsed=((now-started)/1000)%lesson.duration;
+      let current=timeline[timeline.length-1];
+
+      for(const item of timeline){
+        if(elapsed>=item.start&&elapsed<item.end){
+          current=item;
+          break;
+        }
+      }
+
+      if(card._lessonPage!==current.index){
+        card._lessonPage=current.index;
+        setLessonPreviewPage(card,lesson,current.index);
+      }
+
+      if(bar)bar.style.width=Math.min(100,(elapsed/lesson.duration)*100)+'%';
+      card._lessonRaf=requestAnimationFrame(tick);
+    }
+
+    card._lessonRaf=requestAnimationFrame(tick);
+  }
+
+  function stopLessonPreview(card){
+    card._lessonPlaying=false;
+    if(card._lessonRaf)cancelAnimationFrame(card._lessonRaf);
+    const button=card.querySelector('.lesson-center-play');
+    if(button)button.textContent='▶';
+  }
+
+  function roundedRect(ctx,x,y,w,h,r){
+    const radius=Math.min(r,w/2,h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+radius,y);
+    ctx.arcTo(x+w,y,x+w,y+h,radius);
+    ctx.arcTo(x+w,y+h,x,y+h,radius);
+    ctx.arcTo(x,y+h,x,y,radius);
+    ctx.arcTo(x,y,x+w,y,radius);
+    ctx.closePath();
+  }
+
+  function wrapCanvasLines(ctx,text,maxWidth){
+    const words=String(text||'').split(/\s+/).filter(Boolean);
+    const lines=[];
+    let line='';
+
+    words.forEach(function(word){
+      const test=line?line+' '+word:word;
+      if(ctx.measureText(test).width>maxWidth&&line){
+        lines.push(line);
+        line=word;
+      }else{
+        line=test;
+      }
+    });
+
+    if(line)lines.push(line);
+    return lines;
+  }
+
+  function drawLessonFrame(ctx,lesson,time,width,height){
+    ctx.save();
+    ctx.clearRect(0,0,width,height);
+
+    const g=ctx.createLinearGradient(0,0,width,height);
+    g.addColorStop(0,'#0b0c10');
+    g.addColorStop(.58,'#11131a');
+    g.addColorStop(1,'#17131f');
+    ctx.fillStyle=g;
+    ctx.fillRect(0,0,width,height);
+
+    ctx.globalAlpha=.12;
+    ctx.strokeStyle='#ffffff';
+    ctx.lineWidth=1;
+    for(let x=0;x<width;x+=64){
+      ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,height);ctx.stroke();
+    }
+    for(let y=0;y<height;y+=64){
+      ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(width,y);ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+
+    ctx.direction='rtl';
+    ctx.textAlign='right';
+    ctx.fillStyle='rgba(255,255,255,.74)';
+    ctx.font='500 20px Huninn, Arial';
+    ctx.fillText('Sifra • שיעור מתמטי',width-58,52);
+
+    const timeline=lessonTimeline(lesson);
+    let current=timeline[timeline.length-1];
+    for(const item of timeline){
+      if(time>=item.start&&time<item.end){current=item;break}
+    }
+
+    const page=current.page;
+    const local=Math.max(0,time-current.start);
+    const dur=Math.max(1,current.end-current.start);
+    const enter=Math.min(1,local/.55);
+    const exit=Math.max(0,(local-(dur-.5))/.5);
+    const ease=function(v){return 1-Math.pow(1-v,3)};
+    const alpha=Math.max(0,Math.min(1,ease(enter)*(1-exit)));
+    const offset=(1-ease(enter))*28-exit*16;
+
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    ctx.translate(0,offset);
+
+    ctx.fillStyle='#ffffff';
+    ctx.font='700 50px Huninn, Arial';
+    const titleLines=wrapCanvasLines(ctx,page.title,width-160);
+    let y=170;
+    titleLines.slice(0,2).forEach(function(line){
+      ctx.fillText(line,width-80,y);
+      y+=60;
+    });
+
+    if(page.body){
+      ctx.fillStyle='rgba(255,255,255,.80)';
+      ctx.font='400 27px Huninn, Arial';
+      const lines=wrapCanvasLines(ctx,page.body,width-200);
+      lines.slice(0,4).forEach(function(line){
+        ctx.fillText(line,width-80,y);
+        y+=40;
+      });
+      y+=6;
+    }
+
+    if(page.formula){
+      const boxW=Math.min(width-220,Math.max(360,ctx.measureText(page.formula).width+80));
+      const boxH=78;
+      const boxX=(width-boxW)/2;
+      const boxY=Math.min(height-190,y+12);
+
+      roundedRect(ctx,boxX,boxY,boxW,boxH,18);
+      ctx.fillStyle='rgba(255,255,255,.07)';
+      ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.14)';
+      ctx.stroke();
+
+      ctx.direction='ltr';
+      ctx.textAlign='center';
+      ctx.fillStyle='#ffffff';
+      ctx.font='600 36px Huninn, Arial';
+      ctx.fillText(page.formula,width/2,boxY+50);
+      ctx.direction='rtl';
+      ctx.textAlign='right';
+      y=boxY+boxH+22;
+    }
+
+    if(page.bullets&&page.bullets.length){
+      ctx.fillStyle='rgba(255,255,255,.84)';
+      ctx.font='400 24px Huninn, Arial';
+      page.bullets.slice(0,4).forEach(function(item){
+        const lines=wrapCanvasLines(ctx,'• '+item,width-220);
+        lines.slice(0,2).forEach(function(line){
+          ctx.fillText(line,width-92,y);
+          y+=34;
+        });
+        y+=3;
+      });
+    }
+
+    ctx.restore();
+
+    ctx.direction='ltr';
+    ctx.textAlign='left';
+    ctx.fillStyle='rgba(255,255,255,.52)';
+    ctx.font='500 18px Huninn, Arial';
+    ctx.fillText((current.index+1)+' / '+lesson.pages.length,58,52);
+
+    const progress=Math.max(0,Math.min(1,time/lesson.duration));
+    ctx.fillStyle='rgba(255,255,255,.13)';
+    ctx.fillRect(0,height-7,width,7);
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,height-7,width*progress,7);
+
+    ctx.restore();
+  }
+
+  let mediaBunnyLoader=null;
+  function loadMediaBunny(){
+    if(!mediaBunnyLoader){
+      mediaBunnyLoader=import('https://cdn.jsdelivr.net/npm/mediabunny@1.58.0/+esm');
+    }
+    return mediaBunnyLoader;
+  }
+
+  async function renderLessonMp4(card,lesson){
+    const renderButton=card.querySelector('.lesson-render-button');
+    const overlay=card.querySelector('.lesson-render-overlay');
+    const percentEl=card.querySelector('.lesson-render-percent');
+    const statusEl=card.querySelector('.lesson-render-status');
+    const progressEl=card.querySelector('.lesson-render-track > div');
+    const stage=card.querySelector('.lesson-stage');
+
+    if(renderButton)renderButton.disabled=true;
+    if(overlay)overlay.classList.add('show');
+    stopLessonPreview(card);
+
+    function setProgress(value,status){
+      const percent=Math.max(0,Math.min(100,Math.round(value)));
+      if(percentEl)percentEl.textContent=percent+'%';
+      if(progressEl)progressEl.style.width=percent+'%';
+      if(statusEl&&status)statusEl.textContent=status;
+    }
+
+    try{
+      setProgress(2,'מכין מנוע וידאו…');
+      await document.fonts.ready;
+
+      const media=await loadMediaBunny();
+      const {
+        Output,
+        BufferTarget,
+        CanvasSource,
+        Mp4OutputFormat,
+        getFirstEncodableVideoCodec
+      }=media;
+
+      const width=1280;
+      const height=720;
+      const fps=30;
+      const canvas=document.createElement('canvas');
+      canvas.width=width;
+      canvas.height=height;
+      const ctx=canvas.getContext('2d',{alpha:false});
+
+      const format=new Mp4OutputFormat();
+      const codec=await getFirstEncodableVideoCodec(
+        format.getSupportedVideoCodecs(),
+        {width:width,height:height}
+      );
+
+      if(!codec)throw new Error('הדפדפן לא תומך כרגע ביצירת MP4.');
+
+      const target=new BufferTarget();
+      const output=new Output({
+        format:format,
+        target:target
+      });
+
+      const source=new CanvasSource(canvas,{
+        codec:codec,
+        bitrate:5_500_000
+      });
+
+      output.addVideoTrack(source);
+      await output.start();
+
+      const totalFrames=Math.max(1,Math.round(lesson.duration*fps));
+      setProgress(5,'מרנדר את הסרטון…');
+
+      for(let frame=0;frame<totalFrames;frame+=1){
+        const time=frame/fps;
+        drawLessonFrame(ctx,lesson,time,width,height);
+        await source.add(time,1/fps);
+
+        if(frame%4===0||frame===totalFrames-1){
+          const p=5+(frame/(totalFrames-1||1))*90;
+          setProgress(p,'מרנדר את הסרטון…');
+        }
+      }
+
+      setProgress(96,'מקודד MP4…');
+      await output.finalize();
+
+      const blob=new Blob([target.buffer],{type:'video/mp4'});
+      const url=URL.createObjectURL(blob);
+
+      card._lessonVideoUrl=url;
+
+      const video=document.createElement('video');
+      video.className='lesson-video';
+      video.src=url;
+      video.controls=true;
+      video.playsInline=true;
+      stage.appendChild(video);
+
+      const download=card.querySelector('.lesson-download');
+      if(download){
+        download.href=url;
+        download.download='sifra-'+Date.now()+'.mp4';
+        download.hidden=false;
+      }
+
+      setProgress(100,'הסרטון מוכן');
+      setTimeout(function(){
+        if(overlay)overlay.classList.remove('show');
+      },450);
+    }catch(error){
+      console.error('Video render failed:',error);
+      setProgress(0,error.message||'יצירת הסרטון נכשלה.');
+      if(statusEl)statusEl.style.color='#ff9da3';
+      setTimeout(function(){
+        if(overlay)overlay.classList.remove('show');
+        if(statusEl)statusEl.style.color='';
+      },2200);
+    }finally{
+      if(renderButton)renderButton.disabled=false;
+    }
+  }
+
+  function renderLessonViz(target,payload){
+    let lesson;
+    try{
+      lesson=normalizeLesson(payload);
+    }catch(error){
+      const shell=vizCard('סרטון הסבר','הנתונים אינם תקינים','Video');
+      target.appendChild(shell.card);
+      const el=document.createElement('div');
+      el.className='viz-error';
+      el.textContent='לא הצלחתי להכין את תצוגת הסרטון.';
+      shell.body.appendChild(el);
+      return;
+    }
+
+    const card=document.createElement('div');
+    card.className='lesson-card';
+
+    const stage=document.createElement('div');
+    stage.className='lesson-stage';
+
+    const grid=document.createElement('div');
+    grid.className='lesson-stage-grid';
+
+    const brand=document.createElement('div');
+    brand.className='lesson-brand';
+    brand.innerHTML='<span class="lesson-brand-dot"></span><span>Sifra</span>';
+
+    const counter=document.createElement('div');
+    counter.className='lesson-counter';
+    counter.textContent='1 / '+lesson.pages.length;
+
+    const page=document.createElement('div');
+    page.className='lesson-page';
+
+    const progress=document.createElement('div');
+    progress.className='lesson-stage-progress';
+    progress.innerHTML='<div></div>';
+
+    const play=document.createElement('button');
+    play.className='lesson-center-play';
+    play.type='button';
+    play.textContent='▶';
+    play.setAttribute('aria-label','נגן תצוגה מקדימה');
+
+    const overlay=document.createElement('div');
+    overlay.className='lesson-render-overlay';
+    overlay.innerHTML=
+      '<div class="lesson-render-percent">0%</div>'+
+      '<div class="lesson-render-status">מכין סרטון…</div>'+
+      '<div class="lesson-render-track"><div></div></div>';
+
+    stage.append(grid,brand,counter,page,progress,play,overlay);
+
+    const toolbar=document.createElement('div');
+    toolbar.className='lesson-toolbar';
+
+    const meta=document.createElement('div');
+    meta.className='lesson-meta';
+    meta.innerHTML=
+      '<div class="lesson-meta-title"></div>'+
+      '<div class="lesson-meta-sub"></div>';
+    meta.querySelector('.lesson-meta-title').textContent=lesson.title;
+    meta.querySelector('.lesson-meta-sub').textContent=Math.round(lesson.duration)+' שניות • '+lesson.pages.length+' סצנות • 1280×720';
+
+    const render=document.createElement('button');
+    render.className='lesson-action primary lesson-render-button';
+    render.type='button';
+    render.textContent='צור MP4';
+
+    const download=document.createElement('a');
+    download.className='lesson-action lesson-download';
+    download.textContent='הורד MP4';
+    download.hidden=true;
+
+    toolbar.append(meta,download,render);
+    card.append(stage,toolbar);
+    target.appendChild(card);
+
+    setLessonPreviewPage(card,lesson,0);
+
+    play.addEventListener('click',function(){
+      if(card._lessonPlaying)stopLessonPreview(card);
+      else startLessonPreview(card,lesson);
+    });
+
+    render.addEventListener('click',function(){
+      renderLessonMp4(card,lesson);
+    });
+  }
+
   function hydrateVisuals(root){
     root.querySelectorAll(
       '.sifra-viz:not([data-ready])'
@@ -2524,6 +3579,18 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         renderStepsViz(target,payload);
       }else if(type==='triangle'){
         renderTriangleViz(target,payload);
+      }else if(type==='angle'){
+        renderAngleViz(target,payload);
+      }else if(type==='circle'){
+        renderCircleViz(target,payload);
+      }else if(type==='fraction'){
+        renderFractionViz(target,payload);
+      }else if(type==='matrix'){
+        renderMatrixViz(target,payload);
+      }else if(type==='bars'){
+        renderBarsViz(target,payload);
+      }else if(type==='lesson'){
+        renderLessonViz(target,payload);
       }
     });
   }
