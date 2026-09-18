@@ -4445,12 +4445,12 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     if(summary){
       summary.x=.5;
       summary.y=title?.text
-        ? .52
-        : .49;
+        ? .59
+        : .50;
       summary.w=.82;
       summary.h=title?.text
-        ? .53
-        : .60;
+        ? .46
+        : .58;
       summary.align='center';
       summary.size=Math.max(
         30,
@@ -4485,10 +4485,12 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     if(sequence){
       sequence.x=.5;
       sequence.y=title?.text
-        ? .49
-        : .44;
+        ? .59
+        : .48;
       sequence.w=.80;
-      sequence.h=.44;
+      sequence.h=title?.text
+        ? .40
+        : .44;
       sequence.align='center';
       sequence.size=clamp(
         sequence.size,
@@ -4529,23 +4531,29 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       if(hasSideCopy){
         visual.x=.31;
-        visual.y=.53;
+        visual.y=title?.text
+          ? .60
+          : .52;
         visual.w=
           visual.type==='numberline'
             ? .48
             : .50;
         visual.h=
           visual.type==='numberline'
-            ? .25
-            : .52;
+            ? .22
+            : title?.text
+              ? .44
+              : .52;
 
-        let sideY=.27;
+        let sideY=title?.text
+          ? .38
+          : .25;
 
         formulas.slice(0,2).forEach(function(element,index){
           element.x=.91;
           element.y=
             sideY+
-            index*.21;
+            index*.19;
           element.w=.42;
           element.align='right';
           element.size=clamp(
@@ -4566,9 +4574,11 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
             Math.min(
               .72,
               Math.max(
-                .43,
+                title?.text
+                  ? .58
+                  : .43,
                 sideY+
-                index*.16
+                index*.15
               )
             );
           element.w=.42;
@@ -4590,16 +4600,18 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       }else{
         visual.x=.5;
         visual.y=title?.text
-          ? .53
-          : .49;
+          ? .60
+          : .50;
         visual.w=
           visual.type==='numberline'
             ? .78
             : .72;
         visual.h=
           visual.type==='numberline'
-            ? .25
-            : .58;
+            ? .22
+            : title?.text
+              ? .46
+              : .58;
       }
 
       visual.at=Math.min(
@@ -4617,13 +4629,15 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
       shown.forEach(function(element){
         element.y=title?.text
-          ? .54
+          ? .60
           : .50;
         element.w=.41;
         element.h=
           element.type==='numberline'
-            ? .24
-            : .49;
+            ? .22
+            : title?.text
+              ? .44
+              : .49;
         element.at=Math.min(
           element.at,
           .22
