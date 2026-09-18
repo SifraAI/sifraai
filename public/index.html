@@ -7,7 +7,7 @@
 <title>Sifra — AI למתמטיקה</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#fcfcfc;
@@ -48,7 +48,7 @@ html[data-theme="dark"]{
 html,body{height:100%}
 body{
   margin:0;
-  font-family:"Assistant",ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  font-family:"Huninn",ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
   background:var(--bg);
   color:var(--text);
   overflow:hidden;
@@ -74,7 +74,7 @@ svg{display:block}
 }
 body.sidebar-collapsed .app{grid-template-columns:0 minmax(0,1fr)}
 .sidebar{
-  direction:rtl;
+  direction:ltr;
   position:relative;
   min-width:0;
   width:var(--sidebar-width);
@@ -155,8 +155,10 @@ body.sidebar-collapsed .sidebar{
   color:var(--text);
   font-size:15px;
   font-weight:500;
-  text-align:right;
+  text-align:left;
+  direction:ltr;
 }
+.nav-btn span{direction:rtl;unicode-bidi:plaintext}
 .nav-btn:hover{background:var(--surface-hover)}
 .nav-btn svg{flex:none}
 .more-panel{
@@ -203,8 +205,10 @@ body.sidebar-collapsed .sidebar{
   gap:4px;
   font-size:14px;
   font-weight:500;
-  direction:rtl;
+  direction:ltr;
+  text-align:left;
 }
+.section-toggle span{direction:rtl;unicode-bidi:plaintext}
 .section-toggle:hover{color:var(--text);background:var(--surface-hover)}
 .section-toggle svg{width:14px;height:14px}
 .sidebar-footer{
@@ -252,6 +256,86 @@ body.sidebar-collapsed .sidebar{
   display:grid;place-items:center;color:var(--muted)
 }
 .profile-action:hover{background:var(--surface)}
+
+.sidebar-footer{position:relative}
+.account-trigger{
+  width:100%;
+  border:0;
+  background:transparent;
+  text-align:left;
+}
+.profile-name{direction:rtl;unicode-bidi:plaintext}
+.profile-chevron{transition:transform .16s ease;color:var(--muted);flex:none}
+.account-trigger.open .profile-chevron{transform:rotate(180deg)}
+.account-menu{
+  display:none;
+  position:absolute;
+  left:8px;
+  bottom:64px;
+  width:calc(100% - 16px);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:12px;
+  box-shadow:0 14px 45px rgba(0,0,0,.13);
+  overflow:hidden;
+  z-index:60;
+  direction:ltr;
+}
+.account-menu.open{display:block;animation:accountIn .16s ease-out}
+@keyframes accountIn{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:none}}
+.account-menu-head{
+  min-height:58px;
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border-bottom:1px solid var(--line);
+}
+.account-menu-copy{min-width:0;flex:1}
+.account-menu-title{font-size:14px;font-weight:600;direction:rtl;unicode-bidi:plaintext}
+.account-menu-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.usage-card{
+  margin:12px;
+  padding:12px;
+  background:color-mix(in srgb,var(--sidebar) 86%,var(--surface));
+  border-radius:10px;
+}
+.usage-title{font-size:14px;font-weight:600;margin-bottom:10px;direction:rtl;unicode-bidi:plaintext}
+.usage-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+.usage-row span:first-child{direction:rtl;unicode-bidi:plaintext}
+.usage-value{color:var(--muted);font-size:12px}
+.usage-track{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin:7px 0 1px}
+.usage-fill{height:100%;width:0%;background:var(--text);border-radius:inherit;transition:width .3s ease}
+.account-upgrade{
+  width:calc(100% - 24px);
+  margin:0 12px 12px;
+  height:34px;
+  border:1px solid #ff6846;
+  color:#ff5a36;
+  background:transparent;
+  border-radius:8px;
+  font-size:13px;
+}
+.account-upgrade:hover{background:color-mix(in srgb,#ff6846 8%,transparent)}
+.account-menu-section{padding:7px 7px;border-top:1px solid var(--line)}
+.account-menu-label{padding:5px 7px 4px;color:var(--muted);font-size:11px;direction:rtl;unicode-bidi:plaintext}
+.account-menu-row{
+  width:100%;min-height:36px;border:0;background:transparent;border-radius:7px;padding:0 8px;
+  display:flex;align-items:center;gap:10px;text-align:left;color:var(--text);font-size:13px;
+}
+.account-menu-row:hover{background:var(--surface-hover)}
+.account-menu-row span{direction:rtl;unicode-bidi:plaintext}
+.message-flight{
+  position:fixed;
+  z-index:200;
+  pointer-events:none;
+  margin:0!important;
+  max-width:none!important;
+  overflow:hidden;
+  box-shadow:0 6px 24px rgba(0,0,0,.09);
+  will-change:transform,opacity,border-radius;
+}
+
 .main{
   direction:rtl;
   min-width:0;
@@ -376,30 +460,31 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   overflow-wrap:anywhere;
 }
 .assistant-text strong{font-weight:700}
-.thinking{
-  color:var(--muted);
-  display:flex;
-  align-items:center;
-  gap:8px;
+.thinking{color:var(--muted)}
+.thinking-shimmer{
+  display:inline-block;
+  font-weight:500;
+  color:transparent;
+  background:linear-gradient(100deg,var(--muted) 15%,var(--muted) 38%,var(--text) 50%,var(--muted) 62%,var(--muted) 85%);
+  background-size:230% 100%;
+  -webkit-background-clip:text;
+  background-clip:text;
+  animation:thinkingShine 1.35s linear infinite;
 }
-.thinking-dot{
-  width:6px;height:6px;border-radius:50%;background:var(--muted);
-  animation:pulse 1.2s ease-in-out infinite;
-}
-@keyframes pulse{
-  0%,100%{opacity:.25;transform:scale(.85)}
-  50%{opacity:1;transform:scale(1)}
+@keyframes thinkingShine{
+  0%{background-position:130% 0}
+  100%{background-position:-90% 0}
 }
 .error{color:var(--danger)}
 .message-actions{
-  margin-top:8px;
+  margin-top:7px;
   display:flex;
   align-items:center;
-  gap:2px;
+  gap:0;
   direction:ltr;
 }
 .action-icon{
-  width:31px;height:31px;
+  width:28px;height:28px;
   border:0;background:transparent;border-radius:7px;
   color:var(--muted);
   display:grid;place-items:center;
@@ -408,16 +493,16 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
 .action-icon.active{color:var(--text);background:var(--surface-hover)}
 .composer-home{width:100%}
 .composer-shell{
-  min-height:54px;
+  min-height:130px;
   border:1px solid var(--line-strong);
   background:var(--composer);
   border-radius:28px;
   display:flex;
   align-items:flex-end;
   gap:7px;
-  padding:6px 8px 6px 9px;
+  padding:10px 12px;
   box-shadow:var(--shadow-composer);
-  direction:ltr;
+  direction:rtl;
   transition:border-color .15s,box-shadow .15s;
 }
 .composer-shell:focus-within{
@@ -435,9 +520,10 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   resize:none;
   background:transparent;
   color:var(--text);
-  height:40px;
-  max-height:160px;
-  padding:9px 7px 7px;
+  height:94px;
+  min-height:94px;
+  max-height:190px;
+  padding:12px 8px 9px;
   line-height:1.45;
   font-size:16px;
   direction:rtl;
@@ -459,20 +545,6 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
 }
 .send-btn:hover:not(:disabled){transform:scale(1.03)}
 .send-btn:disabled{opacity:.2;cursor:default}
-.model-mini{
-  height:34px;
-  border:0;
-  background:transparent;
-  border-radius:9px;
-  padding:0 6px;
-  color:var(--muted);
-  display:flex;
-  align-items:center;
-  gap:3px;
-  font-size:13px;
-  white-space:nowrap;
-}
-.model-mini:hover{background:var(--surface-hover);color:var(--text)}
 .attachments{
   display:none;
   width:100%;
@@ -492,22 +564,40 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   background:rgba(20,20,20,.86);color:#fff;display:grid;place-items:center;font-size:16px;line-height:1;
 }
 .quick-grid{
-  margin-top:16px;
+  width:min(620px,100%);
+  margin:16px auto 0;
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:8px;
+  gap:9px;
 }
 .quick{
-  min-height:46px;
+  min-height:48px;
   border:1px solid var(--line);
-  background:transparent;
-  color:var(--muted);
-  border-radius:13px;
-  padding:10px 12px;
+  background:color-mix(in srgb,var(--surface) 74%,transparent);
+  color:var(--text);
+  border-radius:15px;
+  padding:8px 11px;
   text-align:right;
   font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  box-shadow:0 1px 2px rgba(0,0,0,.02);
+  transition:transform .16s ease,background .16s ease,border-color .16s ease;
 }
-.quick:hover{background:var(--surface-hover);color:var(--text)}
+.quick:hover{background:var(--surface-hover);border-color:var(--line-strong);transform:translateY(-1px)}
+.quick-icon{
+  width:30px;height:30px;border-radius:10px;display:grid;place-items:center;flex:none;
+}
+.quick-icon svg{width:17px;height:17px}
+.quick-icon.purple{background:#f0e9ff;color:#7950d8}
+.quick-icon.green{background:#e5f7ec;color:#21864c}
+.quick-icon.orange{background:#fff0df;color:#d66a17}
+.quick-icon.blue{background:#e5f1ff;color:#3478c8}
+html[data-theme="dark"] .quick-icon.purple{background:#342b48;color:#c2a7ff}
+html[data-theme="dark"] .quick-icon.green{background:#203b2a;color:#72d99a}
+html[data-theme="dark"] .quick-icon.orange{background:#44301f;color:#ffab68}
+html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 .bottom-zone{
   display:none;
   position:absolute;
@@ -589,7 +679,6 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   .home-kicker{font-size:13px}
   .quick-grid{grid-template-columns:1fr}
   .quick:nth-child(4){display:none}
-  .model-mini{display:none}
   .user-bubble{max-width:88%}
   .chat-inner{width:calc(100% - 22px);padding-bottom:165px}
   .composer-shell{border-radius:24px}
@@ -664,18 +753,37 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
     </div>
 
     <div class="sidebar-footer">
-      <div class="profile">
+      <div class="account-menu" id="accountMenu">
+        <div class="account-menu-head">
+          <div class="avatar">S</div>
+          <div class="account-menu-copy">
+            <div class="account-menu-title">החשבון שלי</div>
+            <div class="account-menu-sub">Sifra</div>
+          </div>
+        </div>
+        <div class="usage-card">
+          <div class="usage-title">שימוש</div>
+          <div class="usage-row"><span>מגבלה יומית</span><span class="usage-value" id="dailyUsage">— / 150</span></div>
+          <div class="usage-track"><div class="usage-fill" id="dailyUsageFill"></div></div>
+          <div class="usage-row" style="margin-top:10px"><span>תמונות בהודעה</span><span class="usage-value">עד 2</span></div>
+        </div>
+        <button class="account-upgrade" id="upgradeBtn">שדרוג התוכנית</button>
+        <div class="account-menu-section">
+          <div class="account-menu-label">חשבון</div>
+          <button class="account-menu-row" id="accountSettings"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"></circle><path d="M19 15.5a1.7 1.7 0 0 0 .3 1.9l.1.1-2 2-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21h-3v-.3a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-2-2 .1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 4.2 14H4v-3h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 2-2 .1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V4h3v.3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 2 2-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v3h-.2a1.7 1.7 0 0 0-1.6 1Z"></path></svg><span>הגדרות</span></button>
+          <button class="account-menu-row" id="accountTheme"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.5 15.5A8 8 0 1 1 8.5 3.6a6.6 6.6 0 0 0 12 11.9Z"></path></svg><span id="accountThemeText">מצב כהה</span></button>
+          <button class="account-menu-row" id="accountLanguage"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"></path></svg><span>שפה</span></button>
+          <button class="account-menu-row" id="accountHelp"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M9.7 9a2.4 2.4 0 1 1 3.7 2c-.9.6-1.4 1.1-1.4 2M12 17h.01"></path></svg><span>עזרה ותמיכה</span></button>
+        </div>
+      </div>
+
+      <button class="profile account-trigger" id="accountButton">
         <div class="avatar">S</div>
         <div class="profile-copy">
           <div class="profile-name">החשבון שלי</div>
-          <div class="profile-plan">Free</div>
         </div>
-        <button class="profile-action" aria-label="חשבון" title="חשבון">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-            <path d="M5 9.5 6.4 5h11.2L19 9.5"></path><path d="M4 9.5h16v8A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5z"></path><path d="M9 9.5v1.2a3 3 0 0 0 6 0V9.5"></path>
-          </svg>
-        </button>
-      </div>
+        <svg class="profile-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 14 4-4 4 4"></path></svg>
+      </button>
     </div>
   </aside>
 
@@ -705,7 +813,6 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
 
     <section class="home" id="home">
       <div class="home-inner">
-        <div class="home-kicker"><span class="green"></span>מוכן לפתור איתך, שלב אחר שלב</div>
         <h1>מה נפתור היום?</h1>
 
         <div class="attachments" id="homeAttachments"></div>
@@ -716,7 +823,6 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
               <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
             </button>
             <textarea class="composer-input" id="homeInput" maxlength="7000" placeholder="שאל את Sifra"></textarea>
-            <button class="model-mini" type="button" tabindex="-1">Sifra <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m7 9 5 5 5-5"></path></svg></button>
             <button class="round-btn" id="micHome" aria-label="מיקרופון" title="מיקרופון">
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"></path></svg>
             </button>
@@ -727,10 +833,22 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
         </div>
 
         <div class="quick-grid">
-          <button class="quick">פתור משוואה והסבר שלב־שלב</button>
-          <button class="quick">למד אותי נושא מתמטי מהבסיס</button>
-          <button class="quick">בדוק פתרון ותגיד איפה טעיתי</button>
-          <button class="quick">צור לי תרגול לפי הרמה שלי</button>
+          <button class="quick" data-prompt="פתור משוואה והסבר שלב־שלב">
+            <span class="quick-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 7h14M5 17h14M9 4 7 20M17 4l-2 16"></path></svg></span>
+            <span>פתור משוואה והסבר שלב־שלב</span>
+          </button>
+          <button class="quick" data-prompt="למד אותי נושא מתמטי מהבסיס">
+            <span class="quick-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"></path><path d="M8 8h7M8 12h5"></path></svg></span>
+            <span>למד אותי נושא מתמטי מהבסיס</span>
+          </button>
+          <button class="quick" data-prompt="בדוק פתרון ותגיד איפה טעיתי">
+            <span class="quick-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 12 4 4L19 6"></path><path d="M12 3a9 9 0 1 0 9 9"></path></svg></span>
+            <span>בדוק פתרון ותגיד איפה טעיתי</span>
+          </button>
+          <button class="quick" data-prompt="צור לי תרגול לפי הרמה שלי">
+            <span class="quick-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18M3 12h18"></path><circle cx="12" cy="12" r="8"></circle></svg></span>
+            <span>צור לי תרגול לפי הרמה שלי</span>
+          </button>
         </div>
       </div>
     </section>
@@ -747,7 +865,6 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
             <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
           </button>
           <textarea class="composer-input" id="chatInput" maxlength="7000" placeholder="שאל את Sifra"></textarea>
-          <button class="model-mini" type="button" tabindex="-1">Sifra <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m7 9 5 5 5-5"></path></svg></button>
           <button class="round-btn" id="micChat" aria-label="מיקרופון" title="מיקרופון">
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"></path></svg>
           </button>
@@ -765,21 +882,21 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
 (function(){
   'use strict';
   const $=function(selector){return document.querySelector(selector)};
-  const sidebar=$('#sidebar'),overlay=$('#overlay'),home=$('#home'),chat=$('#chat'),chatInner=$('#chatInner'),bottomZone=$('#bottomZone'),homeInput=$('#homeInput'),chatInput=$('#chatInput'),sendHome=$('#sendHome'),sendChat=$('#sendChat'),fileInput=$('#fileInput'),homeAttachments=$('#homeAttachments'),chatAttachments=$('#chatAttachments'),homeComposer=$('#homeComposer'),chatComposer=$('#chatComposer'),toast=$('#toast'),themeColor=$('#themeColor');
+  const sidebar=$('#sidebar'),overlay=$('#overlay'),home=$('#home'),chat=$('#chat'),chatInner=$('#chatInner'),bottomZone=$('#bottomZone'),homeInput=$('#homeInput'),chatInput=$('#chatInput'),sendHome=$('#sendHome'),sendChat=$('#sendChat'),fileInput=$('#fileInput'),homeAttachments=$('#homeAttachments'),chatAttachments=$('#chatAttachments'),homeComposer=$('#homeComposer'),chatComposer=$('#chatComposer'),toast=$('#toast'),themeColor=$('#themeColor'),accountMenu=$('#accountMenu'),accountButton=$('#accountButton'),dailyUsage=$('#dailyUsage'),dailyUsageFill=$('#dailyUsageFill');
   const state={messages:[],images:[],busy:false};
   const MAX_IMAGES=2;
 
   function esc(value){return String(value).replace(/[&<>"']/g,function(char){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]})}
   function formatAnswer(text){return esc(text).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
   function showToast(message){toast.textContent=message;toast.classList.add('on');clearTimeout(showToast.timer);showToast.timer=setTimeout(function(){toast.classList.remove('on')},2200)}
-  function resizeTextarea(el){el.style.height='40px';el.style.height=Math.min(Math.max(40,el.scrollHeight),160)+'px'}
+  function resizeTextarea(el){el.style.height='94px';el.style.height=Math.min(Math.max(94,el.scrollHeight),190)+'px'}
   function updateButtons(){const hasHome=homeInput.value.trim()||state.images.length,hasChat=chatInput.value.trim()||state.images.length;sendHome.disabled=state.busy||!hasHome;sendChat.disabled=state.busy||!hasChat}
 
   function setTheme(theme){
     document.documentElement.dataset.theme=theme;
     localStorage.setItem('sifra-theme',theme);
     const dark=theme==='dark';
-    $('#themeText').textContent=dark?'מצב בהיר':'מצב כהה';
+    $('#themeText').textContent=dark?'מצב בהיר':'מצב כהה';if($('#accountThemeText'))$('#accountThemeText').textContent=dark?'מצב בהיר':'מצב כהה';
     themeColor.setAttribute('content',dark?'#212121':'#fcfcfc');
     $('#themeIcon').innerHTML=dark?'<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>':'<path d="M20.5 15.5A8 8 0 1 1 8.5 3.6a6.6 6.6 0 0 0 12 11.9Z"></path>';
   }
@@ -791,9 +908,17 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   $('#searchBtn').addEventListener('click',function(){showToast('חיפוש יתווסף בהמשך')});
   $('#libraryBtn').addEventListener('click',function(){showToast('הספרייה תתווסף בהמשך')});
   $('#topMoreBtn').addEventListener('click',function(){showToast('אפשרויות נוספות יתווספו בהמשך')});
+  accountButton.addEventListener('click',function(event){event.stopPropagation();accountMenu.classList.toggle('open');accountButton.classList.toggle('open',accountMenu.classList.contains('open'))});
+  accountMenu.addEventListener('click',function(event){event.stopPropagation()});
+  document.addEventListener('click',function(){accountMenu.classList.remove('open');accountButton.classList.remove('open')});
+  $('#upgradeBtn').addEventListener('click',function(){showToast('השדרוג יתווסף בהמשך')});
+  $('#accountSettings').addEventListener('click',function(){showToast('הגדרות יתווספו בהמשך')});
+  $('#accountLanguage').addEventListener('click',function(){showToast('בחירת שפה תתווסף בהמשך')});
+  $('#accountHelp').addEventListener('click',function(){showToast('מרכז העזרה יתווסף בהמשך')});
+  $('#accountTheme').addEventListener('click',function(){setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark')});
 
   function openSidebar(){if(window.innerWidth<=860){sidebar.classList.add('mobile-open');overlay.classList.add('on')}else document.body.classList.remove('sidebar-collapsed')}
-  function closeSidebar(){if(window.innerWidth<=860){sidebar.classList.remove('mobile-open');overlay.classList.remove('on')}else document.body.classList.add('sidebar-collapsed')}
+  function closeSidebar(){accountMenu.classList.remove('open');accountButton.classList.remove('open');if(window.innerWidth<=860){sidebar.classList.remove('mobile-open');overlay.classList.remove('on')}else document.body.classList.add('sidebar-collapsed')}
   $('#collapseBtn').addEventListener('click',closeSidebar);
   $('#reopenSidebar').addEventListener('click',openSidebar);
   overlay.addEventListener('click',function(){sidebar.classList.remove('mobile-open');overlay.classList.remove('on')});
@@ -818,13 +943,11 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
     const down=iconButton('תגובה לא טובה','<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"></path><path d="m7 14 4 7a2 2 0 0 0 3-2v-4h5a2 2 0 0 0 2-2.4l-1.5-7A2 2 0 0 0 17.5 4H7z"></path></svg>');
     up.addEventListener('click',function(){up.classList.toggle('active');down.classList.remove('active')});
     down.addEventListener('click',function(){down.classList.toggle('active');up.classList.remove('active')});
-    const share=iconButton('שתף תשובה','<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 15V3"></path><path d="m7 8 5-5 5 5"></path><path d="M5 12v6.5A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5V12"></path></svg>');
-    share.addEventListener('click',function(){shareText(text)});
     const retry=iconButton('נסה שוב','<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6v5h-5"></path><path d="M19 11a7.5 7.5 0 1 0-1.3 6"></path></svg>');
     retry.addEventListener('click',retryLastAnswer);
     const more=iconButton('עוד','<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>');
     more.addEventListener('click',function(){showToast('אפשרויות נוספות יתווספו בהמשך')});
-    bar.append(copy,up,down,share,retry,more);return bar;
+    bar.append(copy,up,down,retry,more);return bar;
   }
 
   function addUserMessage(text,images){
@@ -841,7 +964,7 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   function addAssistantMessage(text,options){
     const row=document.createElement('div');row.className='message-row assistant-row';
     const content=document.createElement('div');content.className='assistant-text';
-    if(options&&options.thinking){content.classList.add('thinking');content.innerHTML='<span class="thinking-dot"></span><span>חושב…</span>'}
+    if(options&&options.thinking){content.classList.add('thinking');content.innerHTML='<span class="thinking-shimmer">חושב</span>'}
     else content.innerHTML=formatAnswer(text);
     if(options&&options.error)content.classList.add('error');
     row.appendChild(content);
@@ -907,6 +1030,52 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
     });
   });
 
+  function animateComposerDock(sourceRect){
+    const targetRect=chatComposer.getBoundingClientRect();
+    if(!targetRect.width)return;
+    const dx=sourceRect.left-targetRect.left;
+    const dy=sourceRect.top-targetRect.top;
+    const sx=Math.max(.82,Math.min(1.18,sourceRect.width/targetRect.width));
+    const sy=Math.max(.78,Math.min(1.18,sourceRect.height/targetRect.height));
+    chatComposer.animate([
+      {transform:'translate('+dx+'px,'+dy+'px) scale('+sx+','+sy+')',transformOrigin:'top left',opacity:.15},
+      {offset:.45,opacity:.82,transform:'translate('+(dx*.32)+'px,'+(dy*.32)+'px) scale(1.02,.9)'},
+      {transform:'none',opacity:1}
+    ],{duration:430,easing:'cubic-bezier(.2,.8,.2,1)'});
+  }
+
+  function animateUserFlight(sourceRect,row){
+    return new Promise(function(resolve){
+      const bubble=row.querySelector('.user-bubble');
+      if(!bubble){row.style.opacity='1';resolve();return}
+      const dest=bubble.getBoundingClientRect();
+      const flight=bubble.cloneNode(true);
+      flight.classList.add('message-flight');
+      flight.style.left=dest.left+'px';
+      flight.style.top=dest.top+'px';
+      flight.style.width=dest.width+'px';
+      flight.style.height=dest.height+'px';
+      flight.style.maxWidth='none';
+      document.body.appendChild(flight);
+
+      const dx=sourceRect.left-dest.left;
+      const dy=sourceRect.top-dest.top;
+      const sx=Math.max(1,Math.min(1.48,sourceRect.width/Math.max(dest.width,1)));
+      const sy=Math.max(.72,Math.min(1.25,sourceRect.height/Math.max(dest.height,1)));
+      row.style.opacity='0';
+
+      const animation=flight.animate([
+        {transform:'translate('+dx+'px,'+dy+'px) scale('+sx+','+sy+')',transformOrigin:'center right',opacity:.12,borderRadius:'28px'},
+        {offset:.42,transform:'translate('+(dx*.48)+'px,'+(dy*.48)+'px) scale(1.08,.72)',opacity:.86,borderRadius:'23px'},
+        {offset:.76,transform:'translate('+(dx*.12)+'px,'+(dy*.12)+'px) scale(.98,1.04)',opacity:1,borderRadius:'18px'},
+        {transform:'none',opacity:1,borderRadius:'18px'}
+      ],{duration:470,easing:'cubic-bezier(.18,.82,.22,1)',fill:'forwards'});
+
+      animation.onfinish=function(){flight.remove();row.style.opacity='1';resolve()};
+      animation.oncancel=function(){flight.remove();row.style.opacity='1';resolve()};
+    });
+  }
+
   async function requestAI(images){
     const pending=addAssistantMessage('',{thinking:true});
     try{
@@ -919,6 +1088,15 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
         })
       });
       let data={};try{data=await response.json()}catch(error){}
+      const remaining=response.headers.get('RateLimit-Remaining');
+      if(remaining!==null){
+        const left=Math.max(0,Math.min(150,Number(remaining)));
+        if(Number.isFinite(left)){
+          const used=150-left;
+          dailyUsage.textContent=used+' / 150';
+          dailyUsageFill.style.width=Math.min(100,(used/150)*100)+'%';
+        }
+      }
       pending.remove();
       if(!response.ok){
         if(response.status===429&&data.retryAfter)throw new Error('שלחת יותר מדי הודעות. נסה שוב בעוד '+data.retryAfter+' שניות.');
@@ -937,13 +1115,27 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
     if(state.busy)return;
     const text=input.value.trim()||(state.images.length?'פתור את התרגיל שבתמונה והסבר שלב-שלב.':'');
     if(!text)return;
+
+    const sourceComposer=input===homeInput?homeComposer:chatComposer;
+    const sourceRect=sourceComposer.getBoundingClientRect();
+
     state.busy=true;updateButtons();
     const first=enterChat(),images=state.images.splice(0);renderAttachments();
-    addUserMessage(text,images.map(function(item){return item.dataUrl}));
+    const row=addUserMessage(text,images.map(function(item){return item.dataUrl}));
     state.messages.push({role:'user',content:text});
     input.value='';resizeTextarea(input);
-    if(first)chat.scrollTop=0;else chat.scrollTop=chat.scrollHeight;
+
+    if(first){
+      chat.scrollTop=0;
+      requestAnimationFrame(function(){requestAnimationFrame(function(){animateComposerDock(sourceRect)})});
+    }else{
+      chat.scrollTop=chat.scrollHeight;
+    }
+
+    await new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve)})});
+    await animateUserFlight(sourceRect,row);
     await requestAI(images);
+
     state.busy=false;updateButtons();
     chat.scrollTo({top:chat.scrollHeight,behavior:'smooth'});
     chatInput.focus();
@@ -968,7 +1160,7 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   sendHome.addEventListener('click',function(){submit(homeInput)});
   sendChat.addEventListener('click',function(){submit(chatInput)});
   document.querySelectorAll('.quick').forEach(function(button){
-    button.addEventListener('click',function(){homeInput.value=button.textContent.trim();resizeTextarea(homeInput);updateButtons();homeInput.focus()})
+    button.addEventListener('click',function(){homeInput.value=button.dataset.prompt||button.textContent.trim();resizeTextarea(homeInput);updateButtons();homeInput.focus()})
   });
 
   function resetChat(){
