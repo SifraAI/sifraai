@@ -34,11 +34,7 @@ const SYSTEM_PROMPT = `
 `;
 
 class ProviderError extends Error {
-  constructor(
-    message,
-    status = 502,
-    code = 'provider_error'
-  ) {
+  constructor(message, status = 502, code = 'provider_error') {
     super(message);
     this.name = 'ProviderError';
     this.status = status;
@@ -46,25 +42,16 @@ class ProviderError extends Error {
   }
 }
 
-function buildMessages(
-  messages,
-  images = []
-) {
-  const clean = messages.map(
-    (message) => ({
-      role: message.role,
-      content: message.content
-    })
-  );
+function buildMessages(messages, images = []) {
+  const clean = messages.map((message) => ({
+    role: message.role,
+    content: message.content
+  }));
 
   if (images.length) {
     let lastUserIndex = -1;
 
-    for (
-      let i = clean.length - 1;
-      i >= 0;
-      i -= 1
-    ) {
+    for (let i = clean.length - 1; i >= 0; i -= 1) {
       if (clean[i].role === 'user') {
         lastUserIndex = i;
         break;
@@ -79,15 +66,10 @@ function buildMessages(
       clean[lastUserIndex] = {
         role: 'user',
         content: [
-          {
-            type: 'text',
-            text
-          },
+          { type: 'text', text },
           ...images.map((image) => ({
             type: 'image_url',
-            image_url: {
-              url: image.dataUrl
-            }
+            image_url: { url: image.dataUrl }
           }))
         ]
       };
@@ -95,10 +77,7 @@ function buildMessages(
   }
 
   return [
-    {
-      role: 'system',
-      content: SYSTEM_PROMPT
-    },
+    { role: 'system', content: SYSTEM_PROMPT },
     ...clean
   ];
 }
@@ -112,15 +91,258 @@ function readJson(raw) {
 }
 
 function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function askSifra({
+function providerStatusFromCode(code, fallback = 502) {
+  if (!code) return fallback;
+
+  if (
+    code === 'service_unavailable' ||
+    code === 'no_provider_available' ||
+    code === 'min_discount_unavailable'
+  ) {
+    return 503;
+  }
+
+  if (
+    code === 'rate_limit_error' ||
+    code === 'rate_limited'
+  ) {
+    return 429;
+  }
+
+  if (
+    code === 'upstream_timeout' ||
+    code === 'timeout'
+  ) {
+    return 504;
+  }
+
+  if (
+    code === 'upstream_error' ||
+    code === 'provider_error'
+  ) {
+    return 502;
+  }
+
+  if (code === 'insufficient_balance') {
+    return 402;
+  }
+
+  return fallback;
+}
+
+function retryableStatus(status) {
+  return [429, 502, 503, 504].includes(status);
+}
+
+function retryDelay(response, attempt) {
+  const retryAfter = Number(
+    response?.headers?.get?.('retry-after')
+  );
+
+  if (
+    Number.isFinite(retryAfter) &&
+    retryAfter > 0
+  ) {
+    return Math.min(retryAfter * 1000, 4000);
+  }
+
+  return [300, 900, 1800][attempt] || 1800;
+}
+
+function extractToken(payload) {
+  const delta =
+    payload?.choices?.[0]?.delta?.content;
+
+  if (typeof delta === 'string') {
+    return delta;
+  }
+
+  if (Array.isArray(delta)) {
+    return delta.map((part) => {
+      if (typeof part === 'string') return part;
+      return part?.text || part?.content || '';
+    }).join('');
+  }
+
+  const text =
+    payload?.choices?.[0]?.text;
+
+  return typeof text === 'string' ? text : '';
+}
+
+function parseProviderError(payload) {
+  const error =
+    payload?.error ||
+    (payload?.type === 'error' ? payload : null);
+
+  if (!error) return null;
+
+  const code =
+    error?.code ||
+    payload?.code ||
+    'provider_error';
+
+  const message =
+    error?.message ||
+    payload?.message ||
+    'AI provider stream failed';
+
+  const status = providerStatusFromCode(
+    code,
+    Number(error?.status) || 502
+  );
+
+  return new ProviderError(
+    message,
+    status,
+    code
+  );
+}
+
+function parseSseBlock(block) {
+  const lines = block.split('\n');
+  const dataLines = [];
+
+  for (const line of lines) {
+    if (line.startsWith('data:')) {
+      dataLines.push(line.slice(5).trimStart());
+    }
+  }
+
+  return dataLines.join('\n').trim();
+}
+
+async function consumeProviderStream(
+  response,
+  onToken
+) {
+  if (!response.body) {
+    throw new ProviderError(
+      'AI provider returned no stream',
+      502,
+      'empty_stream'
+    );
+  }
+
+  const reader =
+    response.body.getReader();
+
+  const decoder =
+    new TextDecoder();
+
+  let buffer = '';
+  let answer = '';
+  let model = MODEL;
+  let delivered = false;
+
+  async function consumeBlock(block) {
+    const raw = parseSseBlock(block);
+
+    if (!raw || raw === '[DONE]') {
+      return raw === '[DONE]';
+    }
+
+    const payload = readJson(raw);
+    if (!payload) return false;
+
+    const streamError =
+      parseProviderError(payload);
+
+    if (streamError) {
+      streamError.delivered = delivered;
+      throw streamError;
+    }
+
+    if (payload?.model) {
+      model = payload.model;
+    }
+
+    const token =
+      extractToken(payload);
+
+    if (token) {
+      delivered = true;
+      answer += token;
+      await onToken(token);
+    }
+
+    return false;
+  }
+
+  while (true) {
+    const { value, done } =
+      await reader.read();
+
+    if (done) break;
+
+    buffer += decoder.decode(
+      value,
+      { stream: true }
+    );
+
+    buffer =
+      buffer.replace(/\r\n/g, '\n');
+
+    let boundary;
+
+    while (
+      (boundary = buffer.indexOf('\n\n')) !== -1
+    ) {
+      const block =
+        buffer.slice(0, boundary);
+
+      buffer =
+        buffer.slice(boundary + 2);
+
+      const finished =
+        await consumeBlock(block);
+
+      if (finished) {
+        try {
+          await reader.cancel();
+        } catch {}
+        return {
+          answer,
+          model,
+          delivered
+        };
+      }
+    }
+  }
+
+  buffer += decoder.decode();
+  buffer = buffer.replace(/\r\n/g, '\n');
+
+  if (buffer.trim()) {
+    await consumeBlock(buffer);
+  }
+
+  if (!answer.trim()) {
+    const error = new ProviderError(
+      'AI provider returned an empty response',
+      502,
+      'empty_response'
+    );
+
+    error.delivered = delivered;
+    throw error;
+  }
+
+  return {
+    answer,
+    model,
+    delivered
+  };
+}
+
+async function streamSifra({
   messages,
   images = [],
-  signal
+  signal,
+  onToken
 }) {
   const apiKey =
     process.env.CHEAPERINFERENCE_API_KEY;
@@ -133,26 +355,28 @@ async function askSifra({
     );
   }
 
-  // Send the chosen model directly.
   const requestBody = {
     model: MODEL,
     messages: buildMessages(
       messages,
       images
     ),
-    temperature: 0.2
+    temperature: 0.2,
+    stream: true
   };
 
   let lastError;
 
   for (
     let attempt = 0;
-    attempt < 2;
+    attempt < 3;
     attempt += 1
   ) {
+    let response;
+
     try {
       const timeoutSignal =
-        AbortSignal.timeout(70_000);
+        AbortSignal.timeout(90_000);
 
       const combinedSignal = signal
         ? AbortSignal.any([
@@ -161,7 +385,7 @@ async function askSifra({
           ])
         : timeoutSignal;
 
-      const response = await fetch(
+      response = await fetch(
         API_URL,
         {
           method: 'POST',
@@ -178,68 +402,107 @@ async function askSifra({
         }
       );
 
-      const raw =
-        await response.text();
-
-      const data =
-        readJson(raw);
-
       if (!response.ok) {
-        const providerCode =
+        const raw =
+          await response.text();
+
+        const data =
+          readJson(raw);
+
+        const code =
           data?.error?.code ||
           data?.code ||
           'provider_error';
 
-        const safeMessage =
+        const message =
           data?.error?.message ||
           data?.message ||
           `CheaperInference returned ${response.status}`;
 
+        const error =
+          new ProviderError(
+            message,
+            response.status,
+            code
+          );
+
         if (
-          [502, 503, 504].includes(
-            response.status
-          ) &&
-          attempt === 0
+          retryableStatus(response.status) &&
+          attempt < 2
         ) {
-          await sleep(350);
+          console.warn(
+            'CheaperInference retry:',
+            {
+              attempt: attempt + 1,
+              status: response.status,
+              code
+            }
+          );
+
+          await sleep(
+            retryDelay(response, attempt)
+          );
+
           continue;
         }
 
-        throw new ProviderError(
-          safeMessage,
-          response.status,
-          providerCode
-        );
+        throw error;
       }
 
-      const answer =
-        data?.choices?.[0]?.message?.content;
-
-      if (
-        typeof answer !== 'string' ||
-        !answer.trim()
-      ) {
-        throw new ProviderError(
-          'AI provider returned an empty response',
-          502,
-          'empty_response'
+      try {
+        return await consumeProviderStream(
+          response,
+          onToken
         );
-      }
+      } catch (error) {
+        if (
+          error instanceof ProviderError &&
+          !error.delivered &&
+          retryableStatus(error.status) &&
+          attempt < 2
+        ) {
+          console.warn(
+            'CheaperInference stream retry:',
+            {
+              attempt: attempt + 1,
+              status: error.status,
+              code: error.code
+            }
+          );
 
-      return {
-        answer: answer.trim(),
-        model: data?.model || MODEL
-      };
+          await sleep(
+            retryDelay(response, attempt)
+          );
+
+          continue;
+        }
+
+        throw error;
+      }
     } catch (error) {
       if (
         error?.name === 'AbortError' ||
         error?.name === 'TimeoutError'
       ) {
-        throw new ProviderError(
-          'AI request timed out',
-          504,
-          'timeout'
-        );
+        const timeoutError =
+          new ProviderError(
+            'AI request timed out',
+            504,
+            'timeout'
+          );
+
+        if (
+          !signal?.aborted &&
+          attempt < 2
+        ) {
+          lastError = timeoutError;
+          await sleep(
+            retryDelay(response, attempt)
+          );
+          continue;
+        }
+
+        throw timeoutError;
       }
 
       if (
@@ -250,8 +513,10 @@ async function askSifra({
 
       lastError = error;
 
-      if (attempt === 0) {
-        await sleep(350);
+      if (attempt < 2) {
+        await sleep(
+          retryDelay(response, attempt)
+        );
         continue;
       }
     }
@@ -269,8 +534,32 @@ async function askSifra({
   );
 }
 
+async function askSifra({
+  messages,
+  images = [],
+  signal
+}) {
+  let answer = '';
+
+  const result = await streamSifra({
+    messages,
+    images,
+    signal,
+    onToken: async (token) => {
+      answer += token;
+    }
+  });
+
+  return {
+    answer:
+      result.answer || answer,
+    model: result.model
+  };
+}
+
 module.exports = {
   askSifra,
+  streamSifra,
   SYSTEM_PROMPT,
   ProviderError,
   MODEL
