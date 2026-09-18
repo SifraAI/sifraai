@@ -84,6 +84,8 @@ const SYSTEM_PROMPT = String.raw`
 או:
 <diagram.numberline>-2 <= x <= 4</diagram.numberline>
 - השתמש בו לאי-שוויונות, תחומים וקטעים על ציר המספרים.
+- אפשר להשתמש גם ב-x = 2 כדי להדגיש ערך יחיד על הציר.
+- אל תשתמש בשתי numberline נפרדות רק כדי להראות שני שורשים של משוואה. אם יש שני פתרונות כמו x=2 ו-x=3, העדף graph שמראה את שתי נקודות החיתוך או equation-sequence; numberline מיועד בעיקר לתחומים/אי-שוויונות או לערך יחיד.
 
 דיאגרמת שלבים:
 <diagram.steps>פתיחת סוגריים -> איסוף איברים -> בידוד x -> בדיקה</diagram.steps>
@@ -183,7 +185,8 @@ const SYSTEM_PROMPT = String.raw`
 סוגי elements בסרטון:
 - type:"title" — כותרת.
 - type:"text" — הסבר.
-- type:"formula" — נוסחת KaTeX אחת.
+- type:"formula" — נוסחת KaTeX אחת בלבד. formula חייב להכיל מתמטיקה בלבד, ללא משפטי הסבר בעברית. את ההסבר שים ב-text או note.
+- אל תכניס עברית לתוך formula או לתוך formula של equation-sequence. לדוגמה, במקום "x=2 או x=3" בתוך formula, כתוב formula:"x=2,\\;x=3" וב-note:"אלה שני הפתרונות".
 - type:"bullets" — items עד 4.
 - type:"arrow" — from:[x,y], to:[x,y], optional label.
 - type:"line" — קו.
@@ -226,6 +229,8 @@ const SYSTEM_PROMPT = String.raw`
 - אל תיצור שתי formula נפרדות שמציגות שלבים עוקבים של אותו חישוב. השתמש ב-equation-sequence כדי שהחישוב ישתנה במקום אחד.
 - אם rectangle כבר מציג rows/cols ותוצאת כפל, אל תוסיף formula כפולה מתחתיו עם אותה תוצאה.
 - summary חייב להיות בעברית ולתת label ברור לכל ערך.
+- summary צריך להכיל 2-4 פריטים משמעותיים בלבד. אם אין title נפרד, השתמש בכותרת "סיכום".
+- בתוך summary: label בעברית; value צריך להיות נוסחה קצרה או טקסט קצר וברור. אל תערבב משפט עברי ארוך בתוך value מתמטי.
 
 סגנון תשובה מומלץ:
 1. משפט קצר שמסביר מה עושים.
