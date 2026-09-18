@@ -3238,10 +3238,16 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
             ? clamp(Number(rawElement.toY),0,1)
             : null,
           from:Array.isArray(rawElement.from)&&rawElement.from.length>=2
-            ? [clamp(Number(rawElement.from[0]),0,1),clamp(Number(rawElement.from[1]),0,1)]
+            ? [
+                clamp(Number(rawElement.from[0]),.065,.935),
+                clamp(Number(rawElement.from[1]),.095,.86)
+              ]
             : null,
           to:Array.isArray(rawElement.to)&&rawElement.to.length>=2
-            ? [clamp(Number(rawElement.to[0]),0,1),clamp(Number(rawElement.to[1]),0,1)]
+            ? [
+                clamp(Number(rawElement.to[0]),.065,.935),
+                clamp(Number(rawElement.to[1]),.095,.86)
+              ]
             : null
         };
 
@@ -3919,6 +3925,113 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       });
     });
 
+    scene.elements
+      .filter(function(element){
+        return (
+          element.type==='arrow'&&
+          element.label&&
+          element.from&&
+          element.to
+        );
+      })
+      .forEach(function(element){
+        const mx=
+          (element.from[0]+
+          element.to[0])/2;
+
+        const my=
+          (element.from[1]+
+          element.to[1])/2;
+
+        const vx=
+          element.to[0]-
+          element.from[0];
+
+        const vy=
+          element.to[1]-
+          element.from[1];
+
+        const len=
+          Math.max(
+            .001,
+            Math.hypot(vx,vy)
+          );
+
+        const nx=-vy/len;
+        const ny=vx/len;
+        const offset=.055;
+
+        const obstacles=
+          scene.elements
+            .filter(function(other){
+              return (
+                other!==element&&
+                ![
+                  'arrow',
+                  'line'
+                ].includes(other.type)
+              );
+            })
+            .map(lessonElementBox)
+            .filter(Boolean);
+
+        function score(side){
+          const x=
+            mx+
+            nx*offset*side;
+
+          const y=
+            my+
+            ny*offset*side;
+
+          const labelBox={
+            left:x-.15,
+            right:x+.15,
+            top:y-.038,
+            bottom:y+.038
+          };
+
+          let value=0;
+
+          obstacles.forEach(
+            function(box){
+              value+=
+                lessonBoxOverlap(
+                  labelBox,
+                  box
+                )*12;
+            }
+          );
+
+          if(labelBox.left<.065){
+            value+=
+              (.065-labelBox.left)*4;
+          }
+
+          if(labelBox.right>.935){
+            value+=
+              (labelBox.right-.935)*4;
+          }
+
+          if(labelBox.top<.095){
+            value+=
+              (.095-labelBox.top)*4;
+          }
+
+          if(labelBox.bottom>.86){
+            value+=
+              (labelBox.bottom-.86)*4;
+          }
+
+          return value;
+        }
+
+        element._labelSide=
+          score(1)<=score(-1)
+            ? 1
+            : -1;
+      });
+
     const earliest=
       scene.elements.length
         ? Math.min.apply(
@@ -4551,12 +4664,19 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       let nx=-vy/length;
       let ny=vx/length;
 
-      if(ny>0){
+      if(
+        Number.isFinite(
+          element._labelSide
+        )
+      ){
+        nx*=element._labelSide;
+        ny*=element._labelSide;
+      }else if(ny>0){
         nx*=-1;
         ny*=-1;
       }
 
-      const offset=31;
+      const offset=34;
       const labelX=
         (x1+ex)/2+
         nx*offset;
