@@ -4,7 +4,7 @@ const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
 const helmet = require('helmet');
-const { askSifra, ProviderError } = require('./ai');
+const { streamSifra, ProviderError } = require('./ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -288,7 +288,10 @@ app.post(
     86_400_000
   ),
   async (req, res) => {
-    const abortController = new AbortController();
+    const abortController =
+      new AbortController();
+
+    let streamStarted = false;
 
     res.on('close', () => {
       if (!res.writableEnded) {
@@ -296,57 +299,134 @@ app.post(
       }
     });
 
-    try {
-      const messages = validateMessages(req.body);
-      const images = validateImages(req.body?.images);
+    function sendEvent(
+      event,
+      payload
+    ) {
+      if (res.writableEnded) return;
 
-      const result = await askSifra({
-        messages,
-        images,
-        signal: abortController.signal
-      });
+      if (!streamStarted) {
+        res.status(200);
+        res.setHeader(
+          'Content-Type',
+          'text/event-stream; charset=utf-8'
+        );
+        res.setHeader(
+          'Cache-Control',
+          'no-cache, no-transform'
+        );
+        res.setHeader(
+          'X-Accel-Buffering',
+          'no'
+        );
 
-      return res.json({
-        answer: result.answer,
-        model: result.model
-      });
-    } catch (error) {
-      if (abortController.signal.aborted) return;
-
-      if (error instanceof ProviderError) {
-        console.error('AI provider error:', {
-          status: error.status,
-          code: error.code
-        });
-
-        if (error.status === 429) {
-          return res.status(503).json({
-            error: 'המודל עמוס כרגע. נסה שוב בעוד כמה שניות.',
-            code: 'provider_busy'
-          });
-        }
-
-        if (error.status === 402) {
-          return res.status(503).json({
-            error: 'שירות ה-AI אינו זמין כרגע.',
-            code: 'provider_billing'
-          });
-        }
-
-        if (error.status === 504) {
-          return res.status(504).json({
-            error: 'התגובה לקחה יותר מדי זמן. נסה שוב.',
-            code: 'timeout'
-          });
-        }
-
-        return res.status(502).json({
-          error: 'לא הצלחתי לקבל תשובה כרגע. נסה שוב בעוד רגע.',
-          code: 'provider_error'
-        });
+        streamStarted = true;
       }
 
-      const status = Number(error?.status) || 500;
+      res.write(
+        `event: ${event}\n` +
+        `data: ${JSON.stringify(payload)}\n\n`
+      );
+    }
+
+    try {
+      const messages =
+        validateMessages(req.body);
+
+      const images =
+        validateImages(req.body?.images);
+
+      const result =
+        await streamSifra({
+          messages,
+          images,
+          signal:
+            abortController.signal,
+          onToken: async (token) => {
+            sendEvent(
+              'token',
+              { text: token }
+            );
+          }
+        });
+
+      sendEvent('done', {
+        model: result.model
+      });
+
+      return res.end();
+    } catch (error) {
+      if (
+        abortController.signal.aborted
+      ) {
+        return;
+      }
+
+      if (error instanceof ProviderError) {
+        console.error(
+          'AI provider error:',
+          {
+            status: error.status,
+            code: error.code
+          }
+        );
+
+        let publicMessage =
+          'לא הצלחתי לקבל תשובה כרגע. נסה שוב בעוד רגע.';
+
+        let publicCode =
+          'provider_error';
+
+        if (
+          error.status === 429 ||
+          error.status === 503
+        ) {
+          publicMessage =
+            'המודל עמוס כרגע. נסה שוב בעוד כמה שניות.';
+
+          publicCode =
+            'provider_busy';
+        } else if (
+          error.status === 402
+        ) {
+          publicMessage =
+            'שירות ה-AI אינו זמין כרגע.';
+
+          publicCode =
+            'provider_billing';
+        } else if (
+          error.status === 504
+        ) {
+          publicMessage =
+            'התגובה לקחה יותר מדי זמן. נסה שוב.';
+
+          publicCode =
+            'timeout';
+        }
+
+        if (streamStarted) {
+          sendEvent('error', {
+            error: publicMessage,
+            code: publicCode
+          });
+
+          return res.end();
+        }
+
+        return res
+          .status(
+            error.status === 504
+              ? 504
+              : 503
+          )
+          .json({
+            error: publicMessage,
+            code: publicCode
+          });
+      }
+
+      const status =
+        Number(error?.status) || 500;
 
       const publicErrors = {
         400: 'הבקשה לא תקינה.',
@@ -358,12 +438,25 @@ app.post(
         error?.message || error
       );
 
-      return res.status(status).json({
-        error:
-          publicErrors[status] ||
-          'אירעה שגיאה. נסה שוב.',
-        code: 'request_error'
-      });
+      if (streamStarted) {
+        sendEvent('error', {
+          error:
+            publicErrors[status] ||
+            'אירעה שגיאה. נסה שוב.',
+          code: 'request_error'
+        });
+
+        return res.end();
+      }
+
+      return res
+        .status(status)
+        .json({
+          error:
+            publicErrors[status] ||
+            'אירעה שגיאה. נסה שוב.',
+          code: 'request_error'
+        });
     }
   }
 );
