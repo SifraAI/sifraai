@@ -5169,6 +5169,7 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     const totalH=rows*cell+(rows-1)*8;
     const left=element.x*width-totalW/2;
     const top=element.y*height-totalH/2;
+    const elapsed=Math.max(0,localTime-element.at);
 
     ctx.save();
     ctx.globalAlpha=motion.alpha;
@@ -5178,13 +5179,80 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       const row=Math.floor(i/cols);
       const x=left+col*(cell+8);
       const y=top+row*(cell+8);
+      const reveal=clamp(
+        (elapsed-i*.10)/Math.max(.28,element.duration*.55),
+        0,
+        1
+      );
+      const eased=easeOutCubic(reveal);
 
-      roundedRect(ctx,x,y,cell,cell,10);
-      ctx.fillStyle=i<numerator?palette.accent:(palette.dark?'rgba(255,255,255,.035)':'rgba(0,0,0,.03)');
+      ctx.save();
+      ctx.translate(x+cell/2,y+cell/2);
+      ctx.scale(.86+.14*eased,.86+.14*eased);
+      ctx.translate(-cell/2,-cell/2);
+
+      roundedRect(ctx,0,0,cell,cell,10);
+
+      if(i<numerator){
+        ctx.fillStyle=
+          'color-mix' in ctx
+            ? palette.accent
+            : palette.accent;
+      }else{
+        ctx.fillStyle=
+          palette.dark
+            ? 'rgba(255,255,255,.035)'
+            : 'rgba(0,0,0,.03)';
+      }
+
+      ctx.globalAlpha*=
+        .25+.75*eased;
+
       ctx.fill();
-      ctx.strokeStyle=palette.subtle2;
-      ctx.lineWidth=1;
+
+      const missing=
+        i>=numerator;
+
+      const pulse=
+        missing&&
+        elapsed>element.duration*.72
+          ? .5+.5*Math.sin(
+              (elapsed-element.duration*.72)*5.5
+            )
+          : 0;
+
+      ctx.strokeStyle=
+        pulse>0
+          ? palette.accent
+          : palette.subtle2;
+
+      ctx.lineWidth=
+        pulse>0
+          ? 2.4
+          : 1;
+
       ctx.stroke();
+      ctx.restore();
+    }
+
+    if(
+      numerator<denominator&&
+      elapsed>element.duration*.78
+    ){
+      const remaining=
+        denominator-numerator;
+
+      ctx.direction='rtl';
+      ctx.textAlign='center';
+      ctx.textBaseline='top';
+      ctx.fillStyle=palette.muted;
+      ctx.font='600 20px Huninn, Arial';
+
+      ctx.fillText(
+        'נשאר '+remaining+' מתוך '+denominator,
+        element.x*width,
+        top+totalH+18
+      );
     }
 
     ctx.restore();
@@ -5363,6 +5431,38 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
         ctx.restore();
       }
+    }
+
+    if(
+      index===element.steps.length-1&&
+      within>stepSeconds*.42
+    ){
+      const glow=
+        .45+
+        .15*Math.sin(
+          within*4.2
+        );
+
+      ctx.save();
+      ctx.globalAlpha=glow;
+      roundedRect(
+        ctx,
+        centerX-maxWidth*.34,
+        centerY-maxHeight*.24,
+        maxWidth*.68,
+        maxHeight*.48,
+        18
+      );
+      ctx.fillStyle=
+        palette.dark
+          ? 'rgba(73,196,124,.10)'
+          : 'rgba(73,196,124,.08)';
+      ctx.fill();
+      ctx.strokeStyle=
+        '#49c47c';
+      ctx.lineWidth=2;
+      ctx.stroke();
+      ctx.restore();
     }
 
     if(index>0&&within<transition){
@@ -5621,6 +5721,80 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
         ctx.restore();
       }
+    }
+
+    if(
+      element.rows>0&&
+      element.cols>0&&
+      progress>.76
+    ){
+      const area=
+        element.rows*
+        element.cols;
+
+      const label=
+        element.cols+
+        ' × '+
+        element.rows+
+        ' = '+
+        area;
+
+      const below=
+        top+boxH+42;
+
+      const labelY=
+        below<height*.84
+          ? below
+          : top-58;
+
+      const alpha=
+        clamp(
+          (progress-.76)/.18,
+          0,
+          1
+        );
+
+      ctx.globalAlpha*=
+        easeOutCubic(alpha);
+
+      ctx.direction='ltr';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.font='700 25px Huninn, Arial';
+
+      const measure=
+        ctx.measureText(label);
+
+      const pillW=
+        measure.width+30;
+
+      roundedRect(
+        ctx,
+        element.x*width-pillW/2,
+        labelY-20,
+        pillW,
+        40,
+        999
+      );
+
+      ctx.fillStyle=
+        palette.dark
+          ? 'rgba(73,196,124,.12)'
+          : 'rgba(73,196,124,.09)';
+
+      ctx.fill();
+      ctx.strokeStyle='#49c47c';
+      ctx.lineWidth=1.5;
+      ctx.stroke();
+
+      ctx.fillStyle=
+        palette.text;
+
+      ctx.fillText(
+        label,
+        element.x*width,
+        labelY
+      );
     }
 
     ctx.restore();
