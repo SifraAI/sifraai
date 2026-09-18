@@ -3,217 +3,988 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#fcfcfc" id="themeColor">
 <title>Sifra — AI למתמטיקה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#fff;--soft:#f6f6f6;--soft2:#f1f1f1;--line:#e6e6e6;--text:#171717;--muted:#777;--danger:#b91c1c;--side:248px}
-*{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:Inter,Arial,"Noto Sans Hebrew",sans-serif;background:#fff;color:var(--text);overflow:hidden}
-button,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:default}.app{height:100dvh;display:grid;grid-template-columns:minmax(0,1fr) var(--side);direction:ltr}
-.side{direction:rtl;background:#fafafa;border-left:1px solid var(--line);display:flex;flex-direction:column;padding:12px;min-width:0;z-index:20}
-.logo{font-size:20px;font-weight:800;padding:7px 8px 18px;display:flex;gap:9px;align-items:center;direction:ltr}.mark{width:30px;height:30px;border-radius:10px;background:#111;color:#fff;display:grid;place-items:center;font-family:Georgia,serif;font-size:20px}
-.new{border:1px solid var(--line);background:#fff;border-radius:11px;padding:11px;font-weight:650}.new:hover,.item:hover{background:#f0f0f0}.label{font-size:12px;color:#999;margin:24px 8px 8px}.item{border:0;background:transparent;text-align:right;padding:9px;border-radius:9px;color:#444}.history{display:flex;flex-direction:column}.account{margin-top:auto;border-top:1px solid var(--line);padding:14px 7px;color:#555;font-size:13px}
-.main{direction:rtl;position:relative;display:flex;flex-direction:column;min-width:0;height:100dvh;overflow:hidden;background:#fff}.top{height:58px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;flex:none;border-bottom:1px solid transparent}.top b{font-size:14px}.status{font-size:12px;color:#8a8a8a;display:flex;align-items:center;gap:7px}.status-dot{width:7px;height:7px;background:#16a34a;border-radius:50%}
-.home-wrap{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:24px 16px 120px}.center{width:min(760px,100%);transform:translateY(-24px)}h1{text-align:center;font-size:38px;letter-spacing:-1.5px;margin:0 0 25px}.sub{text-align:center;color:#888;font-size:13px;margin-bottom:10px}.dot{display:inline-block;width:7px;height:7px;background:#16a34a;border-radius:50%;margin-left:7px}
-.box{border:1px solid #e2e2e2;background:#f6f6f6;border-radius:22px;padding:17px;box-shadow:0 12px 35px #0000000a;transition:.18s}.box:focus-within,.box.drag{background:#fff;box-shadow:0 15px 40px #00000010;border-color:#d5d5d5}textarea{width:100%;height:90px;resize:none;border:0;outline:0;background:transparent;font-size:18px;line-height:1.6;color:#171717}textarea::placeholder{color:#aaa}
-.actions{display:flex;justify-content:space-between;align-items:center;gap:10px}.action-left{display:flex;align-items:center;gap:4px}.plus{border:0;background:transparent;width:38px;height:38px;border-radius:10px;font-size:23px;color:#666;display:grid;place-items:center}.plus:hover{background:#eee}.send{width:39px;height:39px;border:0;border-radius:50%;background:#111;color:#fff;font-size:20px;display:grid;place-items:center}.send:disabled{opacity:.25}.send.busy{opacity:.55}
-.attachments{display:none;gap:8px;flex-wrap:wrap;margin:4px 0 12px}.attachments.on{display:flex}.attachment{position:relative;width:72px;height:72px;border:1px solid #ddd;border-radius:12px;overflow:hidden;background:#fff}.attachment img{width:100%;height:100%;object-fit:cover}.attachment button{position:absolute;top:4px;left:4px;width:22px;height:22px;border:0;border-radius:50%;background:#111;color:#fff;display:grid;place-items:center;font-size:15px;line-height:1}.attachment-loading{display:grid;place-items:center;width:72px;height:72px;border:1px dashed #ccc;border-radius:12px;color:#888;font-size:11px;background:#fff}
-.quick{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}.q{border:1px solid var(--line);background:#fff;border-radius:13px;padding:13px;text-align:right;color:#555}.q:hover{background:#fafafa}.hint{font-size:11px;color:#aaa;text-align:center;margin-top:12px}
-.chat{display:none;flex:1;width:min(780px,calc(100% - 32px));margin:0 auto;overflow-y:auto;padding:28px 10px 150px;scrollbar-width:thin}.chat.on{display:block}.msg{margin:0 0 24px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}.user{background:#f2f2f2;border-radius:15px 15px 4px 15px;padding:11px 14px;margin-right:auto;width:max-content;max-width:80%}.user-images{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;direction:ltr}.user-images img{width:120px;max-height:150px;object-fit:cover;border-radius:10px;border:1px solid #ddd}.ai{padding-right:45px;position:relative;min-height:31px}.ai:before{content:"S";position:absolute;right:0;top:0;width:31px;height:31px;background:#111;color:#fff;border-radius:9px;display:grid;place-items:center;font-family:Georgia,serif;font-weight:700}.ai strong{font-weight:750}.thinking{color:#888}.error{color:var(--danger)}
-.bottom{display:none;position:absolute;bottom:0;left:0;right:0;padding:24px 20px 20px;background:linear-gradient(transparent,#fff 28%);pointer-events:none}.bottom.on{display:block}.bottom-stack{width:min(760px,100%);margin:auto;pointer-events:auto}.mini-attachments{padding:0 10px 8px}.mini{background:#f6f6f6;border:1px solid var(--line);border-radius:18px;padding:9px 10px;display:flex;gap:7px;align-items:end;box-shadow:0 8px 28px #0000000c}.mini textarea{height:42px;max-height:120px;font-size:15px;padding:8px 2px}.mini .plus{flex:none}.mini .send{flex:none}
-.menu{display:none;border:0;background:transparent;font-size:24px}.overlay{display:none;position:fixed;inset:0;background:#0003;z-index:15}.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:#111;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:min(420px,calc(100vw - 32px));text-align:center}.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
-@media(max-width:800px){.app{display:block}.side{position:fixed;right:0;top:0;bottom:0;width:min(82vw,290px);transform:translateX(105%);transition:.2s;box-shadow:-15px 0 40px #0002}.side.on{transform:none}.overlay.on{display:block}.menu{display:block}.home-wrap{padding-bottom:105px}.center{transform:translateY(-10px)}.quick{grid-template-columns:1fr}h1{font-size:30px}.top{padding:0 12px}.chat{width:100%;padding:20px 14px 145px}.bottom{padding:18px 12px 14px}.user{max-width:90%}}
-@media(max-width:520px){.sub{font-size:12px}.box{padding:14px;border-radius:19px}textarea{font-size:16px}.quick .q:nth-child(4){display:none}.status span:last-child{display:none}.user-images img{width:96px;max-height:120px}}
-
+:root{
+  --bg:#fcfcfc;
+  --sidebar:#f7f7f8;
+  --surface:#ffffff;
+  --surface-hover:#ececed;
+  --composer:#ffffff;
+  --text:#141414;
+  --muted:#8b8b8b;
+  --muted-2:#a5a5a5;
+  --line:#e7e7e7;
+  --line-strong:#dbdbdb;
+  --user:#e8f3fe;
+  --icon:#242424;
+  --shadow:0 4px 20px rgba(0,0,0,.06);
+  --shadow-composer:0 8px 30px rgba(0,0,0,.07);
+  --sidebar-width:260px;
+  --danger:#bb2d3b;
+}
+html[data-theme="dark"]{
+  --bg:#212121;
+  --sidebar:#171717;
+  --surface:#2a2a2a;
+  --surface-hover:#2f2f2f;
+  --composer:#2f2f2f;
+  --text:#ececec;
+  --muted:#a9a9a9;
+  --muted-2:#8b8b8b;
+  --line:#303030;
+  --line-strong:#3b3b3b;
+  --user:#2f2f2f;
+  --icon:#ececec;
+  --shadow:0 4px 20px rgba(0,0,0,.22);
+  --shadow-composer:0 10px 35px rgba(0,0,0,.25);
+  --danger:#ff7f87;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:"Assistant",ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  overflow:hidden;
+  font-size:16px;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+button,textarea,input{font:inherit}
+button{color:inherit;cursor:pointer}
+button:disabled{cursor:default}
+button:focus-visible,textarea:focus-visible,input:focus-visible{
+  outline:2px solid color-mix(in srgb,var(--text) 35%,transparent);
+  outline-offset:2px;
+}
+svg{display:block}
+.app{
+  height:100dvh;
+  display:grid;
+  grid-template-columns:var(--sidebar-width) minmax(0,1fr);
+  background:var(--bg);
+  direction:ltr;
+  transition:grid-template-columns .2s ease;
+}
+body.sidebar-collapsed .app{grid-template-columns:0 minmax(0,1fr)}
+.sidebar{
+  direction:rtl;
+  position:relative;
+  min-width:0;
+  width:var(--sidebar-width);
+  height:100dvh;
+  overflow:hidden;
+  border-left:1px solid var(--line);
+  background:var(--sidebar);
+  display:flex;
+  flex-direction:column;
+  transition:transform .2s ease,opacity .2s ease;
+  z-index:30;
+}
+body.sidebar-collapsed .sidebar{
+  transform:translateX(-100%);
+  opacity:0;
+  pointer-events:none;
+}
+.sidebar-head{
+  height:52px;
+  padding:10px 13px 6px 15px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  direction:ltr;
+  flex:none;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  margin-right:auto;
+  font-size:17px;
+  font-weight:700;
+  letter-spacing:-.01em;
+}
+.brand-mark{
+  width:27px;
+  height:27px;
+  border-radius:8px;
+  background:var(--text);
+  color:var(--bg);
+  display:grid;
+  place-items:center;
+  font-family:Georgia,serif;
+  font-size:18px;
+  font-weight:700;
+  box-shadow:0 1px 1px rgba(0,0,0,.05);
+}
+.icon-btn{
+  width:32px;
+  height:32px;
+  border:0;
+  background:transparent;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  color:var(--icon);
+  flex:none;
+}
+.icon-btn:hover{background:var(--surface-hover)}
+.sidebar-nav{
+  padding:9px 10px 0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.nav-btn{
+  height:40px;
+  border:0;
+  background:transparent;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  gap:11px;
+  width:100%;
+  padding:0 9px;
+  color:var(--text);
+  font-size:15px;
+  font-weight:500;
+  text-align:right;
+}
+.nav-btn:hover{background:var(--surface-hover)}
+.nav-btn svg{flex:none}
+.more-panel{
+  display:none;
+  margin:3px 4px 0;
+  padding:5px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--surface);
+  box-shadow:var(--shadow);
+}
+.more-panel.open{display:block}
+.more-item{
+  width:100%;
+  height:36px;
+  border:0;
+  background:transparent;
+  border-radius:7px;
+  padding:0 9px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:var(--text);
+  font-size:14px;
+}
+.more-item:hover{background:var(--surface-hover)}
+.sidebar-sections{
+  padding:13px 10px;
+  overflow-y:auto;
+  min-height:0;
+  flex:1;
+}
+.section-toggle{
+  width:100%;
+  border:0;
+  background:transparent;
+  color:var(--muted);
+  height:40px;
+  padding:0 6px;
+  border-radius:7px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:4px;
+  font-size:14px;
+  font-weight:500;
+  direction:rtl;
+}
+.section-toggle:hover{color:var(--text);background:var(--surface-hover)}
+.section-toggle svg{width:14px;height:14px}
+.sidebar-footer{
+  flex:none;
+  padding:8px 9px 10px;
+  border-top:1px solid transparent;
+}
+.profile{
+  min-height:48px;
+  padding:6px 7px;
+  border-radius:9px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  direction:ltr;
+}
+.profile:hover{background:var(--surface-hover)}
+.avatar{
+  width:30px;height:30px;border-radius:50%;
+  display:grid;place-items:center;
+  background:#c7ccd1;color:#fff;
+  font-size:11px;font-weight:700;
+  flex:none;
+}
+.profile-copy{
+  min-width:0;
+  flex:1;
+  line-height:1.1;
+  direction:ltr;
+}
+.profile-name{
+  font-size:14px;
+  font-weight:500;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.profile-plan{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:12px;
+}
+.profile-action{
+  width:30px;height:30px;border:0;background:transparent;border-radius:7px;
+  display:grid;place-items:center;color:var(--muted)
+}
+.profile-action:hover{background:var(--surface)}
+.main{
+  direction:rtl;
+  min-width:0;
+  height:100dvh;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  background:var(--bg);
+  overflow:hidden;
+}
+.topbar{
+  height:52px;
+  flex:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:7px 14px 5px 15px;
+  direction:ltr;
+  z-index:10;
+}
+.topbar-left,.topbar-right{display:flex;align-items:center;gap:4px}
+.reopen-sidebar{display:none}
+body.sidebar-collapsed .reopen-sidebar{display:grid}
+.share-btn{
+  border:0;
+  background:transparent;
+  height:34px;
+  border-radius:8px;
+  padding:0 9px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:var(--text);
+  font-size:14px;
+}
+.share-btn:hover{background:var(--surface-hover)}
+.home{
+  flex:1;
+  overflow:auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px 24px 135px;
+}
+.home-inner{
+  width:min(760px,100%);
+  transform:translateY(-38px);
+}
+.home h1{
+  margin:0 0 24px;
+  text-align:center;
+  font-size:34px;
+  font-weight:600;
+  letter-spacing:-.025em;
+}
+.home-kicker{
+  text-align:center;
+  color:var(--muted);
+  font-size:14px;
+  margin-bottom:10px;
+}
+.home-kicker .green{
+  display:inline-block;width:7px;height:7px;border-radius:50%;background:#12a150;margin-left:7px;
+}
+.chat{
+  display:none;
+  flex:1;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:var(--line-strong) transparent;
+}
+.chat.on{display:block}
+.chat-inner{
+  width:min(760px,calc(100% - 44px));
+  margin:0 auto;
+  padding:18px 0 175px;
+}
+.message-row{
+  width:100%;
+  margin:0 0 31px;
+}
+.user-row{
+  display:flex;
+  justify-content:flex-start;
+  direction:rtl;
+}
+.user-bubble{
+  max-width:78%;
+  background:var(--user);
+  border-radius:18px;
+  padding:8px 13px 9px;
+  font-size:16px;
+  line-height:1.55;
+  text-align:right;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  box-shadow:0 1px 0 rgba(0,0,0,.015);
+}
+.user-images{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:8px;
+}
+.user-images img{
+  width:132px;
+  max-height:164px;
+  object-fit:cover;
+  border-radius:12px;
+  border:1px solid var(--line);
+}
+.assistant-row{
+  direction:rtl;
+  text-align:right;
+}
+.assistant-text{
+  width:100%;
+  font-size:16px;
+  line-height:1.8;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.assistant-text strong{font-weight:700}
+.thinking{
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.thinking-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--muted);
+  animation:pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%,100%{opacity:.25;transform:scale(.85)}
+  50%{opacity:1;transform:scale(1)}
+}
+.error{color:var(--danger)}
+.message-actions{
+  margin-top:8px;
+  display:flex;
+  align-items:center;
+  gap:2px;
+  direction:ltr;
+}
+.action-icon{
+  width:31px;height:31px;
+  border:0;background:transparent;border-radius:7px;
+  color:var(--muted);
+  display:grid;place-items:center;
+}
+.action-icon:hover{background:var(--surface-hover);color:var(--text)}
+.action-icon.active{color:var(--text);background:var(--surface-hover)}
+.composer-home{width:100%}
+.composer-shell{
+  min-height:54px;
+  border:1px solid var(--line-strong);
+  background:var(--composer);
+  border-radius:28px;
+  display:flex;
+  align-items:flex-end;
+  gap:7px;
+  padding:6px 8px 6px 9px;
+  box-shadow:var(--shadow-composer);
+  direction:ltr;
+  transition:border-color .15s,box-shadow .15s;
+}
+.composer-shell:focus-within{
+  border-color:color-mix(in srgb,var(--line-strong) 55%,var(--text) 45%);
+}
+.composer-shell.drag{
+  border-color:var(--text);
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--text) 12%,transparent),var(--shadow-composer);
+}
+.composer-input{
+  min-width:0;
+  flex:1;
+  border:0;
+  outline:0;
+  resize:none;
+  background:transparent;
+  color:var(--text);
+  height:40px;
+  max-height:160px;
+  padding:9px 7px 7px;
+  line-height:1.45;
+  font-size:16px;
+  direction:rtl;
+  text-align:right;
+  overflow-y:auto;
+}
+.composer-input::placeholder{color:var(--muted)}
+.round-btn{
+  width:36px;height:36px;flex:none;
+  border:0;background:transparent;border-radius:50%;
+  display:grid;place-items:center;color:var(--icon);
+}
+.round-btn:hover{background:var(--surface-hover)}
+.send-btn{
+  width:36px;height:36px;flex:none;border:0;border-radius:50%;
+  background:var(--text);color:var(--bg);
+  display:grid;place-items:center;
+  transition:opacity .15s,transform .15s;
+}
+.send-btn:hover:not(:disabled){transform:scale(1.03)}
+.send-btn:disabled{opacity:.2;cursor:default}
+.model-mini{
+  height:34px;
+  border:0;
+  background:transparent;
+  border-radius:9px;
+  padding:0 6px;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  gap:3px;
+  font-size:13px;
+  white-space:nowrap;
+}
+.model-mini:hover{background:var(--surface-hover);color:var(--text)}
+.attachments{
+  display:none;
+  width:100%;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:0 0 8px;
+  direction:ltr;
+}
+.attachments.on{display:flex}
+.attachment{
+  width:72px;height:72px;position:relative;border-radius:13px;overflow:hidden;
+  border:1px solid var(--line);background:var(--surface);
+}
+.attachment img{width:100%;height:100%;object-fit:cover}
+.attachment button{
+  position:absolute;top:4px;right:4px;width:22px;height:22px;border:0;border-radius:50%;
+  background:rgba(20,20,20,.86);color:#fff;display:grid;place-items:center;font-size:16px;line-height:1;
+}
+.quick-grid{
+  margin-top:16px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.quick{
+  min-height:46px;
+  border:1px solid var(--line);
+  background:transparent;
+  color:var(--muted);
+  border-radius:13px;
+  padding:10px 12px;
+  text-align:right;
+  font-size:14px;
+}
+.quick:hover{background:var(--surface-hover);color:var(--text)}
+.bottom-zone{
+  display:none;
+  position:absolute;
+  left:0;right:0;bottom:0;
+  padding:34px 22px 13px;
+  background:linear-gradient(to top,var(--bg) 72%,color-mix(in srgb,var(--bg) 86%,transparent) 86%,transparent);
+  pointer-events:none;
+  z-index:9;
+}
+.bottom-zone.on{display:block}
+.bottom-inner{
+  width:min(760px,100%);
+  margin:0 auto;
+  pointer-events:auto;
+}
+.disclaimer{
+  margin-top:9px;
+  color:var(--muted);
+  text-align:center;
+  font-size:11px;
+  line-height:1.25;
+}
+.overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.28);
+  z-index:25;
+  backdrop-filter:blur(1px);
+}
+.toast{
+  position:fixed;
+  bottom:24px;
+  left:50%;
+  transform:translate(-50%,12px);
+  opacity:0;
+  pointer-events:none;
+  z-index:100;
+  background:var(--text);
+  color:var(--bg);
+  border:1px solid var(--line);
+  border-radius:11px;
+  padding:9px 13px;
+  font-size:13px;
+  box-shadow:var(--shadow);
+  transition:.18s ease;
+  max-width:min(420px,calc(100vw - 28px));
+  text-align:center;
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media(max-width:860px){
+  .app{display:block}
+  body.sidebar-collapsed .app{display:block}
+  .sidebar{
+    position:fixed;
+    left:0;
+    top:0;
+    bottom:0;
+    width:min(86vw,300px);
+    transform:translateX(-105%);
+    opacity:1;
+    pointer-events:auto;
+    box-shadow:20px 0 45px rgba(0,0,0,.14);
+  }
+  .sidebar.mobile-open{transform:translateX(0)}
+  body.sidebar-collapsed .sidebar{transform:translateX(-105%);opacity:1;pointer-events:auto}
+  body.sidebar-collapsed .sidebar.mobile-open{transform:translateX(0)}
+  .overlay.on{display:block}
+  .reopen-sidebar{display:grid}
+  .home{padding:18px 14px 125px}
+  .home-inner{transform:translateY(-20px)}
+  .chat-inner{width:min(100% - 28px,760px);padding-top:14px}
+  .bottom-zone{padding:30px 12px 11px}
+  .share-btn span{display:none}
+}
+@media(max-width:560px){
+  .topbar{padding:6px 8px}
+  .home h1{font-size:29px}
+  .home-kicker{font-size:13px}
+  .quick-grid{grid-template-columns:1fr}
+  .quick:nth-child(4){display:none}
+  .model-mini{display:none}
+  .user-bubble{max-width:88%}
+  .chat-inner{width:calc(100% - 22px);padding-bottom:165px}
+  .composer-shell{border-radius:24px}
+  .composer-input{font-size:16px}
+  .user-images img{width:104px;max-height:130px}
+}
 </style>
-
 </head>
 <body>
 <div class="overlay" id="overlay"></div>
-<div class="toast" id="toast"></div>
-<input id="file" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden>
-<div class="app">
-<main class="main">
-  <header class="top">
-    <button class="menu" id="menu" aria-label="פתח תפריט">☰</button>
-    <b>Sifra</b>
-    <div class="status"><span class="status-dot"></span><span>AI למתמטיקה</span></div>
-  </header>
+<div class="toast" id="toast" role="status"></div>
+<input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden>
 
-  <section class="home-wrap" id="homeWrap">
-    <div class="center" id="home">
-      <div class="sub"><span class="dot"></span>מוכן לפתור איתך, שלב אחר שלב</div>
-      <h1>מה נפתור היום?</h1>
-      <div class="box" id="box">
-        <div class="attachments" id="attachments"></div>
-        <textarea id="input" maxlength="7000" placeholder="כתוב תרגיל, משוואה או שאלה במתמטיקה..."></textarea>
-        <div class="actions">
-          <div class="action-left"><button class="plus" id="attach" aria-label="הוסף תמונה" title="הוסף תמונה">＋</button></div>
-          <button class="send" id="send" disabled aria-label="שלח">↑</button>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <span>Sifra</span>
+      </div>
+      <button class="icon-btn" id="searchBtn" aria-label="חיפוש" title="חיפוש">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+          <circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path>
+        </svg>
+      </button>
+      <button class="icon-btn" id="collapseBtn" aria-label="סגור סרגל צד" title="סגור סרגל צד">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+          <rect x="3.5" y="4" width="17" height="16" rx="3"></rect><path d="M9 4v16"></path>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-btn" id="newChat">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.5 5H6.8A2.8 2.8 0 0 0 4 7.8v9.4A2.8 2.8 0 0 0 6.8 20h9.4a2.8 2.8 0 0 0 2.8-2.8V9.5"></path>
+          <path d="m13 11 7-7"></path><path d="M16 4h4v4"></path>
+        </svg>
+        <span>שיחה חדשה</span>
+      </button>
+      <button class="nav-btn" id="libraryBtn">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.5 5.5h4v13h-4zM10 5.5h4v13h-4zM15.7 4.7l3.2-.8 3.2 12.5-3.2.8z"></path>
+        </svg>
+        <span>ספרייה</span>
+      </button>
+      <button class="nav-btn" id="moreBtn">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle>
+        </svg>
+        <span>עוד</span>
+      </button>
+      <div class="more-panel" id="morePanel">
+        <button class="more-item" id="themeBtn">
+          <svg id="themeIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M20.5 15.5A8 8 0 1 1 8.5 3.6a6.6 6.6 0 0 0 12 11.9Z"></path>
+          </svg>
+          <span id="themeText">מצב כהה</span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="sidebar-sections">
+      <button class="section-toggle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
+        <span>מוצמדים</span>
+      </button>
+      <button class="section-toggle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 6 6 6-6 6"></path></svg>
+        <span>אחרונים</span>
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="profile">
+        <div class="avatar">S</div>
+        <div class="profile-copy">
+          <div class="profile-name">החשבון שלי</div>
+          <div class="profile-plan">Free</div>
+        </div>
+        <button class="profile-action" aria-label="חשבון" title="חשבון">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+            <path d="M5 9.5 6.4 5h11.2L19 9.5"></path><path d="M4 9.5h16v8A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5z"></path><path d="M9 9.5v1.2a3 3 0 0 0 6 0V9.5"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="icon-btn reopen-sidebar" id="reopenSidebar" aria-label="פתח סרגל צד" title="פתח סרגל צד">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+            <rect x="3.5" y="4" width="17" height="16" rx="3"></rect><path d="M9 4v16"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="topbar-right">
+        <button class="share-btn" id="shareBtn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 15V3"></path><path d="m7 8 5-5 5 5"></path><path d="M5 12v6.5A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5V12"></path>
+          </svg>
+          <span>שיתוף</span>
+        </button>
+        <button class="icon-btn" id="topMoreBtn" aria-label="עוד" title="עוד">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="home" id="home">
+      <div class="home-inner">
+        <div class="home-kicker"><span class="green"></span>מוכן לפתור איתך, שלב אחר שלב</div>
+        <h1>מה נפתור היום?</h1>
+
+        <div class="attachments" id="homeAttachments"></div>
+
+        <div class="composer-home">
+          <div class="composer-shell" id="homeComposer">
+            <button class="round-btn" id="attachHome" aria-label="הוסף תמונה" title="הוסף תמונה">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+            </button>
+            <textarea class="composer-input" id="homeInput" maxlength="7000" placeholder="שאל את Sifra"></textarea>
+            <button class="model-mini" type="button" tabindex="-1">Sifra <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m7 9 5 5 5-5"></path></svg></button>
+            <button class="round-btn" id="micHome" aria-label="מיקרופון" title="מיקרופון">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"></path></svg>
+            </button>
+            <button class="send-btn" id="sendHome" disabled aria-label="שלח">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="quick-grid">
+          <button class="quick">פתור משוואה והסבר שלב־שלב</button>
+          <button class="quick">למד אותי נושא מתמטי מהבסיס</button>
+          <button class="quick">בדוק פתרון ותגיד איפה טעיתי</button>
+          <button class="quick">צור לי תרגול לפי הרמה שלי</button>
         </div>
       </div>
-      <div class="quick">
-        <button class="q">פתור משוואה והסבר שלב־שלב</button>
-        <button class="q">למד אותי נושא מתמטי מהבסיס</button>
-        <button class="q">בדוק פתרון ותגיד איפה טעיתי</button>
-        <button class="q">צור לי תרגול לפי הרמה שלי</button>
+    </section>
+
+    <section class="chat" id="chat" aria-live="polite">
+      <div class="chat-inner" id="chatInner"></div>
+    </section>
+
+    <div class="bottom-zone" id="bottomZone">
+      <div class="bottom-inner">
+        <div class="attachments" id="chatAttachments"></div>
+        <div class="composer-shell" id="chatComposer">
+          <button class="round-btn" id="attachChat" aria-label="הוסף תמונה" title="הוסף תמונה">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+          </button>
+          <textarea class="composer-input" id="chatInput" maxlength="7000" placeholder="שאל את Sifra"></textarea>
+          <button class="model-mini" type="button" tabindex="-1">Sifra <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m7 9 5 5 5-5"></path></svg></button>
+          <button class="round-btn" id="micChat" aria-label="מיקרופון" title="מיקרופון">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"></path></svg>
+          </button>
+          <button class="send-btn" id="sendChat" disabled aria-label="שלח">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 19V5M6.5 10.5 12 5l5.5 5.5"></path></svg>
+          </button>
+        </div>
+        <div class="disclaimer">Sifra יכולה לטעות. מומלץ לבדוק מידע חשוב.</div>
       </div>
-      <div class="hint">אפשר גם להדביק צילום מסך של תרגיל ישירות לצ׳אט</div>
     </div>
-  </section>
-
-  <section class="chat" id="chat" aria-live="polite"></section>
-
-  <div class="bottom" id="bottom">
-    <div class="bottom-stack">
-      <div class="attachments mini-attachments" id="miniAttachments"></div>
-      <div class="mini" id="miniBox">
-        <button class="plus" id="attach2" aria-label="הוסף תמונה" title="הוסף תמונה">＋</button>
-        <textarea id="follow" maxlength="7000" placeholder="שאל שאלת המשך..."></textarea>
-        <button class="send" id="send2" disabled aria-label="שלח">↑</button>
-      </div>
-    </div>
-  </div>
-</main>
-
-<aside class="side" id="side">
-  <div class="logo"><div class="mark">S</div>Sifra</div>
-  <button class="new" id="new">＋ שיחה חדשה</button>
-  <div class="label">כלים</div>
-  <button class="item">צ׳אט</button><button class="item">מחברת פתרונות</button><button class="item">תרגולים אחרונים</button>
-  <div class="label">שיחות אחרונות</div>
-  <div class="history"><button class="item">משוואה ריבועית</button><button class="item">נגזרות</button><button class="item">גיאומטריה</button></div>
-  <div class="account">Sifra · גרסת בטא</div>
-</aside>
+  </main>
 </div>
+
 <script>
-const $=s=>document.querySelector(s);
-const input=$('#input'),send=$('#send'),chat=$('#chat'),home=$('#home'),homeWrap=$('#homeWrap'),bottom=$('#bottom'),follow=$('#follow'),send2=$('#send2'),side=$('#side'),overlay=$('#overlay'),file=$('#file'),attachments=$('#attachments'),miniAttachments=$('#miniAttachments'),box=$('#box'),miniBox=$('#miniBox'),toast=$('#toast');
-const state={messages:[],images:[],busy:false};
-const MAX_IMAGES=2;
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+(function(){
+  'use strict';
+  const $=function(selector){return document.querySelector(selector)};
+  const sidebar=$('#sidebar'),overlay=$('#overlay'),home=$('#home'),chat=$('#chat'),chatInner=$('#chatInner'),bottomZone=$('#bottomZone'),homeInput=$('#homeInput'),chatInput=$('#chatInput'),sendHome=$('#sendHome'),sendChat=$('#sendChat'),fileInput=$('#fileInput'),homeAttachments=$('#homeAttachments'),chatAttachments=$('#chatAttachments'),homeComposer=$('#homeComposer'),chatComposer=$('#chatComposer'),toast=$('#toast'),themeColor=$('#themeColor');
+  const state={messages:[],images:[],busy:false};
+  const MAX_IMAGES=2;
 
-function showToast(text){toast.textContent=text;toast.classList.add('on');clearTimeout(showToast.t);showToast.t=setTimeout(()=>toast.classList.remove('on'),2600)}
-function resize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px'}
-function updateButtons(){const hasText=input.value.trim()||state.images.length;send.disabled=state.busy||!hasText;send2.disabled=state.busy||!(follow.value.trim()||state.images.length)}
-input.addEventListener('input',()=>{resize(input);updateButtons()});follow.addEventListener('input',()=>{resize(follow);updateButtons()});
+  function esc(value){return String(value).replace(/[&<>"']/g,function(char){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]})}
+  function formatAnswer(text){return esc(text).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
+  function showToast(message){toast.textContent=message;toast.classList.add('on');clearTimeout(showToast.timer);showToast.timer=setTimeout(function(){toast.classList.remove('on')},2200)}
+  function resizeTextarea(el){el.style.height='40px';el.style.height=Math.min(Math.max(40,el.scrollHeight),160)+'px'}
+  function updateButtons(){const hasHome=homeInput.value.trim()||state.images.length,hasChat=chatInput.value.trim()||state.images.length;sendHome.disabled=state.busy||!hasHome;sendChat.disabled=state.busy||!hasChat}
 
-document.querySelectorAll('.q').forEach(x=>x.onclick=()=>{input.value=x.textContent;resize(input);updateButtons();input.focus()});
+  function setTheme(theme){
+    document.documentElement.dataset.theme=theme;
+    localStorage.setItem('sifra-theme',theme);
+    const dark=theme==='dark';
+    $('#themeText').textContent=dark?'מצב בהיר':'מצב כהה';
+    themeColor.setAttribute('content',dark?'#212121':'#fcfcfc');
+    $('#themeIcon').innerHTML=dark?'<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>':'<path d="M20.5 15.5A8 8 0 1 1 8.5 3.6a6.6 6.6 0 0 0 12 11.9Z"></path>';
+  }
+  const savedTheme=localStorage.getItem('sifra-theme');
+  if(savedTheme)setTheme(savedTheme);else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)setTheme('dark');else setTheme('light');
 
-function renderAttachments(){
-  for(const target of [attachments,miniAttachments]){
-    target.innerHTML='';
-    target.classList.toggle('on',state.images.length>0);
-    state.images.forEach((img,i)=>{
-      const wrap=document.createElement('div');wrap.className='attachment';
-      const image=document.createElement('img');image.src=img.dataUrl;image.alt='תמונה מצורפת';
-      const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','הסר תמונה');
-      remove.onclick=()=>{state.images.splice(i,1);renderAttachments();updateButtons()};
-      wrap.append(image,remove);target.appendChild(wrap);
+  $('#themeBtn').addEventListener('click',function(){setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark')});
+  $('#moreBtn').addEventListener('click',function(){$('#morePanel').classList.toggle('open')});
+  $('#searchBtn').addEventListener('click',function(){showToast('חיפוש יתווסף בהמשך')});
+  $('#libraryBtn').addEventListener('click',function(){showToast('הספרייה תתווסף בהמשך')});
+  $('#topMoreBtn').addEventListener('click',function(){showToast('אפשרויות נוספות יתווספו בהמשך')});
+
+  function openSidebar(){if(window.innerWidth<=860){sidebar.classList.add('mobile-open');overlay.classList.add('on')}else document.body.classList.remove('sidebar-collapsed')}
+  function closeSidebar(){if(window.innerWidth<=860){sidebar.classList.remove('mobile-open');overlay.classList.remove('on')}else document.body.classList.add('sidebar-collapsed')}
+  $('#collapseBtn').addEventListener('click',closeSidebar);
+  $('#reopenSidebar').addEventListener('click',openSidebar);
+  overlay.addEventListener('click',function(){sidebar.classList.remove('mobile-open');overlay.classList.remove('on')});
+
+  async function shareText(text){
+    try{
+      if(navigator.share)await navigator.share({title:'Sifra',text:text||'Sifra — AI למתמטיקה',url:location.href});
+      else{await navigator.clipboard.writeText(text||location.href);showToast('הועתק ללוח')}
+    }catch(error){if(error&&error.name!=='AbortError')showToast('לא הצלחתי לשתף')}
+  }
+  $('#shareBtn').addEventListener('click',function(){shareText('')});
+
+  function iconButton(label,svg){
+    const button=document.createElement('button');
+    button.className='action-icon';button.type='button';button.setAttribute('aria-label',label);button.title=label;button.innerHTML=svg;return button;
+  }
+  function actionBar(text){
+    const bar=document.createElement('div');bar.className='message-actions';
+    const copy=iconButton('העתק','<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>');
+    copy.addEventListener('click',async function(){try{await navigator.clipboard.writeText(text);showToast('התשובה הועתקה')}catch(error){showToast('לא הצלחתי להעתיק')}});
+    const up=iconButton('תגובה טובה','<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path><path d="M7 10l4-7a2 2 0 0 1 3 2v4h5a2 2 0 0 1 2 2.4l-1.5 7A2 2 0 0 1 17.5 20H7z"></path></svg>');
+    const down=iconButton('תגובה לא טובה','<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"></path><path d="m7 14 4 7a2 2 0 0 0 3-2v-4h5a2 2 0 0 0 2-2.4l-1.5-7A2 2 0 0 0 17.5 4H7z"></path></svg>');
+    up.addEventListener('click',function(){up.classList.toggle('active');down.classList.remove('active')});
+    down.addEventListener('click',function(){down.classList.toggle('active');up.classList.remove('active')});
+    const share=iconButton('שתף תשובה','<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 15V3"></path><path d="m7 8 5-5 5 5"></path><path d="M5 12v6.5A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5V12"></path></svg>');
+    share.addEventListener('click',function(){shareText(text)});
+    const retry=iconButton('נסה שוב','<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6v5h-5"></path><path d="M19 11a7.5 7.5 0 1 0-1.3 6"></path></svg>');
+    retry.addEventListener('click',retryLastAnswer);
+    const more=iconButton('עוד','<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="19" cy="12" r="1.4"></circle></svg>');
+    more.addEventListener('click',function(){showToast('אפשרויות נוספות יתווספו בהמשך')});
+    bar.append(copy,up,down,share,retry,more);return bar;
+  }
+
+  function addUserMessage(text,images){
+    const row=document.createElement('div');row.className='message-row user-row';
+    const bubble=document.createElement('div');bubble.className='user-bubble';
+    if(images&&images.length){
+      const gallery=document.createElement('div');gallery.className='user-images';
+      images.forEach(function(src){const image=document.createElement('img');image.src=src;image.alt='תמונה שצורפה';gallery.appendChild(image)});
+      bubble.appendChild(gallery);
+    }
+    const content=document.createElement('div');content.textContent=text;bubble.appendChild(content);row.appendChild(bubble);chatInner.appendChild(row);return row;
+  }
+
+  function addAssistantMessage(text,options){
+    const row=document.createElement('div');row.className='message-row assistant-row';
+    const content=document.createElement('div');content.className='assistant-text';
+    if(options&&options.thinking){content.classList.add('thinking');content.innerHTML='<span class="thinking-dot"></span><span>חושב…</span>'}
+    else content.innerHTML=formatAnswer(text);
+    if(options&&options.error)content.classList.add('error');
+    row.appendChild(content);
+    if(!(options&&(options.thinking||options.error)))row.appendChild(actionBar(text));
+    chatInner.appendChild(row);return row;
+  }
+
+  function enterChat(){
+    if(chat.classList.contains('on'))return false;
+    home.style.display='none';chat.classList.add('on');bottomZone.classList.add('on');chat.scrollTop=0;return true;
+  }
+
+  function renderAttachments(){
+    [homeAttachments,chatAttachments].forEach(function(target){
+      target.innerHTML='';target.classList.toggle('on',state.images.length>0);
+      state.images.forEach(function(item,index){
+        const wrap=document.createElement('div');wrap.className='attachment';
+        const image=document.createElement('img');image.src=item.dataUrl;image.alt='תמונה מצורפת';
+        const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','הסר תמונה');
+        remove.addEventListener('click',function(){state.images.splice(index,1);renderAttachments();updateButtons()});
+        wrap.append(image,remove);target.appendChild(wrap);
+      });
     });
   }
-}
 
-function blobToDataUrl(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(blob)})}
-async function compressImage(fileObj){
-  if(!/^image\/(png|jpeg|webp)$/.test(fileObj.type))throw new Error('אפשר להעלות PNG, JPG או WebP בלבד');
-  if(fileObj.size>10*1024*1024)throw new Error('התמונה גדולה מדי');
-  const bitmap=await createImageBitmap(fileObj);
-  const maxSide=1500,scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
-  const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
-  const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
-  let quality=.82;
-  let blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',quality));
-  while(blob&&blob.size>1350000&&quality>.5){quality-=.1;blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',quality))}
-  if(!blob||blob.size>1500000)throw new Error('לא הצלחתי להקטין את התמונה מספיק');
-  return {dataUrl:await blobToDataUrl(blob),name:fileObj.name||'image.jpg'};
-}
+  function blobToDataUrl(blob){return new Promise(function(resolve,reject){const reader=new FileReader();reader.onload=function(){resolve(reader.result)};reader.onerror=reject;reader.readAsDataURL(blob)})}
+  async function compressImage(file){
+    if(!/^image\/(png|jpeg|webp)$/.test(file.type))throw new Error('אפשר להעלות PNG, JPG או WebP בלבד');
+    if(file.size>10*1024*1024)throw new Error('התמונה גדולה מדי');
+    const bitmap=await createImageBitmap(file),maxSide=1500,scale=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));
+    const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    const context=canvas.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(bitmap,0,0,canvas.width,canvas.height);if(bitmap.close)bitmap.close();
+    let quality=.82,blob=await new Promise(function(resolve){canvas.toBlob(resolve,'image/jpeg',quality)});
+    while(blob&&blob.size>1350000&&quality>.5){quality-=.1;blob=await new Promise(function(resolve){canvas.toBlob(resolve,'image/jpeg',quality)})}
+    if(!blob||blob.size>1500000)throw new Error('לא הצלחתי להקטין את התמונה מספיק');
+    return {dataUrl:await blobToDataUrl(blob),name:file.name||'image.jpg'};
+  }
 
-async function addFiles(fileList){
-  const list=[...fileList].slice(0,MAX_IMAGES-state.images.length);
-  if(!list.length){if(state.images.length>=MAX_IMAGES)showToast(`אפשר לצרף עד ${MAX_IMAGES} תמונות`);return}
-  try{
-    for(const f of list){state.images.push(await compressImage(f));renderAttachments();updateButtons()}
-  }catch(e){showToast(e.message||'לא הצלחתי לצרף את התמונה')}
-  file.value='';
-}
+  async function addFiles(fileList){
+    const available=MAX_IMAGES-state.images.length,list=Array.from(fileList).slice(0,available);
+    if(!list.length){if(state.images.length>=MAX_IMAGES)showToast('אפשר לצרף עד '+MAX_IMAGES+' תמונות');return}
+    try{for(const file of list){state.images.push(await compressImage(file));renderAttachments();updateButtons()}}
+    catch(error){showToast(error.message||'לא הצלחתי לצרף את התמונה')}
+    fileInput.value='';
+  }
 
-function openPicker(){if(state.images.length>=MAX_IMAGES)return showToast(`אפשר לצרף עד ${MAX_IMAGES} תמונות`);file.click()}
-$('#attach').onclick=openPicker;$('#attach2').onclick=openPicker;file.onchange=()=>addFiles(file.files);
+  function openFilePicker(){if(state.images.length>=MAX_IMAGES){showToast('אפשר לצרף עד '+MAX_IMAGES+' תמונות');return}fileInput.click()}
+  $('#attachHome').addEventListener('click',openFilePicker);
+  $('#attachChat').addEventListener('click',openFilePicker);
+  fileInput.addEventListener('change',function(){addFiles(fileInput.files)});
+  document.addEventListener('paste',function(event){
+    const files=Array.from(event.clipboardData&&event.clipboardData.files||[]).filter(function(file){return file.type.startsWith('image/')});
+    if(files.length){event.preventDefault();addFiles(files)}
+  });
 
-document.addEventListener('paste',e=>{const imgs=[...(e.clipboardData?.files||[])].filter(x=>x.type.startsWith('image/'));if(imgs.length){e.preventDefault();addFiles(imgs)}});
-for(const target of [box,miniBox]){
-  target.addEventListener('dragover',e=>{e.preventDefault();target.classList.add('drag')});
-  target.addEventListener('dragleave',()=>target.classList.remove('drag'));
-  target.addEventListener('drop',e=>{e.preventDefault();target.classList.remove('drag');addFiles([...e.dataTransfer.files].filter(x=>x.type.startsWith('image/')))})
-}
-
-function formatAnswer(text){
-  return esc(text)
-    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-    .replace(/\n/g,'<br>');
-}
-
-function addMessage(text,type,images=[]){
-  const d=document.createElement('div');d.className='msg '+type;
-  if(images.length){const gallery=document.createElement('div');gallery.className='user-images';images.forEach(src=>{const i=document.createElement('img');i.src=src;i.alt='תמונה שצורפה';gallery.appendChild(i)});d.appendChild(gallery)}
-  const content=document.createElement('div');content.innerHTML=formatAnswer(text);d.appendChild(content);chat.appendChild(d);return d;
-}
-
-function enterChat(){
-  if(chat.classList.contains('on'))return false;
-  home.style.display='none';homeWrap.style.display='none';chat.classList.add('on');bottom.classList.add('on');chat.scrollTop=0;return true;
-}
-
-async function askServer(images){
-  const pending=addMessage('חושב…','ai thinking');
-  try{
-    const r=await fetch('/api/chat',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({messages:state.messages.slice(-16),images:images.map(x=>({dataUrl:x.dataUrl}))})
+  [homeComposer,chatComposer].forEach(function(target){
+    target.addEventListener('dragover',function(event){event.preventDefault();target.classList.add('drag')});
+    target.addEventListener('dragleave',function(){target.classList.remove('drag')});
+    target.addEventListener('drop',function(event){
+      event.preventDefault();target.classList.remove('drag');
+      const files=Array.from(event.dataTransfer.files).filter(function(file){return file.type.startsWith('image/')});
+      addFiles(files);
     });
-    let j={};try{j=await r.json()}catch{}
-    pending.remove();
-    if(!r.ok){
-      if(r.status===429&&j.retryAfter)throw new Error(`שלחת יותר מדי הודעות. נסה שוב בעוד ${j.retryAfter} שניות.`);
-      throw new Error(j.error||'לא הצלחתי לקבל תשובה כרגע.');
+  });
+
+  async function requestAI(images){
+    const pending=addAssistantMessage('',{thinking:true});
+    try{
+      const response=await fetch('/api/chat',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          messages:state.messages.slice(-16),
+          images:images.map(function(item){return {dataUrl:item.dataUrl}})
+        })
+      });
+      let data={};try{data=await response.json()}catch(error){}
+      pending.remove();
+      if(!response.ok){
+        if(response.status===429&&data.retryAfter)throw new Error('שלחת יותר מדי הודעות. נסה שוב בעוד '+data.retryAfter+' שניות.');
+        throw new Error(data.error||'לא הצלחתי לקבל תשובה כרגע.');
+      }
+      if(!data.answer)throw new Error('השרת החזיר תשובה ריקה.');
+      state.messages.push({role:'assistant',content:data.answer});
+      addAssistantMessage(data.answer);
+    }catch(error){
+      pending.remove();
+      addAssistantMessage(error.message||'לא הצלחתי לקבל תשובה.',{error:true});
     }
-    if(!j.answer)throw new Error('השרת החזיר תשובה ריקה.');
-    state.messages.push({role:'assistant',content:j.answer});
-    addMessage(j.answer,'ai');
-  }catch(e){pending.remove();addMessage(e.message||'לא הצלחתי לקבל תשובה.','ai error')}
-}
+  }
 
-async function submit(el){
-  if(state.busy)return;
-  const text=el.value.trim()||(state.images.length?'פתור את התרגיל שבתמונה והסבר שלב-שלב.':'');
-  if(!text)return;
+  async function submit(input){
+    if(state.busy)return;
+    const text=input.value.trim()||(state.images.length?'פתור את התרגיל שבתמונה והסבר שלב-שלב.':'');
+    if(!text)return;
+    state.busy=true;updateButtons();
+    const first=enterChat(),images=state.images.splice(0);renderAttachments();
+    addUserMessage(text,images.map(function(item){return item.dataUrl}));
+    state.messages.push({role:'user',content:text});
+    input.value='';resizeTextarea(input);
+    if(first)chat.scrollTop=0;else chat.scrollTop=chat.scrollHeight;
+    await requestAI(images);
+    state.busy=false;updateButtons();
+    chat.scrollTo({top:chat.scrollHeight,behavior:'smooth'});
+    chatInput.focus();
+  }
 
-  state.busy=true;updateButtons();send.classList.add('busy');send2.classList.add('busy');
-  const first=enterChat();
-  const images=state.images.splice(0);renderAttachments();
-  addMessage(text,'user',images.map(x=>x.dataUrl));
-  state.messages.push({role:'user',content:text});
-  el.value='';resize(el);
-  if(first)chat.scrollTop=0;else chat.scrollTop=chat.scrollHeight;
+  async function retryLastAnswer(){
+    if(state.busy||!state.messages.length)return;
+    if(state.messages[state.messages.length-1].role==='assistant'){
+      state.messages.pop();
+      const rows=chatInner.querySelectorAll('.assistant-row');
+      if(rows.length)rows[rows.length-1].remove();
+    }
+    if(!state.messages.length||state.messages[state.messages.length-1].role!=='user')return;
+    state.busy=true;updateButtons();await requestAI([]);state.busy=false;updateButtons();chat.scrollTo({top:chat.scrollHeight,behavior:'smooth'});
+  }
 
-  await askServer(images);
-  state.busy=false;send.classList.remove('busy');send2.classList.remove('busy');updateButtons();
-  chat.scrollTo({top:chat.scrollHeight,behavior:'smooth'});
-  follow.focus();
-}
+  homeInput.addEventListener('input',function(){resizeTextarea(homeInput);updateButtons()});
+  chatInput.addEventListener('input',function(){resizeTextarea(chatInput);updateButtons()});
+  [homeInput,chatInput].forEach(function(input){
+    input.addEventListener('keydown',function(event){if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submit(input)}})
+  });
+  sendHome.addEventListener('click',function(){submit(homeInput)});
+  sendChat.addEventListener('click',function(){submit(chatInput)});
+  document.querySelectorAll('.quick').forEach(function(button){
+    button.addEventListener('click',function(){homeInput.value=button.textContent.trim();resizeTextarea(homeInput);updateButtons();homeInput.focus()})
+  });
 
-send.onclick=()=>submit(input);send2.onclick=()=>submit(follow);
-[input,follow].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit(el)}}));
+  function resetChat(){
+    state.messages=[];state.images=[];state.busy=false;chatInner.innerHTML='';chat.classList.remove('on');bottomZone.classList.remove('on');home.style.display='flex';homeInput.value='';chatInput.value='';
+    resizeTextarea(homeInput);resizeTextarea(chatInput);renderAttachments();updateButtons();
+    if(window.innerWidth<=860){sidebar.classList.remove('mobile-open');overlay.classList.remove('on')}
+    setTimeout(function(){homeInput.focus()},40);
+  }
 
-$('#new').onclick=()=>{
-  state.messages=[];state.images=[];state.busy=false;chat.innerHTML='';chat.classList.remove('on');bottom.classList.remove('on');home.style.display='';homeWrap.style.display='flex';input.value='';follow.value='';renderAttachments();updateButtons();side.classList.remove('on');overlay.classList.remove('on');setTimeout(()=>input.focus(),50)
-};
-function closeMenu(){side.classList.remove('on');overlay.classList.remove('on')}
-$('#menu').onclick=()=>{side.classList.add('on');overlay.classList.add('on')};overlay.onclick=closeMenu;
-updateButtons();
-
+  $('#newChat').addEventListener('click',resetChat);
+  function micNotice(){showToast('קלט קולי יתווסף בהמשך')}
+  $('#micHome').addEventListener('click',micNotice);
+  $('#micChat').addEventListener('click',micNotice);
+  window.addEventListener('resize',function(){if(window.innerWidth>860){sidebar.classList.remove('mobile-open');overlay.classList.remove('on')}});
+  updateButtons();
+})();
 </script>
-
 </body>
 </html>
