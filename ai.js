@@ -67,8 +67,12 @@ const SYSTEM_PROMPT = String.raw`
 <chart.equation>y=2x+3</chart.equation>
 - אפשר גם להשמיט את y= ולכתוב רק ביטוי של x:
 <chart.equation>x^2+5x-2</chart.equation>
+- אפשר להשתמש בפרמטרים סמליים a, b, c, m, k, n. הממשק יציג להם סליידרים אינטראקטיביים. לדוגמה:
+<chart.equation>y=mx+b</chart.equation>
+או:
+<chart.equation>y=ax^2+bx+c</chart.equation>
 - השתמש בפונקציות מתמטיות רגילות כגון sin(x), cos(x), tan(x), sqrt(x), abs(x), log(x), ln(x), exp(x).
-- השתמש בגרף כאשר המשתמש צריך לראות צורה של פונקציה, חיתוכים, קיצון, שיפוע או התנהגות.
+- השתמש בגרף כאשר המשתמש צריך לראות צורה של פונקציה, חיתוכים, קיצון, שיפוע, השפעת פרמטרים או התנהגות.
 
 נקודות במערכת צירים:
 <chart.points>{"points":[[-2,4],[0,0],[2,4]],"connect":true}</chart.points>
