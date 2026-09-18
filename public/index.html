@@ -769,11 +769,38 @@ html[data-theme="dark"] .viz-card{
   display:block;
   color:var(--text);
 }
-.viz-angle,.viz-circle,.viz-bars{
+.viz-angle,.viz-circle,.viz-bars,.viz-vector,.viz-venn,.viz-sequence{
   width:100%;
   min-height:250px;
   display:block;
   color:var(--text);
+}
+.viz-ratio{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:28px 12px;
+}
+.viz-ratio-group{
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+.viz-ratio-block{
+  width:42px;
+  height:42px;
+  border-radius:10px;
+  border:1px solid var(--line-strong);
+}
+.viz-ratio-label{
+  width:100%;
+  text-align:center;
+  direction:rtl;
+  color:var(--muted);
+  font-size:12px;
+  margin-top:8px;
 }
 .viz-fraction{
   display:flex;
@@ -1724,6 +1751,10 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       {tag:'diagram.fraction',type:'fraction'},
       {tag:'diagram.matrix',type:'matrix'},
       {tag:'chart.bars',type:'bars'},
+      {tag:'diagram.vector',type:'vector'},
+      {tag:'diagram.venn',type:'venn'},
+      {tag:'diagram.ratio',type:'ratio'},
+      {tag:'chart.sequence',type:'sequence'},
       {tag:'video.lesson',type:'lesson'}
     ];
 
@@ -4740,6 +4771,182 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     );
   }
 
+  function renderVectorViz(target,payload){
+    const shell=vizCard('וקטור','כיוון וגודל','Vector');
+    target.appendChild(shell.card);
+
+    try{
+      const data=JSON.parse(payload);
+      const from=Array.isArray(data.from)?data.from:[0,0];
+      const to=Array.isArray(data.to)?data.to:[1,1];
+      const x1=Number(from[0]),y1=Number(from[1]);
+      const x2=Number(to[0]),y2=Number(to[1]);
+      if([x1,y1,x2,y2].some(function(v){return !Number.isFinite(v)}))throw new Error();
+
+      const svg=svgNode('svg',{
+        viewBox:'0 0 600 300',
+        class:'viz-vector',
+        role:'img',
+        'aria-label':'וקטור'
+      });
+
+      const minX=Math.min(-1,x1,x2),maxX=Math.max(1,x1,x2);
+      const minY=Math.min(-1,y1,y2),maxY=Math.max(1,y1,y2);
+      const pad=48;
+      const px=function(x){return pad+(x-minX)/(maxX-minX)*(600-pad*2)};
+      const py=function(y){return 300-pad-(y-minY)/(maxY-minY)*(300-pad*2)};
+
+      svg.append(
+        svgNode('line',{x1:pad,y1:py(0),x2:600-pad,y2:py(0),stroke:'currentColor','stroke-opacity':'.28'}),
+        svgNode('line',{x1:px(0),y1:pad,x2:px(0),y2:300-pad,stroke:'currentColor','stroke-opacity':'.28'})
+      );
+
+      const sx=px(x1),sy=py(y1),ex=px(x2),ey=py(y2);
+      const angle=Math.atan2(ey-sy,ex-sx);
+      svg.appendChild(svgNode('line',{
+        x1:sx,y1:sy,x2:ex,y2:ey,
+        stroke:'currentColor','stroke-width':'4','stroke-linecap':'round'
+      }));
+      const head=15;
+      const path=svgNode('path',{
+        d:'M '+ex+' '+ey+' L '+(ex-head*Math.cos(angle-Math.PI/6))+' '+(ey-head*Math.sin(angle-Math.PI/6))+' L '+(ex-head*Math.cos(angle+Math.PI/6))+' '+(ey-head*Math.sin(angle+Math.PI/6))+' Z',
+        fill:'currentColor'
+      });
+      svg.appendChild(path);
+
+      const label=svgNode('text',{
+        x:(sx+ex)/2,
+        y:(sy+ey)/2-12,
+        'text-anchor':'middle',
+        fill:'currentColor',
+        'font-size':'18',
+        'font-weight':'700'
+      });
+      label.textContent=String(data.label||'v');
+      svg.appendChild(label);
+
+      shell.body.appendChild(svg);
+    }catch(error){
+      const el=document.createElement('div');
+      el.className='viz-error';
+      el.textContent='לא הצלחתי להציג את הווקטור.';
+      shell.body.appendChild(el);
+    }
+  }
+
+  function renderVennViz(target,payload){
+    const shell=vizCard('דיאגרמת קבוצות','חיתוך ואיחוד','Venn');
+    target.appendChild(shell.card);
+
+    try{
+      const data=JSON.parse(payload);
+      const svg=svgNode('svg',{
+        viewBox:'0 0 600 300',
+        class:'viz-venn',
+        role:'img',
+        'aria-label':'דיאגרמת ון'
+      });
+
+      svg.append(
+        svgNode('circle',{cx:'245',cy:'150',r:'95',fill:'currentColor','fill-opacity':'.10',stroke:'currentColor','stroke-width':'2'}),
+        svgNode('circle',{cx:'355',cy:'150',r:'95',fill:'currentColor','fill-opacity':'.10',stroke:'currentColor','stroke-width':'2'})
+      );
+
+      const left=svgNode('text',{x:'205',y:'150','text-anchor':'middle',fill:'currentColor','font-size':'20','font-weight':'700'});
+      left.textContent=String(data.left||'A');
+      const right=svgNode('text',{x:'395',y:'150','text-anchor':'middle',fill:'currentColor','font-size':'20','font-weight':'700'});
+      right.textContent=String(data.right||'B');
+      const inter=svgNode('text',{x:'300',y:'155','text-anchor':'middle',fill:'currentColor','font-size':'16'});
+      inter.textContent=String(data.intersection||'A ∩ B');
+      svg.append(left,right,inter);
+      shell.body.appendChild(svg);
+    }catch(error){
+      const el=document.createElement('div');
+      el.className='viz-error';
+      el.textContent='לא הצלחתי להציג את דיאגרמת הקבוצות.';
+      shell.body.appendChild(el);
+    }
+  }
+
+  function renderRatioViz(target,payload){
+    const shell=vizCard('יחס','השוואת חלקים','Ratio');
+    target.appendChild(shell.card);
+
+    try{
+      const data=JSON.parse(payload);
+      const a=Math.max(1,Math.min(12,Math.floor(Number(data.a))));
+      const b=Math.max(1,Math.min(12,Math.floor(Number(data.b))));
+      if(!Number.isFinite(a)||!Number.isFinite(b))throw new Error();
+
+      const wrap=document.createElement('div');
+      wrap.className='viz-ratio';
+
+      function group(count,filled,label){
+        const box=document.createElement('div');
+        const row=document.createElement('div');
+        row.className='viz-ratio-group';
+        for(let i=0;i<count;i+=1){
+          const block=document.createElement('div');
+          block.className='viz-ratio-block';
+          block.style.background=filled?'var(--text)':'var(--surface-hover)';
+          row.appendChild(block);
+        }
+        const caption=document.createElement('div');
+        caption.className='viz-ratio-label';
+        caption.textContent=label+' = '+count;
+        box.append(row,caption);
+        return box;
+      }
+
+      wrap.append(
+        group(a,true,String(data.labelA||'א')),
+        group(b,false,String(data.labelB||'ב'))
+      );
+      shell.body.appendChild(wrap);
+    }catch(error){
+      const el=document.createElement('div');
+      el.className='viz-error';
+      el.textContent='לא הצלחתי להציג את היחס.';
+      shell.body.appendChild(el);
+    }
+  }
+
+  function renderSequenceViz(target,payload){
+    let data;
+    try{data=JSON.parse(payload)}catch(error){data=null}
+    const title=data&&data.title?String(data.title):'סדרה';
+    const shell=vizCard(title,'דפוס לאורך צעדים','Sequence');
+    target.appendChild(shell.card);
+
+    try{
+      const values=Array.isArray(data.values)?data.values.slice(0,16).map(Number):[];
+      if(values.length<2||values.some(function(v){return !Number.isFinite(v)}))throw new Error();
+
+      const points=values.map(function(value,index){return [index+1,value]});
+      const ys=values;
+      let yMin=Math.min.apply(null,ys),yMax=Math.max.apply(null,ys);
+      if(!(yMax>yMin)){yMin-=1;yMax+=1}
+      const span=Math.max(1,yMax-yMin);
+      yMin-=span*.15;
+      yMax+=span*.15;
+
+      shell.body.appendChild(buildPlotSvg(points,{
+        xMin:1,
+        xMax:values.length,
+        yMin:yMin,
+        yMax:yMax,
+        connect:true,
+        points:true,
+        label:title
+      }));
+    }catch(error){
+      const el=document.createElement('div');
+      el.className='viz-error';
+      el.textContent='לא הצלחתי להציג את הסדרה.';
+      shell.body.appendChild(el);
+    }
+  }
+
   function hydrateVisuals(root){
     root.querySelectorAll(
       '.sifra-viz:not([data-ready])'
@@ -4775,6 +4982,14 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         renderMatrixViz(target,payload);
       }else if(type==='bars'){
         renderBarsViz(target,payload);
+      }else if(type==='vector'){
+        renderVectorViz(target,payload);
+      }else if(type==='venn'){
+        renderVennViz(target,payload);
+      }else if(type==='ratio'){
+        renderRatioViz(target,payload);
+      }else if(type==='sequence'){
+        renderSequenceViz(target,payload);
       }else if(type==='lesson'){
         renderLessonViz(target,payload);
       }
