@@ -6523,7 +6523,23 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       await document.fonts.ready;
       await document.fonts.load('700 54px Huninn');
       await document.fonts.load('500 28px Huninn');
+
+      const renderStatus=
+        overlay?.querySelector(
+          '.lesson-render-sub'
+        );
+
+      if(renderStatus){
+        renderStatus.textContent=
+          'מכין נוסחאות וגרפיקה…';
+      }
+
       await prepareLessonAssets(lesson);
+
+      if(renderStatus){
+        renderStatus.textContent=
+          'מרנדר את הווידאו…';
+      }
 
       const media=await loadMediaBunny();
 
@@ -6533,6 +6549,9 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         CanvasSource,
         Mp4OutputFormat,
         Quality,
+        Input,
+        BlobSource,
+        ALL_FORMATS,
         getFirstEncodableVideoCodec
       }=media;
 
@@ -6690,6 +6709,106 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           {type:'video/mp4'}
         );
 
+      if(renderStatus){
+        renderStatus.textContent=
+          'בודק את קובץ ה-MP4…';
+      }
+
+      const validationInput=
+        new Input({
+          source:
+            new BlobSource(blob),
+          formats:
+            ALL_FORMATS
+        });
+
+      try{
+        const readable=
+          await validationInput.canRead();
+
+        if(!readable){
+          throw new Error(
+            'קובץ ה-MP4 שנוצר אינו קריא.'
+          );
+        }
+
+        const track=
+          await validationInput.getPrimaryVideoTrack();
+
+        if(!track){
+          throw new Error(
+            'לא נמצא ערוץ וידאו בקובץ.'
+          );
+        }
+
+        const [
+          decodable,
+          outWidth,
+          outHeight,
+          outDuration,
+          fpsMetrics
+        ]=await Promise.all([
+          track.canDecode(),
+          track.getDisplayWidth(),
+          track.getDisplayHeight(),
+          validationInput.computeDuration(),
+          track.computeFrameRateMetrics()
+        ]);
+
+        if(!decodable){
+          throw new Error(
+            'הדפדפן לא מצליח לפענח את ה-MP4 שנוצר.'
+          );
+        }
+
+        if(
+          outWidth!==width||
+          outHeight!==height
+        ){
+          throw new Error(
+            'רזולוציית ה-MP4 אינה תקינה.'
+          );
+        }
+
+        if(
+          !Number.isFinite(outDuration)||
+          Math.abs(
+            outDuration-
+            lesson.duration
+          )>.35
+        ){
+          throw new Error(
+            'משך ה-MP4 אינו תואם לשיעור.'
+          );
+        }
+
+        const measuredFps=
+          Number(
+            fpsMetrics?.
+              bestGuessFrameRate
+          );
+
+        if(
+          Number.isFinite(
+            measuredFps
+          )&&
+          Math.abs(
+            measuredFps-fps
+          )>2
+        ){
+          throw new Error(
+            'קצב הפריימים של ה-MP4 אינו יציב.'
+          );
+        }
+      }finally{
+        if(
+          typeof validationInput.dispose===
+          'function'
+        ){
+          validationInput.dispose();
+        }
+      }
+
       const url=
         URL.createObjectURL(blob);
 
@@ -6727,6 +6846,11 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         download.download=
           'sifra-'+Date.now()+'.mp4';
         download.hidden=false;
+      }
+
+      if(renderStatus){
+        renderStatus.textContent=
+          'הסרטון מוכן';
       }
 
       if(overlay){
