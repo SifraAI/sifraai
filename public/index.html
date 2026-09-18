@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#fcfcfc" id="themeColor">
 <title>Sifra — AI למתמטיקה</title>
+<link rel="icon" type="image/png" href="/assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
@@ -121,17 +122,11 @@ body.sidebar-collapsed .sidebar{
   letter-spacing:-.01em;
 }
 .brand-mark{
-  width:27px;
-  height:27px;
-  border-radius:8px;
-  background:var(--text);
-  color:var(--bg);
-  display:grid;
-  place-items:center;
-  font-family:Georgia,serif;
-  font-size:18px;
-  font-weight:700;
-  box-shadow:0 1px 1px rgba(0,0,0,.05);
+  width:28px;
+  height:28px;
+  object-fit:contain;
+  display:block;
+  flex:none;
 }
 .icon-btn{
   width:32px;
@@ -334,17 +329,6 @@ body.sidebar-collapsed .sidebar{
 }
 .account-menu-row:hover{background:var(--surface-hover)}
 .account-menu-row span{direction:rtl;unicode-bidi:plaintext}
-.message-flight{
-  position:fixed;
-  z-index:200;
-  pointer-events:none;
-  margin:0!important;
-  max-width:none!important;
-  overflow:hidden;
-  box-shadow:0 6px 24px rgba(0,0,0,.09);
-  will-change:transform,opacity,border-radius;
-}
-
 .main{
   direction:rtl;
   min-width:0;
@@ -532,8 +516,8 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   animation:thinkingShine 1.35s linear infinite;
 }
 @keyframes thinkingShine{
-  0%{background-position:130% 0}
-  100%{background-position:-90% 0}
+  0%{background-position:-90% 0}
+  100%{background-position:130% 0}
 }
 .error{color:var(--danger)}
 .message-actions{
@@ -773,7 +757,7 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">
       <div class="brand">
-        <div class="brand-mark">S</div>
+        <img class="brand-mark" id="brandLogo" src="/assets/whitelogo.png" alt="Sifra">
         <span>Sifra</span>
       </div>
       <button class="icon-btn" id="searchBtn" aria-label="חיפוש" title="חיפוש">
@@ -969,7 +953,7 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 (function(){
   'use strict';
   const $=function(selector){return document.querySelector(selector)};
-  const sidebar=$('#sidebar'),overlay=$('#overlay'),home=$('#home'),chat=$('#chat'),chatInner=$('#chatInner'),bottomZone=$('#bottomZone'),homeInput=$('#homeInput'),chatInput=$('#chatInput'),sendHome=$('#sendHome'),sendChat=$('#sendChat'),fileInput=$('#fileInput'),homeAttachments=$('#homeAttachments'),chatAttachments=$('#chatAttachments'),homeComposer=$('#homeComposer'),chatComposer=$('#chatComposer'),toast=$('#toast'),themeColor=$('#themeColor'),accountMenu=$('#accountMenu'),accountButton=$('#accountButton'),dailyUsage=$('#dailyUsage'),dailyUsageFill=$('#dailyUsageFill');
+  const sidebar=$('#sidebar'),overlay=$('#overlay'),home=$('#home'),chat=$('#chat'),chatInner=$('#chatInner'),bottomZone=$('#bottomZone'),homeInput=$('#homeInput'),chatInput=$('#chatInput'),sendHome=$('#sendHome'),sendChat=$('#sendChat'),fileInput=$('#fileInput'),homeAttachments=$('#homeAttachments'),chatAttachments=$('#chatAttachments'),homeComposer=$('#homeComposer'),chatComposer=$('#chatComposer'),toast=$('#toast'),themeColor=$('#themeColor'),accountMenu=$('#accountMenu'),accountButton=$('#accountButton'),dailyUsage=$('#dailyUsage'),dailyUsageFill=$('#dailyUsageFill'),brandLogo=$('#brandLogo');
   const state={messages:[],images:[],busy:false};
   const MAX_IMAGES=2;
 
@@ -984,7 +968,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     localStorage.setItem('sifra-theme',theme);
     const dark=theme==='dark';
     $('#themeText').textContent=dark?'מצב בהיר':'מצב כהה';if($('#accountThemeText'))$('#accountThemeText').textContent=dark?'מצב בהיר':'מצב כהה';
-    themeColor.setAttribute('content',dark?'#212121':'#fcfcfc');
+    themeColor.setAttribute('content',dark?'#111111':'#fcfcfc');
+    if(brandLogo)brandLogo.src=dark?'/assets/whitelogo.png':'/assets/blacklogo.png';
     $('#themeIcon').innerHTML=dark?'<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>':'<path d="M20.5 15.5A8 8 0 1 1 8.5 3.6a6.6 6.6 0 0 0 12 11.9Z"></path>';
   }
   const savedTheme=localStorage.getItem('sifra-theme');
@@ -1140,34 +1125,35 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
   }
 
   function animateUserFlight(sourceRect,row){
-    return new Promise(function(resolve){
-      const bubble=row.querySelector('.user-bubble');
-      if(!bubble){row.style.opacity='1';resolve();return}
+    const bubble=row.querySelector('.user-bubble');
+    if(!bubble)return Promise.resolve();
 
-      const dest=bubble.getBoundingClientRect();
-      const flight=bubble.cloneNode(true);
-      flight.classList.add('message-flight');
-      flight.style.left=dest.left+'px';
-      flight.style.top=dest.top+'px';
-      flight.style.width=dest.width+'px';
-      flight.style.height=dest.height+'px';
-      flight.style.maxWidth='none';
-      document.body.appendChild(flight);
+    const dest=bubble.getBoundingClientRect();
+    const sourceY=sourceRect.top+18;
+    const dy=Math.max(0,sourceY-dest.top);
 
-      const sourceY=sourceRect.top+Math.min(sourceRect.height*.42,58);
-      const dy=sourceY-dest.top;
-      row.style.opacity='0';
+    row.style.opacity='1';
 
-      const animation=flight.animate([
-        {transform:'translateY('+dy+'px) scaleX(1.03) scaleY(.54)',transformOrigin:'center center',opacity:.08,borderRadius:'28px'},
-        {offset:.34,transform:'translateY('+(dy*.64)+'px) scaleX(1.015) scaleY(.72)',opacity:.68,borderRadius:'24px'},
-        {offset:.72,transform:'translateY('+(dy*.18)+'px) scaleX(.99) scaleY(1.04)',opacity:1,borderRadius:'19px'},
-        {transform:'translateY(0) scaleX(1) scaleY(1)',opacity:1,borderRadius:'18px'}
-      ],{duration:500,easing:'cubic-bezier(.16,.82,.22,1)',fill:'forwards'});
-
-      animation.onfinish=function(){flight.remove();row.style.opacity='1';resolve()};
-      animation.oncancel=function(){flight.remove();row.style.opacity='1';resolve()};
+    const animation=bubble.animate([
+      {
+        transform:'translateY('+dy+'px)',
+        opacity:0
+      },
+      {
+        offset:.18,
+        opacity:.55
+      },
+      {
+        transform:'translateY(0)',
+        opacity:1
+      }
+    ],{
+      duration:300,
+      easing:'cubic-bezier(.2,.82,.2,1)',
+      fill:'both'
     });
+
+    return animation.finished.catch(function(){});
   }
 
   async function requestAI(images){
@@ -1486,10 +1472,15 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     }
 
     await new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve)})});
-    await animateUserFlight(sourceRect,row);
+
+    const messageMotion=animateUserFlight(sourceRect,row);
+    const aiRequest=requestAI(images);
 
     try{
-      await requestAI(images);
+      await Promise.all([
+        messageMotion,
+        aiRequest
+      ]);
     }catch(error){
       console.warn(
         'Sifra request failed:',
