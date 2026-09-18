@@ -4584,6 +4584,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       });
     }else if(summary){
       scene._layoutKind='summary';
+      summary._showHeading=
+        !title;
 
       if(title){
         title.x=.5;
@@ -5911,7 +5913,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       scene.elements.forEach(function(element){
         if(
           element.type==='formula'&&
-          element.text
+          element.text&&
+          !containsHebrew(element.text)
         ){
           jobs.push(async function(){
             element._formulaBitmap=
@@ -5930,7 +5933,10 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           element.type==='equation-sequence'
         ){
           element.steps.forEach(function(step){
-            if(!step.formula)return;
+            if(
+              !step.formula||
+              containsHebrew(step.formula)
+            )return;
 
             jobs.push(async function(){
               step._formulaBitmap=
@@ -5950,7 +5956,10 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           element.type==='summary'
         ){
           element.summaryItems.forEach(function(item){
-            if(!item.value)return;
+            if(
+              !item.value||
+              containsHebrew(item.value)
+            )return;
 
             jobs.push(async function(){
               item._formulaBitmap=
@@ -6033,7 +6042,10 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       element.size+
       'px Huninn, Arial';
 
-    ctx.direction='ltr';
+    ctx.direction=
+      containsHebrew(text)
+        ? 'rtl'
+        : 'ltr';
     ctx.textAlign=element.align;
     ctx.textBaseline='top';
     ctx.fillText(
@@ -7074,7 +7086,7 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       element.w*width;
 
     const maxHeight=
-      element.h*height*.56;
+      element.h*height*.42;
 
     const panelW=
       Math.min(
@@ -7166,15 +7178,16 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           }
         );
 
-      lessonDrawFormulaAsset(
-        ctx,
-        step._formulaBitmap,
-        step.formula,
-        proxy,
-        palette,
-        maxWidth,
-        maxHeight
-      );
+      const formulaMetrics=
+        lessonDrawFormulaAsset(
+          ctx,
+          step._formulaBitmap,
+          step.formula,
+          proxy,
+          palette,
+          maxWidth,
+          maxHeight
+        );
 
       ctx.restore();
 
@@ -7198,11 +7211,31 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         ctx.fillStyle=
           palette.muted;
 
-        const noteY=
+        const formulaHeight=
+          Math.min(
+            maxHeight,
+            Math.max(
+              element.size*.9,
+              Number(
+                formulaMetrics?.height
+              )||0
+            )*
+            scale
+          );
+
+        const dotsLimit=
           centerY+
-          maxHeight*.43+
-          26+
-          offsetY*.35;
+          element.h*height/2-
+          74;
+
+        const noteY=
+          Math.min(
+            dotsLimit,
+            centerY+
+            offsetY+
+            formulaHeight+
+            30
+          );
 
         ctx.fillText(
           step.note,
@@ -8058,8 +8091,26 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       }
     }
 
-    const local=
+    const rawLocal=
       safeTime-current.start;
+
+    const previous=
+      current.index>0
+        ? timeline[current.index-1]
+        : null;
+
+    const entryLead=
+      previous
+        ? .10+
+          Math.min(
+            .42,
+            previous.scene.seconds*.10
+          )
+        : 0;
+
+    const local=
+      rawLocal+
+      entryLead;
 
     const remaining=
       current.end-safeTime;
