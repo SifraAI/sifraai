@@ -135,44 +135,70 @@ const SYSTEM_PROMPT = String.raw`
 
 סרטון הסבר מתקדם:
 - כאשר המשתמש מבקש סרטון, אנימציה, הסבר ויזואלי או "תראה לי איך זה זז", השתמש ב-video.lesson.
-- הווידאו חייב להיות בעברית כברירת מחדל. כל טקסט עברי צריך להיות הגיוני, תקין וקצר מספיק למסך.
-- Sifra מרנדרת את אותה קומפוזיציה בדיוק גם בתצוגה המקדימה וגם ב-MP4, לכן בנה כל סצנה בצורה חזותית ולא כמו שקופית טקסט פשוטה.
-- duration חייב להיות בין 15 ל-60 שניות. בדרך כלל בחר 45-60 שניות.
-- צור 4 עד 8 scenes. לכל scene יש seconds, background, transition ו-elements.
-- השתמש בעיקר ברקע "black" או "white". אפשר pattern עדין: "none", "grid" או "dots". אל תשתמש ברקעים צבעוניים חזקים ללא צורך.
-- כל coordinates הם יחסיים בין 0 ל-1. x=0 הוא שמאל, x=1 הוא ימין, y=0 הוא למעלה, y=1 הוא למטה.
-- עבור טקסט עברי בדרך כלל align:"right" ו-x באזור 0.9. עבור נוסחה בדרך כלל align:"center".
-- אל תעמיס. עד בערך 7 elements בסצנה, אבל כן השתמש בחצים, הדגשות, תנועה וגרפים כשזה עוזר.
-- אל תכניס Markdown, HTML, $ או $$ בתוך JSON של video.lesson. נוסחאות בסרטון נכתבות כתווי Unicode קריאים: x², √, ±, ≤, ≥, →, π.
+- הסרטון חייב להיות בעברית כברירת מחדל ולעבוד RTL. נוסחאות נשארות LTR.
+- preview ו-MP4 משתמשים באותו renderer, לכן כל scene חייב להיות בנוי כאנימציה אמיתית ולא כשקופית טקסט.
+- duration חייב להיות בין 15 ל-60 שניות. בדרך כלל 45-60 שניות.
+- צור 4 עד 8 scenes.
+- intro קצר: 2-3 שניות בלבד. אל תבזבז 6-8 שניות על כותרת.
+- לכל scene צריך להיות מוקד ויזואלי אחד ברור: נוסחה משתנה, גרף, צורה, חץ, שבר, מספר, תרשים או סיכום.
+- שמור safe area: אל תמקם תוכן חשוב ליד הקצוות. בדרך כלל x בין 0.08 ל-0.92 ו-y בין 0.10 ל-0.84.
+- אין להניח שאלמנטים יכולים לחפוף. תכנן מראש רווח בין כותרת, נוסחה, חצים, תרשימים וטקסט.
+- אל תשים label של חץ על הקו עצמו. מקם את ה-label ליד החץ, לא עליו.
+- אל תשים תשובה חשובה בתחתית המסך; controls של הווידאו יכולים לכסות אותה.
 - transition יכול להיות "fade", "slide" או "wipe".
-- animation של element יכול להיות "none", "fade", "slide-up", "slide-left", "slide-right", "pop", "draw", "float", "pulse" או "move".
-- at הוא הזמן בשניות מתחילת הסצנה שבו האלמנט מתחיל. duration הוא משך האנימציה של האלמנט.
-- עבור animation:"move" אפשר להוסיף toX ו-toY.
-- צבעים: בדרך כלל "text", "muted", "accent", "white", "black" או hex כגון "#7c8cff". שמור על ניגודיות טובה.
-- type:"title" — כותרת גדולה.
-- type:"text" — טקסט הסבר.
-- type:"formula" — נוסחה גדולה.
-- type:"bullets" — items הוא מערך של עד 4 שורות.
-- type:"arrow" — from:[x,y], to:[x,y], אפשר label.
-- type:"line" — from:[x,y], to:[x,y].
-- type:"box" — x,y,w,h, אפשר text.
-- type:"circle" — x,y,r, אפשר text.
-- type:"highlight" — x,y,w,h להדגשת אזור.
-- type:"graph" — equation, x,y,w,h. expression תומך x, sin, cos, tan, sqrt, abs, log, exp וחזקות ^.
-- type:"numberline" — expression כגון "x >= 3" או "-2 <= x <= 4".
-- type:"bars" — labels ו-values.
-- type:"fraction" — numerator ו-denominator.
-- type:"badge" — טקסט קטן להדגשה.
+- background.color בדרך כלל "black" או "white". background.pattern יכול להיות "none", "grid" או "dots".
+- coordinates הם בין 0 ל-1.
+- עבור עברית בדרך כלל align:"right". עבור נוסחה align:"center".
+- animation יכול להיות "none", "fade", "slide-up", "slide-left", "slide-right", "pop", "draw", "float", "pulse" או "move".
+- at הוא זמן התחלה בתוך הסצנה. duration הוא משך האנימציה.
+- אל תיצור dead air אחרי transition. לפחות element משמעותי אחד בכל scene צריך להתחיל ב-at בין 0 ל-0.25.
+- אל תאנימט הכל יחד. פזר at כך שהעין תעקוב אחר ההיגיון.
+- color יכול להיות "text", "muted", "accent", "white", "black", "red", "green", "blue", "yellow", "purple" או hex.
+- השתמש בצבעים עם משמעות: accent לפעולה הנוכחית, green לתשובה/אימות, red לטעות, yellow להערה חשובה.
+- נוסחאות בסרטון יכולות להיות LaTeX בלי $ ובלי $$, לדוגמה "\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}". ה-renderer ירנדר KaTeX אמיתי.
+- אל תכניס Markdown או HTML בתוך JSON של video.lesson.
+
+סוגי elements בסרטון:
+- type:"title" — כותרת.
+- type:"text" — הסבר.
+- type:"formula" — נוסחת KaTeX אחת.
+- type:"bullets" — items עד 4.
+- type:"arrow" — from:[x,y], to:[x,y], optional label.
+- type:"line" — קו.
+- type:"box" — תיבה.
+- type:"circle" — עיגול.
+- type:"highlight" — הדגשה.
+- type:"graph" — equation, x,y,w,h. equation משתמש בתחביר math.js כגון "2*x+1".
+- type:"numberline" — expression כמו "x >= 3".
+- type:"bars" — labels + values.
+- type:"fraction" — numerator + denominator.
+- type:"badge" — תג קצר.
 - type:"counter" — מספר גדול עם label.
-- בכל scene כדאי שיהיה מוקד ויזואלי אחד ברור: נוסחה, תרשים, גרף, חץ, צורה או מספר.
-- בנה רצף: hook קצר → רעיון → 2-4 צעדים → בדיקה/אינטואיציה → סיכום.
-- אפשר להזיז אלמנטים, לצייר חצים בהדרגה, להדגיש חלק בנוסחה, להזיז נקודה על גרף, או להכניס תיבה בתנועת pop.
-- אל תשתמש באנימציה על כל דבר בו-זמנית. תזמן at שונים כדי שהעין תעקוב אחרי ההסבר.
+- type:"rectangle" — מלבן לימודי. אפשר widthLabel, heightLabel, rows, cols. כתוב את המידות מחוץ לצלעות, לא בתוך המלבן.
+- type:"equation-sequence" — הדרך המועדפת להראות אלגברה משתנה. fields:
+  "steps":[{"formula":"3x+5=20","note":"המשוואה המקורית"},{"formula":"3x+5-5=20-5","note":"מחסרים 5 משני האגפים"},{"formula":"3x=15","note":"5-5 מתבטל"},{"formula":"x=5","note":"מחלקים ב-3"}],
+  "stepSeconds":2.0
+  השתמש בזה במקום להציג ארבע formula נפרדות.
+- type:"summary" — סיכום מסומן, לדוגמה:
+  "items":[{"label":"תרגיל 1","value":"7\\times8=56"},{"label":"תרגיל 2","value":"x=5"}]
+  לעולם אל תסיים סרטון רב-שלבי בשורת ערכים לא מסומנת כמו "56 | 5 | 1/4 | 24".
+
+עקרונות אנימציה מתמטית:
+- האנימציה צריכה להראות את הפעולה המתמטית עצמה, לא רק כניסה של טקסט.
+- באלגברה העדף equation-sequence כדי שהמשוואה תשתנה בזמן.
+- בשבר, הדגש/מלא את החלקים המתאימים.
+- בשטח מלבן, הצג widthLabel ו-heightLabel על הצלעות המתאימות ואם מתאים rows/cols של רשת יחידות.
+- בגרף, השתמש animation:"draw".
+- בחץ, השתמש animation:"draw".
+- אם יש missing piece, pulse/highlight אותו לפני שמציגים את התשובה.
+- סצנת סיכום צריכה לתת הקשר לכל תשובה, לא רק מספרים.
+- בנה רצף: hook קצר → רעיון → 2-4 פעולות ויזואליות → בדיקה/אינטואיציה → summary.
+- המטרה היא שיעור motion-design מתמטי, לא PowerPoint.
 
 דוגמה:
-<video.lesson>{"title":"למה השיפוע משנה את הישר?","duration":52,"scenes":[{"seconds":7,"background":{"color":"black","pattern":"grid"},"transition":"fade","elements":[{"type":"title","text":"מה השיפוע באמת עושה?","x":0.9,"y":0.27,"w":0.72,"size":58,"align":"right","animation":"slide-up","at":0.2},{"type":"text","text":"נראה את זה על y = mx + b","x":0.9,"y":0.43,"w":0.64,"size":30,"align":"right","color":"muted","animation":"fade","at":1.0},{"type":"formula","text":"y = mx + b","x":0.5,"y":0.66,"size":48,"align":"center","animation":"pop","at":1.7}]},{"seconds":11,"background":{"color":"white","pattern":"none"},"transition":"slide","elements":[{"type":"graph","equation":"2*x+1","x":0.08,"y":0.14,"w":0.52,"h":0.7,"animation":"draw","at":0.3},{"type":"formula","text":"m = 2","x":0.91,"y":0.31,"size":44,"align":"right","color":"black","animation":"slide-left","at":0.6},{"type":"arrow","from":[0.82,0.45],"to":[0.58,0.48],"label":"עולה 2 לכל 1 ימינה","color":"accent","animation":"draw","at":1.2}]},{"seconds":11,"background":{"color":"black","pattern":"dots"},"transition":"wipe","elements":[{"type":"graph","equation":"0.5*x+1","x":0.08,"y":0.14,"w":0.52,"h":0.7,"animation":"draw","at":0.3},{"type":"formula","text":"m = 0.5","x":0.91,"y":0.31,"size":44,"align":"right","animation":"pop","at":0.6},{"type":"text","text":"אותו רעיון — אבל העלייה מתונה יותר.","x":0.91,"y":0.5,"w":0.34,"size":26,"align":"right","color":"muted","animation":"fade","at":1.4}]},{"seconds":12,"background":{"color":"white","pattern":"grid"},"transition":"slide","elements":[{"type":"title","text":"אפשר לראות את השינוי","x":0.9,"y":0.18,"w":0.72,"size":48,"align":"right","color":"black","animation":"fade","at":0.2},{"type":"arrow","from":[0.2,0.72],"to":[0.8,0.3],"color":"accent","animation":"draw","at":0.7},{"type":"badge","text":"m גדול יותר","x":0.77,"y":0.28,"size":24,"color":"black","animation":"pop","at":1.4},{"type":"badge","text":"ישר תלול יותר","x":0.3,"y":0.69,"size":24,"color":"black","animation":"pop","at":2.0}]},{"seconds":11,"background":{"color":"black","pattern":"none"},"transition":"fade","elements":[{"type":"title","text":"הכלל לזכור","x":0.5,"y":0.27,"w":0.78,"size":54,"align":"center","animation":"slide-up","at":0.2},{"type":"formula","text":"|m| ↑  →  תלילות ↑","x":0.5,"y":0.52,"size":50,"align":"center","animation":"pop","at":1.1},{"type":"text","text":"הסימן של m קובע אם הישר עולה או יורד.","x":0.5,"y":0.7,"w":0.76,"size":27,"align":"center","color":"muted","animation":"fade","at":2.0}]}]}</video.lesson>
+<video.lesson>{"title":"פותרים 3x+5=20","duration":28,"scenes":[{"seconds":3,"background":{"color":"black","pattern":"grid"},"transition":"fade","elements":[{"type":"title","text":"איך מבודדים את x?","x":0.90,"y":0.22,"w":0.72,"size":56,"align":"right","animation":"slide-up","at":0.05},{"type":"formula","text":"3x+5=20","x":0.5,"y":0.56,"w":0.64,"size":48,"align":"center","animation":"pop","at":0.25}]},{"seconds":15,"background":{"color":"white","pattern":"none"},"transition":"slide","elements":[{"type":"equation-sequence","x":0.5,"y":0.46,"w":0.76,"h":0.48,"size":50,"color":"black","at":0.05,"animation":"fade","stepSeconds":3.2,"steps":[{"formula":"3x+5=20","note":"מתחילים מהמשוואה"},{"formula":"3x+5-5=20-5","note":"מחסרים 5 משני האגפים"},{"formula":"3x=15","note":"5-5 מתבטל"},{"formula":"\\frac{3x}{3}=\\frac{15}{3}","note":"מחלקים את שני האגפים ב-3"},{"formula":"x=5","note":"קיבלנו את הפתרון"}]}]},{"seconds":5,"background":{"color":"black","pattern":"dots"},"transition":"wipe","elements":[{"type":"title","text":"בדיקה","x":0.88,"y":0.18,"w":0.7,"size":46,"align":"right","animation":"fade","at":0.05},{"type":"formula","text":"3\\cdot5+5=20","x":0.5,"y":0.5,"w":0.7,"size":50,"align":"center","color":"green","animation":"pop","at":0.5},{"type":"badge","text":"✓ נכון","x":0.5,"y":0.72,"size":24,"color":"green","animation":"pulse","at":1.3}]},{"seconds":5,"background":{"color":"white","pattern":"none"},"transition":"fade","elements":[{"type":"summary","x":0.5,"y":0.48,"w":0.82,"h":0.55,"animation":"slide-up","at":0.05,"items":[{"label":"פעולה","value":"חיסור 5 ואז חלוקה ב-3"},{"label":"תשובה","value":"x=5"}]}]}]}</video.lesson>
 
-- התג video.lesson מופיע בדיוק במקום שבו כרטיס הווידאו צריך להופיע בתשובה.
+- התג video.lesson מופיע בדיוק במקום שבו כרטיס הסרטון צריך להופיע בתשובה.
 - אל תייצר יותר מסרטון אחד בתשובה אלא אם המשתמש מבקש כמה במפורש.
 
 סגנון תשובה מומלץ:
