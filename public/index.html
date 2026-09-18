@@ -7842,9 +7842,15 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       element.summaryItems.slice(0,6);
 
     const cols=
-      items.length<=2
-        ? items.length
-        : 2;
+      items.length<=1
+        ? 1
+        : items.length===2
+          ? 2
+          : items.length===3
+            ? 3
+            : items.length===4
+              ? 2
+              : 3;
 
     const rows=
       Math.ceil(
