@@ -14,6 +14,7 @@
 <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjs@14.6.0/lib/browser/math.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 :root{
   --bg:#fcfcfc;
@@ -3171,6 +3172,30 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           items:Array.isArray(rawElement.items)
             ? rawElement.items.slice(0,5).map(function(item){return String(item).slice(0,160)})
             : [],
+          summaryItems:Array.isArray(rawElement.items)
+            ? rawElement.items.slice(0,6).map(function(item,index){
+                if(item&&typeof item==='object'){
+                  return {
+                    label:String(item.label||('פריט '+(index+1))).slice(0,80),
+                    value:String(item.value||'').slice(0,150)
+                  };
+                }
+                return {
+                  label:'פריט '+(index+1),
+                  value:String(item||'').slice(0,150)
+                };
+              })
+            : [],
+          steps:Array.isArray(rawElement.steps)
+            ? rawElement.steps.slice(0,8).map(function(step,index){
+                return {
+                  formula:String(step?.formula||'').slice(0,220),
+                  note:String(step?.note||'').slice(0,150),
+                  label:String(step?.label||('שלב '+(index+1))).slice(0,80)
+                };
+              })
+            : [],
+          stepSeconds:clamp(Number(rawElement.stepSeconds??2.4),.8,6),
           equation:String(rawElement.equation||'').slice(0,180),
           expression:String(rawElement.expression||'').slice(0,120),
           labels:Array.isArray(rawElement.labels)
@@ -3181,6 +3206,10 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
             : [],
           numerator:Number(rawElement.numerator),
           denominator:Number(rawElement.denominator),
+          widthLabel:String(rawElement.widthLabel||'').slice(0,80),
+          heightLabel:String(rawElement.heightLabel||'').slice(0,80),
+          rows:clamp(Math.floor(Number(rawElement.rows)||0),0,20),
+          cols:clamp(Math.floor(Number(rawElement.cols)||0),0,20),
           x:clamp(Number(rawElement.x??.5),0,1),
           y:clamp(Number(rawElement.y??.5),0,1),
           w:clamp(Number(rawElement.w??.52),.08,1),
@@ -3251,13 +3280,256 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       });
     }
 
+    scenes.forEach(function(scene,index){
+      resolveLessonSceneLayout(scene,index);
+    });
+
     const duration=scenes.reduce(function(sum,scene){return sum+scene.seconds},0);
 
     return {
       title:String(data.title||'סרטון הסבר').slice(0,100),
       duration:duration,
-      scenes:scenes
+      scenes:scenes,
+      _formulaAssets:new Map(),
+      _assetsReady:false
     };
+  }
+
+  function lessonElementBox(element){
+    const safeTextHeight=function(lines){
+      return clamp(
+        (element.size/720)*(lines||1)*1.45,
+        .055,
+        .42
+      );
+    };
+
+    if(
+      element.type==='arrow'||
+      element.type==='line'||
+      element.type==='highlight'
+    ){
+      return null;
+    }
+
+    if(
+      element.type==='title'||
+      element.type==='text'||
+      element.type==='formula'
+    ){
+      const lines=
+        element.type==='title'
+          ? 2
+          : element.type==='text'
+            ? 4
+            : 1.45;
+
+      const h=
+        element.type==='formula'
+          ? clamp((element.size+56)/720,.09,.24)
+          : safeTextHeight(lines);
+
+      let left=element.x;
+      if(element.align==='right')left-=element.w;
+      else if(element.align==='center')left-=element.w/2;
+
+      return {
+        left:left,
+        top:element.y,
+        right:left+element.w,
+        bottom:element.y+h,
+        mode:'text'
+      };
+    }
+
+    if(element.type==='bullets'){
+      let left=element.x;
+      if(element.align==='right')left-=element.w;
+      else if(element.align==='center')left-=element.w/2;
+
+      return {
+        left:left,
+        top:element.y,
+        right:left+element.w,
+        bottom:element.y+clamp((element.size/720)*1.5*Math.max(2,element.items.length),.12,.42),
+        mode:'text'
+      };
+    }
+
+    if(element.type==='equation-sequence'){
+      return {
+        left:element.x-element.w/2,
+        top:element.y-element.h/2,
+        right:element.x+element.w/2,
+        bottom:element.y+element.h/2,
+        mode:'center'
+      };
+    }
+
+    if(element.type==='summary'){
+      return {
+        left:element.x-element.w/2,
+        top:element.y-element.h/2,
+        right:element.x+element.w/2,
+        bottom:element.y+element.h/2,
+        mode:'center'
+      };
+    }
+
+    const w=
+      element.type==='circle'
+        ? element.r*2
+        : element.w;
+
+    const h=
+      element.type==='circle'
+        ? element.r*2
+        : element.h;
+
+    return {
+      left:element.x-w/2,
+      top:element.y-h/2,
+      right:element.x+w/2,
+      bottom:element.y+h/2,
+      mode:'center'
+    };
+  }
+
+  function lessonClampElementToSafeArea(element){
+    const safe={
+      left:.065,
+      right:.935,
+      top:.095,
+      bottom:.86
+    };
+
+    const box=lessonElementBox(element);
+    if(!box)return;
+
+    let dx=0;
+    let dy=0;
+
+    if(box.left<safe.left)dx+=safe.left-box.left;
+    if(box.right>safe.right)dx-=box.right-safe.right;
+    if(box.top<safe.top)dy+=safe.top-box.top;
+    if(box.bottom>safe.bottom)dy-=box.bottom-safe.bottom;
+
+    element.x=clamp(element.x+dx,0,1);
+    element.y=clamp(element.y+dy,0,1);
+  }
+
+  function lessonBoxOverlap(a,b){
+    if(!a||!b)return 0;
+
+    const w=Math.max(
+      0,
+      Math.min(a.right,b.right)-
+      Math.max(a.left,b.left)
+    );
+
+    const h=Math.max(
+      0,
+      Math.min(a.bottom,b.bottom)-
+      Math.max(a.top,b.top)
+    );
+
+    return w*h;
+  }
+
+  function resolveLessonSceneLayout(scene){
+    scene.elements.forEach(function(element){
+      lessonClampElementToSafeArea(element);
+    });
+
+    const placed=[];
+    const margin=.024;
+
+    scene.elements.forEach(function(element){
+      if(
+        element.type==='arrow'||
+        element.type==='line'||
+        element.type==='highlight'
+      )return;
+
+      let box=lessonElementBox(element);
+      if(!box)return;
+
+      const collisions=placed.filter(function(other){
+        return lessonBoxOverlap(box,other.box)>.004;
+      });
+
+      if(collisions.length){
+        const originalX=element.x;
+        const originalY=element.y;
+
+        const candidates=[
+          [0,.08],[0,-.08],
+          [-.08,0],[.08,0],
+          [0,.14],[0,-.14],
+          [-.14,0],[.14,0]
+        ];
+
+        let best={
+          x:originalX,
+          y:originalY,
+          score:Infinity
+        };
+
+        candidates.forEach(function(delta){
+          element.x=clamp(originalX+delta[0],0,1);
+          element.y=clamp(originalY+delta[1],0,1);
+          lessonClampElementToSafeArea(element);
+
+          const test=lessonElementBox(element);
+          let score=0;
+
+          placed.forEach(function(other){
+            score+=lessonBoxOverlap(test,other.box);
+          });
+
+          score+=
+            Math.abs(element.x-originalX)*margin+
+            Math.abs(element.y-originalY)*margin;
+
+          if(score<best.score){
+            best={
+              x:element.x,
+              y:element.y,
+              score:score
+            };
+          }
+        });
+
+        element.x=best.x;
+        element.y=best.y;
+        lessonClampElementToSafeArea(element);
+        box=lessonElementBox(element);
+      }
+
+      placed.push({
+        element:element,
+        box:box
+      });
+    });
+
+    const earliest=
+      Math.min.apply(
+        null,
+        scene.elements.map(function(element){
+          return Number(element.at)||0;
+        }).concat([0])
+      );
+
+    if(earliest>.25&&scene.elements.length){
+      const shift=earliest-.12;
+
+      scene.elements.forEach(function(element){
+        element.at=Math.max(
+          0,
+          element.at-shift
+        );
+      });
+    }
   }
 
   function lessonTimeline(lesson){
