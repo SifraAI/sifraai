@@ -3266,6 +3266,162 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       };
     });
 
+    const drawPreferred=new Set([
+      'arrow','line','graph',
+      'numberline','bars',
+      'fraction','rectangle'
+    ]);
+
+    scenes.forEach(function(scene,sceneIndex){
+      scene.elements.forEach(function(element){
+        if(
+          drawPreferred.has(element.type)&&
+          (
+            element.animation==='none'||
+            element.animation==='fade'
+          )
+        ){
+          element.animation='draw';
+          element.duration=Math.max(
+            .7,
+            Math.min(1.8,element.duration)
+          );
+        }
+
+        if(
+          (
+            element.type==='box'
+          )&&
+          /^\s*(\d{1,2})\s*[×x*]\s*(\d{1,2})\s*$/.test(
+            element.text
+          )
+        ){
+          const match=
+            element.text.match(
+              /^\s*(\d{1,2})\s*[×x*]\s*(\d{1,2})\s*$/
+            );
+
+          const wNum=Number(match[1]);
+          const hNum=Number(match[2]);
+
+          if(
+            wNum>0&&hNum>0&&
+            wNum<=16&&hNum<=12
+          ){
+            element.type='rectangle';
+            element.widthLabel=match[1];
+            element.heightLabel=match[2];
+            element.cols=wNum;
+            element.rows=hNum;
+            element.text='';
+            element.animation='draw';
+            element.duration=Math.max(
+              1.2,
+              element.duration
+            );
+          }
+        }
+      });
+
+      if(
+        sceneIndex===scenes.length-1
+      ){
+        const title=
+          scene.elements.find(
+            function(element){
+              return (
+                element.type==='title'&&
+                /סיכום|תוצאות|מה למדנו/.test(
+                  element.text
+                )
+              );
+            }
+          );
+
+        const values=
+          scene.elements.filter(
+            function(element){
+              return (
+                (
+                  element.type==='badge'||
+                  element.type==='formula'||
+                  element.type==='counter'
+                )&&
+                (element.text||element.label)
+              );
+            }
+          );
+
+        const hasSummary=
+          scene.elements.some(
+            function(element){
+              return element.type==='summary';
+            }
+          );
+
+        if(
+          title&&
+          !hasSummary&&
+          values.length>=2
+        ){
+          scene.elements=
+            scene.elements.filter(
+              function(element){
+                return !values.includes(element);
+              }
+            );
+
+          scene.elements.push({
+            type:'summary',
+            summaryItems:
+              values.slice(0,6).map(
+                function(element,index){
+                  return {
+                    label:
+                      element.label||
+                      'תוצאה '+(index+1),
+                    value:
+                      element.text||
+                      element.label
+                  };
+                }
+              ),
+            items:[],
+            steps:[],
+            stepSeconds:2,
+            equation:'',
+            expression:'',
+            labels:[],
+            values:[],
+            numerator:NaN,
+            denominator:NaN,
+            widthLabel:'',
+            heightLabel:'',
+            rows:0,
+            cols:0,
+            x:.5,
+            y:.56,
+            w:.82,
+            h:.48,
+            r:.08,
+            size:34,
+            align:'center',
+            color:'text',
+            fill:'transparent',
+            stroke:'text',
+            label:'',
+            at:.35,
+            duration:.7,
+            animation:'slide-up',
+            toX:null,
+            toY:null,
+            from:null,
+            to:null
+          });
+        }
+      }
+    });
+
     const natural=scenes.reduce(function(sum,scene){return sum+scene.seconds},0);
     const requested=clamp(
       Number(data.duration)||natural,
@@ -3278,6 +3434,45 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       scenes.forEach(function(scene){
         scene.seconds=Math.max(1.8,scene.seconds*scale);
       });
+    }
+
+    if(
+      scenes.length>=4&&
+      scenes[0].seconds>4
+    ){
+      const introTypes=
+        new Set([
+          'title','text','formula',
+          'badge','counter'
+        ]);
+
+      const introSimple=
+        scenes[0].elements.every(
+          function(element){
+            return introTypes.has(
+              element.type
+            );
+          }
+        );
+
+      if(introSimple){
+        const excess=
+          scenes[0].seconds-3.2;
+
+        scenes[0].seconds=3.2;
+
+        const receivers=
+          scenes.slice(1);
+
+        receivers.forEach(function(scene){
+          scene.seconds=
+            Math.min(
+              18,
+              scene.seconds+
+              excess/receivers.length
+            );
+        });
+      }
     }
 
     scenes.forEach(function(scene,index){
