@@ -581,7 +581,11 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   unicode-bidi:isolate;
   display:inline-block;
   vertical-align:middle;
-  margin:0 .08em;
+  margin:0 .1em;
+  padding:.06em .12em;
+  border-radius:7px;
+  cursor:zoom-in;
+  transition:background .15s ease;
 }
 .assistant-text .math-display{
   direction:ltr;
@@ -590,12 +594,27 @@ body.sidebar-collapsed .reopen-sidebar{display:grid}
   width:100%;
   overflow-x:auto;
   overflow-y:hidden;
-  margin:.7em 0;
-  padding:2px 0 5px;
+  margin:.82em 0;
+  padding:12px 10px 14px;
   text-align:center;
+  border-radius:12px;
+  cursor:zoom-in;
+  transition:background .15s ease;
+}
+.assistant-text .math-inline:hover,
+.assistant-text .math-display:hover{
+  background:color-mix(in srgb,var(--surface-hover) 72%,transparent);
 }
 .assistant-text .math-display .katex-display{margin:0}
-.assistant-text .katex{font-size:1.03em}
+.assistant-text .math-inline .katex{font-size:1.16em}
+.assistant-text .math-display .katex{font-size:1.38em}
+.stream-fade{
+  animation:streamFadeIn .17s cubic-bezier(.2,.75,.25,1) both;
+}
+@keyframes streamFadeIn{
+  from{opacity:.28;filter:blur(1.35px)}
+  to{opacity:1;filter:blur(0)}
+}
 .assistant-text.streaming{
   min-height:1.8em;
 }
@@ -831,6 +850,95 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
   text-align:center;
 }
 .toast.on{opacity:1;transform:translate(-50%,0)}
+
+.math-modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:220;
+  align-items:center;
+  justify-content:center;
+  padding:28px;
+}
+.math-modal.open{display:flex}
+.math-modal-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.48);
+  backdrop-filter:blur(13px);
+  -webkit-backdrop-filter:blur(13px);
+}
+.math-modal-card{
+  position:relative;
+  width:min(1040px,calc(100vw - 56px));
+  height:min(720px,calc(100vh - 56px));
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  border:1px solid var(--line-strong);
+  border-radius:20px;
+  background:color-mix(in srgb,var(--surface) 96%,transparent);
+  box-shadow:0 28px 90px rgba(0,0,0,.34);
+  animation:mathModalIn .18s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes mathModalIn{
+  from{opacity:0;transform:scale(.975) translateY(5px)}
+  to{opacity:1;transform:none}
+}
+.math-modal-toolbar{
+  min-height:54px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 10px;
+  border-bottom:1px solid var(--line);
+  direction:ltr;
+  flex:none;
+}
+.math-modal-tool{
+  width:36px;
+  height:36px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:transparent;
+  color:var(--text);
+  display:grid;
+  place-items:center;
+  font-size:19px;
+  line-height:1;
+}
+.math-modal-tool:hover{background:var(--surface-hover)}
+.math-modal-zoom-label{
+  min-width:52px;
+  text-align:center;
+  color:var(--muted);
+  font-size:12px;
+  font-variant-numeric:tabular-nums;
+}
+.math-modal-spacer{flex:1}
+.math-modal-viewport{
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:44px;
+  overscroll-behavior:contain;
+}
+.math-modal-content{
+  direction:ltr;
+  unicode-bidi:isolate;
+  min-width:max-content;
+  color:var(--text);
+  text-align:center;
+  font-size:32px;
+  line-height:1.4;
+  transition:font-size .1s ease;
+}
+.math-modal-content .katex-display{margin:0}
+.math-modal-content .katex{font-size:1em}
+
 @media(max-width:860px){
   .app{display:block}
   body.sidebar-collapsed .app{display:block}
@@ -878,6 +986,24 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 <body>
 <div class="overlay" id="overlay"></div>
 <div class="toast" id="toast" role="status"></div>
+
+<div class="math-modal" id="mathModal" aria-hidden="true">
+  <div class="math-modal-backdrop" id="mathModalBackdrop"></div>
+  <div class="math-modal-card" role="dialog" aria-modal="true" aria-label="תצוגת נוסחה מוגדלת">
+    <div class="math-modal-toolbar">
+      <button class="math-modal-tool" id="mathZoomOut" type="button" aria-label="הקטן">−</button>
+      <div class="math-modal-zoom-label" id="mathZoomLabel">100%</div>
+      <button class="math-modal-tool" id="mathZoomIn" type="button" aria-label="הגדל">+</button>
+      <button class="math-modal-tool" id="mathZoomReset" type="button" aria-label="אפס זום">1:1</button>
+      <div class="math-modal-spacer"></div>
+      <button class="math-modal-tool" id="mathModalClose" type="button" aria-label="סגור">×</button>
+    </div>
+    <div class="math-modal-viewport" id="mathModalViewport">
+      <div class="math-modal-content" id="mathModalContent"></div>
+    </div>
+  </div>
+</div>
+
 <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden>
 
 <div class="app">
@@ -1085,7 +1211,7 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 (function(){
   'use strict';
   const $=function(selector){return document.querySelector(selector)};
-  const sidebar=$('#sidebar'),overlay=$('#overlay'),home=$('#home'),chat=$('#chat'),chatInner=$('#chatInner'),bottomZone=$('#bottomZone'),homeInput=$('#homeInput'),chatInput=$('#chatInput'),sendHome=$('#sendHome'),sendChat=$('#sendChat'),fileInput=$('#fileInput'),homeAttachments=$('#homeAttachments'),chatAttachments=$('#chatAttachments'),homeComposer=$('#homeComposer'),chatComposer=$('#chatComposer'),toast=$('#toast'),themeColor=$('#themeColor'),accountMenu=$('#accountMenu'),accountButton=$('#accountButton'),dailyUsage=$('#dailyUsage'),dailyUsageFill=$('#dailyUsageFill'),brandLogo=$('#brandLogo'),scrollDownBtn=$('#scrollDownBtn');
+  const sidebar=$('#sidebar'),overlay=$('#overlay'),home=$('#home'),chat=$('#chat'),chatInner=$('#chatInner'),bottomZone=$('#bottomZone'),homeInput=$('#homeInput'),chatInput=$('#chatInput'),sendHome=$('#sendHome'),sendChat=$('#sendChat'),fileInput=$('#fileInput'),homeAttachments=$('#homeAttachments'),chatAttachments=$('#chatAttachments'),homeComposer=$('#homeComposer'),chatComposer=$('#chatComposer'),toast=$('#toast'),themeColor=$('#themeColor'),accountMenu=$('#accountMenu'),accountButton=$('#accountButton'),dailyUsage=$('#dailyUsage'),dailyUsageFill=$('#dailyUsageFill'),brandLogo=$('#brandLogo'),scrollDownBtn=$('#scrollDownBtn'),mathModal=$('#mathModal'),mathModalBackdrop=$('#mathModalBackdrop'),mathModalContent=$('#mathModalContent'),mathModalViewport=$('#mathModalViewport'),mathZoomLabel=$('#mathZoomLabel');
   const state={messages:[],images:[],busy:false};
   const MAX_IMAGES=2;
 
@@ -1106,11 +1232,11 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           trust:false,
           output:'htmlAndMathml'
         });
-        return '<span class="'+(displayMode?'math-display':'math-inline')+'">'+rendered+'</span>';
+        return '<span class="'+(displayMode?'math-display':'math-inline')+'" data-math="'+encodeURIComponent(math)+'" data-display="'+(displayMode?'1':'0')+'">'+rendered+'</span>';
       }catch(error){}
     }
 
-    return '<span class="'+(displayMode?'math-display':'math-inline')+'">'+esc((displayMode?'$$':'$')+source+(displayMode?'$$':'$'))+'</span>';
+    return '<span class="'+(displayMode?'math-display':'math-inline')+'" data-math="'+encodeURIComponent(math)+'" data-display="'+(displayMode?'1':'0')+'">'+esc((displayMode?'$$':'$')+source+(displayMode?'$$':'$'))+'</span>';
   }
   function findInlineDollar(source,from){
     for(let i=from;i<source.length;i+=1){
@@ -1216,6 +1342,86 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
 
     return html;
   }
+
+  function animateStreamTail(root){
+    const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+    const nodes=[];
+    let node;
+    while((node=walker.nextNode())){
+      if(!node.nodeValue||!node.nodeValue.trim())continue;
+      const parent=node.parentElement;
+      if(parent&&parent.closest('.katex, code, pre, .math-inline, .math-display'))continue;
+      nodes.push(node);
+    }
+
+    let remaining=125;
+    for(let i=nodes.length-1;i>=0&&remaining>0;i-=1){
+      const textNode=nodes[i];
+      const length=textNode.nodeValue.length;
+      const take=Math.min(remaining,length);
+      if(take<=0)continue;
+      const suffix=take===length?textNode:textNode.splitText(length-take);
+      const span=document.createElement('span');
+      span.className='stream-fade';
+      suffix.parentNode.insertBefore(span,suffix);
+      span.appendChild(suffix);
+      remaining-=take;
+    }
+  }
+
+  let mathZoom=1;
+  function setMathZoom(value){
+    mathZoom=Math.max(.65,Math.min(3.5,value));
+    mathModalContent.style.fontSize=(32*mathZoom)+'px';
+    mathZoomLabel.textContent=Math.round(mathZoom*100)+'%';
+  }
+
+  function openMathModal(target){
+    const encoded=target.dataset.math;
+    if(!encoded)return;
+    let math='';
+    try{math=decodeURIComponent(encoded)}catch(error){return}
+
+    if(window.katex){
+      mathModalContent.innerHTML=window.katex.renderToString(math,{
+        throwOnError:false,
+        displayMode:true,
+        strict:'ignore',
+        trust:false,
+        output:'htmlAndMathml'
+      });
+    }else{
+      mathModalContent.textContent=math;
+    }
+
+    setMathZoom(1);
+    mathModal.classList.add('open');
+    mathModal.setAttribute('aria-hidden','false');
+    document.body.style.overflow='hidden';
+  }
+
+  function closeMathModal(){
+    mathModal.classList.remove('open');
+    mathModal.setAttribute('aria-hidden','true');
+    document.body.style.overflow='';
+  }
+
+  chatInner.addEventListener('click',function(event){
+    const target=event.target.closest('.math-inline,.math-display');
+    if(target)openMathModal(target);
+  });
+  $('#mathModalClose').addEventListener('click',closeMathModal);
+  mathModalBackdrop.addEventListener('click',closeMathModal);
+  $('#mathZoomIn').addEventListener('click',function(){setMathZoom(mathZoom+.2)});
+  $('#mathZoomOut').addEventListener('click',function(){setMathZoom(mathZoom-.2)});
+  $('#mathZoomReset').addEventListener('click',function(){setMathZoom(1)});
+  mathModalViewport.addEventListener('wheel',function(event){
+    event.preventDefault();
+    setMathZoom(mathZoom+(event.deltaY<0?.12:-.12));
+  },{passive:false});
+  document.addEventListener('keydown',function(event){
+    if(event.key==='Escape'&&mathModal.classList.contains('open'))closeMathModal();
+  });
 
   function showToast(message){toast.textContent=message;toast.classList.add('on');clearTimeout(showToast.timer);showToast.timer=setTimeout(function(){toast.classList.remove('on')},2200)}
   function resizeTextarea(el){el.style.height='130px';el.style.height=Math.min(Math.max(130,el.scrollHeight),220)+'px'}
@@ -1447,14 +1653,11 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     let firstToken=false;
     let completed=false;
     let networkFinished=false;
-    let revealFrame=0;
-    let revealBudget=0;
-    let lastRevealTime=0;
+    let flushTimer=0;
     let revealDone=false;
     let resolveReveal;
-    const revealFinished=new Promise(function(resolve){
-      resolveReveal=resolve;
-    });
+
+    const revealFinished=new Promise(function(resolve){resolveReveal=resolve});
 
     function beginStreaming(){
       if(firstToken)return;
@@ -1465,140 +1668,79 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     }
 
     function renderVisible(){
-      content.innerHTML=
-        formatAnswer(visibleText);
+      content.innerHTML=formatAnswer(visibleText);
+      animateStreamTail(content);
       updateScrollButton();
     }
 
     function finishReveal(){
       if(revealDone)return;
       revealDone=true;
-      revealFrame=0;
+      if(flushTimer){clearTimeout(flushTimer);flushTimer=0}
       renderVisible();
       resolveReveal();
     }
 
-    function revealTick(now){
-      if(!lastRevealTime)lastRevealTime=now;
+    function chooseBurstLength(pendingText){
+      const length=pendingText.length;
+      let target=length>1200?260:length>500?190:length>180?135:Math.min(105,length);
+      if(target>=length)return length;
+      const min=Math.max(55,target-35);
+      for(let i=target;i>=min;i-=1){
+        if(/\s/.test(pendingText[i]||''))return i+1;
+      }
+      return target;
+    }
 
-      const delta=Math.min(
-        50,
-        Math.max(0,now-lastRevealTime)
-      );
+    function flushBurst(){
+      flushTimer=0;
+      const pending=receivedText.slice(visibleText.length);
 
-      lastRevealTime=now;
-
-      const pending=
-        receivedText.length-
-        visibleText.length;
-
-      if(pending>0){
-        const speed=
-          pending>900
-            ? 92
-            : pending>350
-              ? 80
-              : 68;
-
-        revealBudget+=
-          speed*(delta/1000);
-
-        let count=
-          Math.floor(revealBudget);
-
-        if(count>0){
-          count=Math.min(
-            count,
-            pending,
-            4
-          );
-
-          revealBudget-=count;
-
-          visibleText=
-            receivedText.slice(
-              0,
-              visibleText.length+count
-            );
-
-          renderVisible();
-        }
+      if(pending.length){
+        const take=chooseBurstLength(pending);
+        visibleText=receivedText.slice(0,visibleText.length+take);
+        renderVisible();
       }
 
-      if(
-        networkFinished &&
-        visibleText.length>=receivedText.length
-      ){
+      if(networkFinished&&visibleText.length>=receivedText.length){
         finishReveal();
         return;
       }
 
-      revealFrame=
-        requestAnimationFrame(
-          revealTick
-        );
+      if(receivedText.length>visibleText.length){
+        flushTimer=setTimeout(flushBurst,38);
+      }
     }
 
-    function ensureRevealLoop(){
-      if(revealFrame||revealDone)return;
-      lastRevealTime=0;
-      revealFrame=
-        requestAnimationFrame(
-          revealTick
-        );
+    function scheduleFlush(){
+      if(flushTimer||revealDone)return;
+      flushTimer=setTimeout(flushBurst,24);
     }
 
     function markNetworkFinished(){
       networkFinished=true;
-
-      if(
-        !receivedText.length ||
-        visibleText.length>=receivedText.length
-      ){
-        finishReveal();
-      }else{
-        ensureRevealLoop();
-      }
+      if(!receivedText.length||visibleText.length>=receivedText.length)finishReveal();
+      else scheduleFlush();
     }
 
     function parseEventBlock(block){
       let eventName='message';
       const dataLines=[];
-
       block.split('\n').forEach(function(line){
-        if(line.startsWith('event:')){
-          eventName=
-            line.slice(6).trim();
-        }else if(line.startsWith('data:')){
-          dataLines.push(
-            line.slice(5).trimStart()
-          );
-        }
+        if(line.startsWith('event:'))eventName=line.slice(6).trim();
+        else if(line.startsWith('data:'))dataLines.push(line.slice(5).trimStart());
       });
-
       if(!dataLines.length)return;
 
       let data={};
-
-      try{
-        data=JSON.parse(
-          dataLines.join('\n')
-        );
-      }catch(error){
-        return;
-      }
+      try{data=JSON.parse(dataLines.join('\n'))}catch(error){return}
 
       if(eventName==='token'){
-        const token=
-          typeof data.text==='string'
-            ? data.text
-            : '';
-
+        const token=typeof data.text==='string'?data.text:'';
         if(!token)return;
-
         beginStreaming();
         receivedText+=token;
-        ensureRevealLoop();
+        scheduleFlush();
         return;
       }
 
@@ -1608,12 +1750,7 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
       }
 
       if(eventName==='error'){
-        const streamError=
-          new Error(
-            data.error ||
-            'החיבור למודל נקטע. נסה שוב.'
-          );
-
+        const streamError=new Error(data.error||'החיבור למודל נקטע. נסה שוב.');
         streamError.streamError=true;
         throw streamError;
       }
@@ -1622,192 +1759,83 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
     try{
       const response=await fetch('/api/chat',{
         method:'POST',
-        headers:{
-          'Content-Type':'application/json'
-        },
+        headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
-          messages:
-            state.messages.slice(-16),
-          images:images.map(function(item){
-            return {
-              dataUrl:item.dataUrl
-            };
-          })
+          messages:state.messages.slice(-16),
+          images:images.map(function(item){return {dataUrl:item.dataUrl}})
         })
       });
 
-      const remaining=
-        response.headers.get(
-          'RateLimit-Remaining'
-        );
-
+      const remaining=response.headers.get('RateLimit-Remaining');
       if(remaining!==null){
-        const left=Math.max(
-          0,
-          Math.min(
-            150,
-            Number(remaining)
-          )
-        );
-
+        const left=Math.max(0,Math.min(150,Number(remaining)));
         if(Number.isFinite(left)){
           const used=150-left;
-
-          dailyUsage.textContent=
-            used+' / 150';
-
-          dailyUsageFill.style.width=
-            Math.min(
-              100,
-              (used/150)*100
-            )+'%';
+          dailyUsage.textContent=used+' / 150';
+          dailyUsageFill.style.width=Math.min(100,(used/150)*100)+'%';
         }
       }
 
       if(!response.ok){
         let data={};
-
-        try{
-          data=await response.json();
-        }catch(error){}
-
-        if(
-          response.status===429 &&
-          data.retryAfter
-        ){
-          throw new Error(
-            'שלחת יותר מדי הודעות. נסה שוב בעוד '+
-            data.retryAfter+
-            ' שניות.'
-          );
+        try{data=await response.json()}catch(error){}
+        if(response.status===429&&data.retryAfter){
+          throw new Error('שלחת יותר מדי הודעות. נסה שוב בעוד '+data.retryAfter+' שניות.');
         }
-
-        throw new Error(
-          data.error ||
-          'לא הצלחתי לקבל תשובה כרגע.'
-        );
+        throw new Error(data.error||'לא הצלחתי לקבל תשובה כרגע.');
       }
 
-      if(!response.body){
-        throw new Error(
-          'הדפדפן לא קיבל זרם תשובה.'
-        );
-      }
+      if(!response.body)throw new Error('הדפדפן לא קיבל זרם תשובה.');
 
-      const reader=
-        response.body.getReader();
-
-      const decoder=
-        new TextDecoder();
-
+      const reader=response.body.getReader();
+      const decoder=new TextDecoder();
       let buffer='';
 
       while(true){
-        const result=
-          await reader.read();
-
+        const result=await reader.read();
         if(result.done)break;
-
-        buffer+=decoder.decode(
-          result.value,
-          {stream:true}
-        );
-
-        buffer=
-          buffer.replace(/\r\n/g,'\n');
+        buffer+=decoder.decode(result.value,{stream:true});
+        buffer=buffer.replace(/\r\n/g,'\n');
 
         let boundary;
-
-        while(
-          (boundary=
-            buffer.indexOf('\n\n')
-          )!==-1
-        ){
-          const block=
-            buffer.slice(0,boundary);
-
-          buffer=
-            buffer.slice(boundary+2);
-
+        while((boundary=buffer.indexOf('\n\n'))!==-1){
+          const block=buffer.slice(0,boundary);
+          buffer=buffer.slice(boundary+2);
           parseEventBlock(block);
         }
       }
 
       buffer+=decoder.decode();
-      buffer=
-        buffer.replace(/\r\n/g,'\n');
-
-      if(buffer.trim()){
-        parseEventBlock(buffer);
-      }
+      buffer=buffer.replace(/\r\n/g,'\n');
+      if(buffer.trim())parseEventBlock(buffer);
 
       markNetworkFinished();
       await revealFinished;
 
-      if(!receivedText.trim()){
-        throw new Error(
-          'השרת החזיר תשובה ריקה.'
-        );
-      }
+      if(!receivedText.trim())throw new Error('השרת החזיר תשובה ריקה.');
 
-      content.classList.remove(
-        'streaming'
-      );
-
-      state.messages.push({
-        role:'assistant',
-        content:receivedText
-      });
-
-      row.appendChild(
-        actionBar(receivedText)
-      );
-
+      content.classList.remove('streaming');
+      state.messages.push({role:'assistant',content:receivedText});
+      row.appendChild(actionBar(receivedText));
       updateScrollButton();
 
-      if(!completed){
-        console.warn(
-          'Sifra stream ended without an explicit done event'
-        );
-      }
-
+      if(!completed)console.warn('Sifra stream ended without an explicit done event');
       return receivedText;
     }catch(error){
       markNetworkFinished();
 
       if(receivedText.trim()){
         await revealFinished;
-
-        content.classList.remove(
-          'streaming',
-          'thinking'
-        );
-
-        const note=
-          document.createElement('div');
-
-        note.className=
-          'stream-error-note';
-
-        note.textContent=
-          error.message ||
-          'החיבור נקטע. נסה שוב.';
-
+        content.classList.remove('streaming','thinking');
+        const note=document.createElement('div');
+        note.className='stream-error-note';
+        note.textContent=error.message||'החיבור נקטע. נסה שוב.';
         row.appendChild(note);
         updateScrollButton();
       }else{
-        content.classList.remove(
-          'streaming',
-          'thinking'
-        );
-
-        content.classList.add(
-          'error'
-        );
-
-        content.textContent=
-          error.message ||
-          'לא הצלחתי לקבל תשובה.';
+        content.classList.remove('streaming','thinking');
+        content.classList.add('error');
+        content.textContent=error.message||'לא הצלחתי לקבל תשובה.';
       }
 
       throw error;
