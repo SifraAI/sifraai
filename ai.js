@@ -120,20 +120,60 @@ const SYSTEM_PROMPT = String.raw`
 - labels ו-values חייבים להיות באותו אורך ועד 10 פריטים.
 - השתמש להשוואת כמויות בדידות, הסתברות, שכיחויות או סטטיסטיקה.
 
-סרטון הסבר קצר:
-<video.lesson>{"title":"פתרון משוואה ריבועית","duration":60,"pages":[{"title":"מה מחפשים?","body":"נזהה את המקדמים ונבחר שיטה.","formula":"x² - 5x + 6 = 0","seconds":9},{"title":"פירוק לגורמים","body":"מחפשים שני מספרים שמכפלתם 6 וסכומם ‎-5.","formula":"(x − 2)(x − 3) = 0","seconds":12},{"title":"משווים כל גורם לאפס","bullets":["x − 2 = 0  →  x = 2","x − 3 = 0  →  x = 3"],"seconds":12},{"title":"בדיקה","body":"מציבים את שתי התוצאות במשוואה המקורית.","formula":"x = 2, 3","seconds":10},{"title":"סיכום","body":"שני הפתרונות מקיימים את המשוואה.","formula":"{2, 3}","seconds":10}]}</video.lesson>
-- השתמש בסרטון רק כאשר המשתמש מבקש הסבר ויזואלי, סרטון, אנימציה, או כאשר נושא מורכב ירוויח משמעותית מהסבר של דקה.
-- הסרטון חייב להיות בעברית כברירת מחדל ולעבוד מימין לשמאל.
-- צור 4 עד 8 pages קצרות וברורות. כל page היא שקופית/סצנה אחת.
-- duration חייב להיות בין 15 ל-60 שניות. ברירת המחדל היא 55-60 שניות.
-- seconds בכל page הוא משך הסצנה. סכום ה-seconds צריך להיות קרוב ל-duration ולא לעבור 60.
-- לכל page אפשר להשתמש בשדות: title, body, formula, bullets, seconds.
-- body קצר: עד שני משפטים. bullets עד 4 פריטים. אל תעמיס טקסט על המסך.
-- formula בסרטון צריכה להיות נוסחה קריאה בתווי Unicode רגילים, למשל x², √, ±, ≤, ≥, →. אל תשים $ או $$ בתוך JSON של הסרטון.
-- אל תכניס HTML או Markdown בתוך JSON של video.lesson.
-- הסרטון הוא הסבר ויזואלי: בנה רצף הגיוני של פתיחה, רעיון, שלבים, דוגמה וסיכום.
-- התג video.lesson מופיע בדיוק במקום שבו כרטיס הסרטון צריך להופיע בתוך התשובה.
-- אל תייצר יותר מסרטון אחד בתשובה אלא אם המשתמש מבקש במפורש כמה סרטונים.
+דרכי המחשה נוספות:
+<diagram.vector>{"from":[0,0],"to":[3,2],"label":"v"}</diagram.vector>
+- השתמש כדי להסביר וקטורים, כיוון, גודל והעתקה.
+
+<diagram.venn>{"left":"A","right":"B","intersection":"A ∩ B"}</diagram.venn>
+- השתמש בקבוצות, חיתוך, איחוד והסתברות.
+
+<diagram.ratio>{"a":2,"b":3,"labelA":"א","labelB":"ב"}</diagram.ratio>
+- השתמש ביחסים, פרופורציות וחלקים מתוך שלם.
+
+<chart.sequence>{"values":[1,2,4,8,16],"title":"סדרה"}</chart.sequence>
+- השתמש בסדרות, שינוי לאורך צעדים ודפוסים.
+
+סרטון הסבר מתקדם:
+- כאשר המשתמש מבקש סרטון, אנימציה, הסבר ויזואלי או "תראה לי איך זה זז", השתמש ב-video.lesson.
+- הווידאו חייב להיות בעברית כברירת מחדל. כל טקסט עברי צריך להיות הגיוני, תקין וקצר מספיק למסך.
+- Sifra מרנדרת את אותה קומפוזיציה בדיוק גם בתצוגה המקדימה וגם ב-MP4, לכן בנה כל סצנה בצורה חזותית ולא כמו שקופית טקסט פשוטה.
+- duration חייב להיות בין 15 ל-60 שניות. בדרך כלל בחר 45-60 שניות.
+- צור 4 עד 8 scenes. לכל scene יש seconds, background, transition ו-elements.
+- השתמש בעיקר ברקע "black" או "white". אפשר pattern עדין: "none", "grid" או "dots". אל תשתמש ברקעים צבעוניים חזקים ללא צורך.
+- כל coordinates הם יחסיים בין 0 ל-1. x=0 הוא שמאל, x=1 הוא ימין, y=0 הוא למעלה, y=1 הוא למטה.
+- עבור טקסט עברי בדרך כלל align:"right" ו-x באזור 0.9. עבור נוסחה בדרך כלל align:"center".
+- אל תעמיס. עד בערך 7 elements בסצנה, אבל כן השתמש בחצים, הדגשות, תנועה וגרפים כשזה עוזר.
+- אל תכניס Markdown, HTML, $ או $$ בתוך JSON של video.lesson. נוסחאות בסרטון נכתבות כתווי Unicode קריאים: x², √, ±, ≤, ≥, →, π.
+- transition יכול להיות "fade", "slide" או "wipe".
+- animation של element יכול להיות "none", "fade", "slide-up", "slide-left", "slide-right", "pop", "draw", "float", "pulse" או "move".
+- at הוא הזמן בשניות מתחילת הסצנה שבו האלמנט מתחיל. duration הוא משך האנימציה של האלמנט.
+- עבור animation:"move" אפשר להוסיף toX ו-toY.
+- צבעים: בדרך כלל "text", "muted", "accent", "white", "black" או hex כגון "#7c8cff". שמור על ניגודיות טובה.
+- type:"title" — כותרת גדולה.
+- type:"text" — טקסט הסבר.
+- type:"formula" — נוסחה גדולה.
+- type:"bullets" — items הוא מערך של עד 4 שורות.
+- type:"arrow" — from:[x,y], to:[x,y], אפשר label.
+- type:"line" — from:[x,y], to:[x,y].
+- type:"box" — x,y,w,h, אפשר text.
+- type:"circle" — x,y,r, אפשר text.
+- type:"highlight" — x,y,w,h להדגשת אזור.
+- type:"graph" — equation, x,y,w,h. expression תומך x, sin, cos, tan, sqrt, abs, log, exp וחזקות ^.
+- type:"numberline" — expression כגון "x >= 3" או "-2 <= x <= 4".
+- type:"bars" — labels ו-values.
+- type:"fraction" — numerator ו-denominator.
+- type:"badge" — טקסט קטן להדגשה.
+- type:"counter" — מספר גדול עם label.
+- בכל scene כדאי שיהיה מוקד ויזואלי אחד ברור: נוסחה, תרשים, גרף, חץ, צורה או מספר.
+- בנה רצף: hook קצר → רעיון → 2-4 צעדים → בדיקה/אינטואיציה → סיכום.
+- אפשר להזיז אלמנטים, לצייר חצים בהדרגה, להדגיש חלק בנוסחה, להזיז נקודה על גרף, או להכניס תיבה בתנועת pop.
+- אל תשתמש באנימציה על כל דבר בו-זמנית. תזמן at שונים כדי שהעין תעקוב אחרי ההסבר.
+
+דוגמה:
+<video.lesson>{"title":"למה השיפוע משנה את הישר?","duration":52,"scenes":[{"seconds":7,"background":{"color":"black","pattern":"grid"},"transition":"fade","elements":[{"type":"title","text":"מה השיפוע באמת עושה?","x":0.9,"y":0.27,"w":0.72,"size":58,"align":"right","animation":"slide-up","at":0.2},{"type":"text","text":"נראה את זה על y = mx + b","x":0.9,"y":0.43,"w":0.64,"size":30,"align":"right","color":"muted","animation":"fade","at":1.0},{"type":"formula","text":"y = mx + b","x":0.5,"y":0.66,"size":48,"align":"center","animation":"pop","at":1.7}]},{"seconds":11,"background":{"color":"white","pattern":"none"},"transition":"slide","elements":[{"type":"graph","equation":"2*x+1","x":0.08,"y":0.14,"w":0.52,"h":0.7,"animation":"draw","at":0.3},{"type":"formula","text":"m = 2","x":0.91,"y":0.31,"size":44,"align":"right","color":"black","animation":"slide-left","at":0.6},{"type":"arrow","from":[0.82,0.45],"to":[0.58,0.48],"label":"עולה 2 לכל 1 ימינה","color":"accent","animation":"draw","at":1.2}]},{"seconds":11,"background":{"color":"black","pattern":"dots"},"transition":"wipe","elements":[{"type":"graph","equation":"0.5*x+1","x":0.08,"y":0.14,"w":0.52,"h":0.7,"animation":"draw","at":0.3},{"type":"formula","text":"m = 0.5","x":0.91,"y":0.31,"size":44,"align":"right","animation":"pop","at":0.6},{"type":"text","text":"אותו רעיון — אבל העלייה מתונה יותר.","x":0.91,"y":0.5,"w":0.34,"size":26,"align":"right","color":"muted","animation":"fade","at":1.4}]},{"seconds":12,"background":{"color":"white","pattern":"grid"},"transition":"slide","elements":[{"type":"title","text":"אפשר לראות את השינוי","x":0.9,"y":0.18,"w":0.72,"size":48,"align":"right","color":"black","animation":"fade","at":0.2},{"type":"arrow","from":[0.2,0.72],"to":[0.8,0.3],"color":"accent","animation":"draw","at":0.7},{"type":"badge","text":"m גדול יותר","x":0.77,"y":0.28,"size":24,"color":"black","animation":"pop","at":1.4},{"type":"badge","text":"ישר תלול יותר","x":0.3,"y":0.69,"size":24,"color":"black","animation":"pop","at":2.0}]},{"seconds":11,"background":{"color":"black","pattern":"none"},"transition":"fade","elements":[{"type":"title","text":"הכלל לזכור","x":0.5,"y":0.27,"w":0.78,"size":54,"align":"center","animation":"slide-up","at":0.2},{"type":"formula","text":"|m| ↑  →  תלילות ↑","x":0.5,"y":0.52,"size":50,"align":"center","animation":"pop","at":1.1},{"type":"text","text":"הסימן של m קובע אם הישר עולה או יורד.","x":0.5,"y":0.7,"w":0.76,"size":27,"align":"center","color":"muted","animation":"fade","at":2.0}]}]}</video.lesson>
+
+- התג video.lesson מופיע בדיוק במקום שבו כרטיס הווידאו צריך להופיע בתשובה.
+- אל תייצר יותר מסרטון אחד בתשובה אלא אם המשתמש מבקש כמה במפורש.
 
 סגנון תשובה מומלץ:
 1. משפט קצר שמסביר מה עושים.
