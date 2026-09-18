@@ -5099,8 +5099,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
                   item.value,
                   palette.text,
                   Math.max(
-                    24,
-                    element.size*.70
+                    38,
+                    element.size
                   )
                 );
             });
@@ -6743,8 +6743,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         ctx.font=
           '600 '+
           Math.max(
-            17,
-            element.size*.46
+            21,
+            element.size*.58
           )+
           'px Huninn, Arial';
 
@@ -6799,8 +6799,8 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
           ctx.font=
             '700 '+
             Math.max(
-              23,
-              element.size*.70
+              34,
+              element.size*.94
             )+
             'px Huninn, Arial';
 
@@ -7224,7 +7224,7 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
         keyFrameInterval:2,
         latencyMode:'quality',
         contentHint:'detail',
-        hardwareAcceleration:'no-preference'
+        hardwareAcceleration:'prefer-software'
       };
 
       if(
@@ -7241,7 +7241,7 @@ html[data-theme="dark"] .quick-icon.blue{background:#21354b;color:#7ab6ff}
               bitrate:10_000_000,
               framerate:fps,
               latencyMode:'quality',
-              hardwareAcceleration:'no-preference'
+              hardwareAcceleration:'prefer-software'
             });
 
           if(avcSupport.supported){
