@@ -1839,12 +1839,19 @@ html[data-theme="dark"] .home-start:nth-child(3) .home-start-badge{
   border-radius:10px;
 }
 
+.home-tool-icon{
+  font-size:0 !important;
+}
+.home-tool-icon i,
 .home-tool-icon svg{
   display:block;
-  width:19px !important;
-  height:19px !important;
+  width:21px !important;
+  height:21px !important;
   margin:0 !important;
   flex:none;
+  stroke-width:2.15 !important;
+  stroke-linecap:round;
+  stroke-linejoin:round;
 }
 
 .home-start-badge{
@@ -2526,47 +2533,19 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
             </div>
             <div class="home-tools">
               <button class="home-tool smart-action" data-prompt="צור לי סרטון הסבר קצר בעברית על ">
-                <span class="home-tool-icon purple" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3.5" y="5.5" width="17" height="13" rx="3"></rect>
-                    <path d="m10 9.25 5 2.75-5 2.75z"></path>
-                  </svg>
-                </span>
+                <span class="home-tool-icon purple" aria-hidden="true"><i data-lucide="play"></i></span>
                 <div><strong>צור סרטון</strong><span>הסבר ויזואלי קצר עם אנימציות.</span></div>
               </button>
               <button class="home-tool smart-action" data-prompt="בנה לי גרף ברור והסבר מה רואים בו עבור ">
-                <span class="home-tool-icon blue" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4.5 4.5v15h15"></path>
-                    <path d="m7.5 15.5 3.6-4.6 3.1 2.35 3.8-5.1"></path>
-                    <circle cx="7.5" cy="15.5" r=".8" fill="currentColor" stroke="none"></circle>
-                    <circle cx="11.1" cy="10.9" r=".8" fill="currentColor" stroke="none"></circle>
-                    <circle cx="14.2" cy="13.25" r=".8" fill="currentColor" stroke="none"></circle>
-                    <circle cx="18" cy="8.15" r=".8" fill="currentColor" stroke="none"></circle>
-                  </svg>
-                </span>
+                <span class="home-tool-icon blue" aria-hidden="true"><i data-lucide="chart-line"></i></span>
                 <div><strong>בנה גרף</strong><span>גרף אינטראקטיבי עם הסבר.</span></div>
               </button>
               <button class="home-tool smart-action" data-prompt="פתור לי את התרגיל הבא שלב־שלב: ">
-                <span class="home-tool-icon green" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M6 7.5h12"></path>
-                    <path d="M6 16.5h12"></path>
-                    <path d="M9.25 4.5 7.25 19.5"></path>
-                    <path d="m16.75 4.5-2 15"></path>
-                  </svg>
-                </span>
+                <span class="home-tool-icon green" aria-hidden="true"><i data-lucide="calculator"></i></span>
                 <div><strong>פתור תרגיל</strong><span>פתרון מלא בלי לדלג על שלבים.</span></div>
               </button>
               <button class="home-tool smart-action" data-prompt="צור לי מבחן תרגול קצר בנושא ">
-                <span class="home-tool-icon orange" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="5" y="3.5" width="14" height="17" rx="2.5"></rect>
-                    <path d="M8.5 8h7"></path>
-                    <path d="M8.5 12h7"></path>
-                    <path d="M8.5 16h4"></path>
-                  </svg>
-                </span>
+                <span class="home-tool-icon orange" aria-hidden="true"><i data-lucide="clipboard-check"></i></span>
                 <div><strong>מבחן תרגול</strong><span>שאלות מדורגות עם פתרונות.</span></div>
               </button>
             </div>
@@ -2647,9 +2626,9 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
   const state={messages:[],images:[],busy:false,temporary:false,user:null,session:null,supabase:null,conversationId:null,conversations:[],chatNamed:false,authReady:false,subject:'math'};
   const MAX_IMAGES=2;
   const SUBJECTS={
-    math:{label:'מתמטיקה',titles:['מה נפתור היום?','במה צריך עזרה היום?','על מה עובדים היום?','איזה תרגיל נפתור יחד?','מה לא מסתדר?'],placeholders:['תכתוב כאן תרגיל...','אפשר גם לצרף תמונה...','שאל אותי על משוואות, גיאומטריה ועוד...','נתקעת בשיעורי הבית? אני כאן.'],tools:[['צור לי סרטון הסבר קצר בעברית על ','צור סרטון','הסבר ויזואלי קצר עם אנימציות.'],['בנה לי גרף ברור והסבר מה רואים בו עבור ','בנה גרף','גרף אינטראקטיבי עם הסבר.'],['פתור לי את התרגיל הבא שלב־שלב: ','פתור תרגיל','פתרון מלא בלי לדלג על שלבים.'],['צור לי מבחן תרגול קצר בנושא ','מבחן תרגול','שאלות מדורגות עם פתרונות.']],starts:[['למד אותי נושא מתמטי מהבסיס עם דוגמה פשוטה: ','למד אותי נושא','הסבר פשוט מהבסיס.'],['בדוק את הפתרון שלי, מצא איפה טעיתי והסבר למה: ','בדוק פתרון','מצא טעויות והסבר אותן.'],['תן לי 5 תרגילים מהקל לקשה בנושא ','תרגול לפי רמה','תרגילים מהקל לקשה.']]},
-    physics:{label:'פיזיקה',titles:['מה נחקור בפיזיקה היום?','איזה חוק לא מסתדר?','כוחות, אנרגיה או תנועה?','איזה תרגיל פיזיקה נפתור?'],placeholders:['שאל אותי שאלה בפיזיקה...','אפשר לצרף צילום של תרגיל או שרטוט...','קינמטיקה, כוחות, חשמל, גלים ועוד...'],tools:[['צור לי סרטון הסבר קצר בפיזיקה על ','צור סרטון','המחשה של התהליך הפיזיקלי.'],['בנה לי תרשים כוחות והסבר אותו עבור ','תרשים כוחות','כיוונים, כוחות ורכיבים בצורה ברורה.'],['פתור לי את תרגיל הפיזיקה הבא שלב־שלב: ','פתור תרגיל','חוקים, הצבה, יחידות ותשובה.'],['צור לי מבחן תרגול קצר בפיזיקה בנושא ','מבחן תרגול','שאלות מדורגות עם פתרונות.']],starts:[['למד אותי נושא בפיזיקה מהבסיס עם דוגמה מהחיים: ','למד אותי נושא','אינטואיציה לפני הנוסחאות.'],['בדוק את הפתרון שלי בפיזיקה, כולל יחידות וסימנים: ','בדוק פתרון','מצא טעויות בחוק, בהצבה או ביחידות.'],['תן לי 5 תרגילי פיזיקה מהקל לקשה בנושא ','תרגול לפי רמה','תרגול הדרגתי עם יחידות.']]},
-    chemistry:{label:'כימיה',titles:['מה נחקור בכימיה היום?','איזו תגובה נפתור?','מה קורה ברמת החלקיקים?','סטוכיומטריה, קשרים או חומצות?'],placeholders:['שאל אותי שאלה בכימיה...','אפשר לצרף צילום של תרגיל או טבלה...','תגובות, מולים, קשרים, חומצות ועוד...'],tools:[['צור לי סרטון הסבר קצר בכימיה על ','צור סרטון','המחשה של חלקיקים ותהליך כימי.'],['אזן והסבר לי את התגובה הכימית הבאה: ','אזן תגובה','איזון מסודר ושימור אטומים.'],['פתור לי את תרגיל הכימיה הבא שלב־שלב: ','פתור תרגיל','מולים, יחידות וחישוב מסודר.'],['צור לי מבחן תרגול קצר בכימיה בנושא ','מבחן תרגול','שאלות מדורגות עם פתרונות.']],starts:[['למד אותי נושא בכימיה מהבסיס עם דוגמה פשוטה: ','למד אותי נושא','הבנה ברמת החלקיקים.'],['בדוק את הפתרון שלי בכימיה ומצא איפה טעיתי: ','בדוק פתרון','בדיקת נוסחאות, איזון וחישוב.'],['תן לי 5 תרגילי כימיה מהקל לקשה בנושא ','תרגול לפי רמה','תרגול הדרגתי לפי הנושא.']]}
+    math:{label:'מתמטיקה',titles:['מה נפתור היום?','במה צריך עזרה היום?','על מה עובדים היום?','איזה תרגיל נפתור יחד?','מה לא מסתדר?'],placeholders:['תכתוב כאן תרגיל...','אפשר גם לצרף תמונה...','שאל אותי על משוואות, גיאומטריה ועוד...','נתקעת בשיעורי הבית? אני כאן.'],tools:[['צור לי סרטון הסבר קצר בעברית על ','צור סרטון','הסבר ויזואלי קצר עם אנימציות.','play'],['בנה לי גרף ברור והסבר מה רואים בו עבור ','בנה גרף','גרף אינטראקטיבי עם הסבר.','chart-line'],['פתור לי את התרגיל הבא שלב־שלב: ','פתור תרגיל','פתרון מלא בלי לדלג על שלבים.','calculator'],['צור לי מבחן תרגול קצר בנושא ','מבחן תרגול','שאלות מדורגות עם פתרונות.','clipboard-check']],starts:[['למד אותי נושא מתמטי מהבסיס עם דוגמה פשוטה: ','למד אותי נושא','הסבר פשוט מהבסיס.'],['בדוק את הפתרון שלי, מצא איפה טעיתי והסבר למה: ','בדוק פתרון','מצא טעויות והסבר אותן.'],['תן לי 5 תרגילים מהקל לקשה בנושא ','תרגול לפי רמה','תרגילים מהקל לקשה.']]},
+    physics:{label:'פיזיקה',titles:['מה נחקור בפיזיקה היום?','איזה חוק לא מסתדר?','כוחות, אנרגיה או תנועה?','איזה תרגיל פיזיקה נפתור?'],placeholders:['שאל אותי שאלה בפיזיקה...','אפשר לצרף צילום של תרגיל או שרטוט...','קינמטיקה, כוחות, חשמל, גלים ועוד...'],tools:[['צור לי סרטון הסבר קצר בפיזיקה על ','צור סרטון','המחשה של התהליך הפיזיקלי.','play'],['בנה לי תרשים כוחות והסבר אותו עבור ','תרשים כוחות','כיוונים, כוחות ורכיבים בצורה ברורה.','atom'],['פתור לי את תרגיל הפיזיקה הבא שלב־שלב: ','פתור תרגיל','חוקים, הצבה, יחידות ותשובה.','calculator'],['צור לי מבחן תרגול קצר בפיזיקה בנושא ','מבחן תרגול','שאלות מדורגות עם פתרונות.','clipboard-check']],starts:[['למד אותי נושא בפיזיקה מהבסיס עם דוגמה מהחיים: ','למד אותי נושא','אינטואיציה לפני הנוסחאות.'],['בדוק את הפתרון שלי בפיזיקה, כולל יחידות וסימנים: ','בדוק פתרון','מצא טעויות בחוק, בהצבה או ביחידות.'],['תן לי 5 תרגילי פיזיקה מהקל לקשה בנושא ','תרגול לפי רמה','תרגול הדרגתי עם יחידות.']]},
+    chemistry:{label:'כימיה',titles:['מה נחקור בכימיה היום?','איזו תגובה נפתור?','מה קורה ברמת החלקיקים?','סטוכיומטריה, קשרים או חומצות?'],placeholders:['שאל אותי שאלה בכימיה...','אפשר לצרף צילום של תרגיל או טבלה...','תגובות, מולים, קשרים, חומצות ועוד...'],tools:[['צור לי סרטון הסבר קצר בכימיה על ','צור סרטון','המחשה של חלקיקים ותהליך כימי.','play'],['אזן והסבר לי את התגובה הכימית הבאה: ','אזן תגובה','איזון מסודר ושימור אטומים.','flask-conical'],['פתור לי את תרגיל הכימיה הבא שלב־שלב: ','פתור תרגיל','מולים, יחידות וחישוב מסודר.','calculator'],['צור לי מבחן תרגול קצר בכימיה בנושא ','מבחן תרגול','שאלות מדורגות עם פתרונות.','clipboard-check']],starts:[['למד אותי נושא בכימיה מהבסיס עם דוגמה פשוטה: ','למד אותי נושא','הבנה ברמת החלקיקים.'],['בדוק את הפתרון שלי בכימיה ומצא איפה טעיתי: ','בדוק פתרון','בדיקת נוסחאות, איזון וחישוב.'],['תן לי 5 תרגילי כימיה מהקל לקשה בנושא ','תרגול לפי רמה','תרגול הדרגתי לפי הנושא.']]}
   };
   function normalizeSubject(subject){return SUBJECTS[subject]?subject:'math'}
   function subjectLabel(subject){return SUBJECTS[normalizeSubject(subject)].label}
@@ -11934,14 +11913,18 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
     document.querySelectorAll('.subject-nav').forEach(function(button){button.classList.toggle('active',button.dataset.subject===state.subject)});
     document.querySelectorAll('.home-tools .home-tool').forEach(function(button,index){
       const item=config.tools[index];if(!item)return;button.dataset.prompt=item[0];
-      const strong=button.querySelector('strong'),desc=button.querySelector('div span');
+      const strong=button.querySelector('strong'),desc=button.querySelector('div span'),icon=button.querySelector('.home-tool-icon');
       if(strong)strong.textContent=item[1];if(desc)desc.textContent=item[2];
+      if(icon&&item[3])icon.innerHTML='<i data-lucide="'+item[3]+'" aria-hidden="true"></i>';
     });
     document.querySelectorAll('.home-starts .home-start').forEach(function(button,index){
       const item=config.starts[index];if(!item)return;button.dataset.prompt=item[0];
       const strong=button.querySelector('strong'),desc=button.querySelector('.home-start-copy span');
       if(strong)strong.textContent=item[1];if(desc)desc.textContent=item[2];
     });
+    if(window.lucide&&typeof window.lucide.createIcons==='function'){
+      window.lucide.createIcons({attrs:{'stroke-width':'2.15','stroke-linecap':'round','stroke-linejoin':'round'}});
+    }
     if(!reduceMotion)schedulePlaceholder(500);
   }
 
