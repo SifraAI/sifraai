@@ -244,7 +244,12 @@ function sequenceHtml(el){
 function summaryHtml(el){
   const items=(el?.items||[]).filter(v=>v&&typeof v==='object').slice(0,4);
   if(!items.length)return '';
-  return '<div class="summary-grid summary-count-'+items.length+'">'+items.map(item=>'<div class="summary-card"><span class="summary-label">'+esc(item.label)+'</span><div class="summary-value">'+(/[=+\-×÷^_\\]/.test(item.value)?ktex(item.value):esc(item.value))+'</div></div>').join('')+'</div>';
+
+  return '<div class="summary-grid summary-count-'+items.length+'">'+items.map(item=>{
+    const isMath=/[=+\-×÷^_\\]/.test(item.value);
+
+    return '<div class="summary-card"><span class="summary-label">'+esc(item.label)+'</span><div class="summary-value'+(isMath?' summary-math':'')+'">'+(isMath?ktex(item.value):esc(item.value))+'</div></div>';
+  }).join('')+'</div>';
 }
 
 function bulletsHtml(el){
@@ -316,7 +321,7 @@ const CSS=[
 '.rectangle-visual{display:flex;flex-direction:column;align-items:center;gap:12px}.rectangle-width,.rectangle-height{color:var(--muted);font-size:22px;font-weight:700}.rectangle-row{display:flex;align-items:center;gap:18px}.rectangle-grid{width:460px;height:290px;display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);border:3px solid var(--text);border-radius:12px;overflow:hidden}.area-cell{border:1px solid var(--line);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}.rectangle-answer{margin-top:8px;padding:9px 18px;border-radius:999px;background:color-mix(in srgb,var(--green) 14%,var(--panel));color:var(--green);font-size:28px;font-weight:800}',
 '.numberline{width:100%;max-width:760px}.numberline-base,.numberline-ticks line{stroke:var(--muted);stroke-width:2}.numberline-ticks text{fill:var(--muted);font-size:18px;text-anchor:middle}.numberline-segment{stroke:var(--accent);stroke-width:8;stroke-linecap:round}.numberline-mark circle.open{fill:var(--bg);stroke:var(--accent);stroke-width:4}.numberline-mark circle.closed{fill:var(--accent);stroke:var(--accent);stroke-width:4}.numberline-label{fill:var(--text);font-size:23px;font-weight:800;text-anchor:middle}',
 '.bars-visual{width:min(760px,100%);height:350px;padding:24px 28px 18px;border:1px solid var(--line);border-radius:24px;background:var(--panel);display:flex;align-items:flex-end;justify-content:center;gap:28px}.bar-wrap{width:72px;height:100%;display:grid;grid-template-rows:28px 1fr 26px;gap:8px;text-align:center}.bar-value,.bar-label{color:var(--muted);font-size:17px;font-weight:700}.bar{align-self:end;width:100%;min-height:8px;border-radius:10px 10px 4px 4px;background:var(--accent);transform-origin:bottom}',
-'.summary-grid{width:min(1040px,100%);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.summary-count-3{grid-template-columns:repeat(3,minmax(0,1fr))}.summary-card{min-height:150px;padding:22px 24px;border:1px solid var(--line);border-radius:22px;background:var(--panel);box-shadow:0 16px 44px rgba(0,0,0,.07);display:flex;flex-direction:column;justify-content:space-between;gap:18px;direction:rtl}.summary-label{color:var(--muted);font-size:21px;font-weight:700}.summary-value{font-size:34px;font-weight:850}.summary-value .katex{font-size:1.2em}',
+'.summary-grid{width:min(1040px,100%);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.summary-count-3{grid-template-columns:repeat(3,minmax(0,1fr))}.summary-card{min-height:150px;padding:22px 24px;border:1px solid var(--line);border-radius:22px;background:var(--panel);box-shadow:0 16px 44px rgba(0,0,0,.07);display:flex;flex-direction:column;justify-content:space-between;gap:18px;direction:rtl}.summary-label{color:var(--muted);font-size:21px;font-weight:700}.summary-value{font-size:34px;font-weight:850}.summary-value .katex{font-size:1.2em}.summary-math{direction:ltr;unicode-bidi:isolate;text-align:center}',
 '.lesson-bullets{list-style:none;margin:0;padding:0;direction:rtl;display:flex;flex-direction:column;gap:12px}.lesson-bullets li{position:relative;padding:10px 18px 10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel);font-size:22px;font-weight:650}.lesson-bullets li:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);position:absolute;right:0;top:50%;transform:translate(50%,-50%)}',
 '.text-focus{width:min(860px,100%);direction:rtl;text-align:center}.text-focus p{margin:0 0 24px;font-size:38px;line-height:1.45;font-weight:750}'
 ].join('\n');
