@@ -496,16 +496,23 @@ function runProcess(command,args,options={}){
   });
 }
 
-function npx(){return process.platform==='win32'?'npx.cmd':'npx'}
+function hyperframesBin(){
+  return path.join(
+    __dirname,
+    'node_modules',
+    '.bin',
+    process.platform==='win32'
+      ? 'hyperframes.cmd'
+      : 'hyperframes'
+  );
+}
 
 async function checkComposition(dir,onProgress){
   onProgress?.(.08,'בודק פריסה, תנועה וניגודיות…');
 
   await runProcess(
-    npx(),
+    hyperframesBin(),
     [
-      '--no-install',
-      'hyperframes',
       'check',
       '.',
       '--samples','15',
@@ -534,7 +541,7 @@ function parseProgress(value){
 
 async function renderHyperframes(dir,output,onProgress){
   onProgress?.(.23,'מרנדר באיכות גבוהה…');
-  await runProcess(npx(),['--no-install','hyperframes','render','--quality','high','--fps',String(FPS),'--output',output],{
+  await runProcess(hyperframesBin(),['render','--quality','high','--fps',String(FPS),'--output',output],{
     cwd:dir,
     env:{
       HYPERFRAMES_NO_UPDATE_CHECK:'1'
@@ -721,10 +728,8 @@ async function ensureVideoEnvironment(){
     ['ffmpeg',['-version']],
     ['ffprobe',['-version']],
     [
-      npx(),
+      hyperframesBin(),
       [
-        '--no-install',
-        'hyperframes',
         'browser',
         'ensure'
       ]
@@ -749,15 +754,15 @@ async function ensureVideoEnvironment(){
 
       results.push({
         command:
-          entry[0]+' '+
-          entry[1].slice(2).join(' '),
+          path.basename(entry[0])+' '+
+          entry[1].join(' '),
         ok:true
       });
     }catch(error){
       results.push({
         command:
-          entry[0]+' '+
-          entry[1].slice(2).join(' '),
+          path.basename(entry[0])+' '+
+          entry[1].join(' '),
         ok:false,
         error:
           error?.message||
