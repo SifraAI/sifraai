@@ -1,0 +1,63 @@
+name: Video smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "video.js"
+      - "server.js"
+      - "ai.js"
+      - "package.json"
+      - "scripts/video-smoke.js"
+      - ".github/workflows/video-smoke.yml"
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HYPERFRAMES_NO_UPDATE_CHECK: "1"
+      SIFRA_VIDEO_TIMEOUT_MS: "600000"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Check FFmpeg
+        run: |
+          ffmpeg -version
+          ffprobe -version
+
+      - name: Ensure Hyperframes browser
+        run: npx --no-install hyperframes browser ensure
+
+      - name: Syntax checks
+        run: npm run check
+
+      - name: Render real Hebrew math smoke video
+        run: npm run video:smoke
+
+      - name: Probe output
+        run: |
+          test -s sifra-video-smoke.mp4
+          test -s sifra-video-smoke.jpg
+          ffprobe -v error -show_streams -show_format sifra-video-smoke.mp4
+
+      - name: Upload smoke render
+        uses: actions/upload-artifact@v4
+        with:
+          name: sifra-video-smoke
+          path: |
+            sifra-video-smoke.mp4
+            sifra-video-smoke.jpg
+          if-no-files-found: error
