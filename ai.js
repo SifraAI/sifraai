@@ -322,9 +322,11 @@ function buildVideoRecoveryMessages(messages) {
 דרישות קשיחות:
 - JSON תקני לחלוטין.
 - כל טקסט לצופה בעברית.
-- 4 עד 6 scenes.\n- duration בין 20 ל-40 שניות.
+- 4 עד 6 scenes.
+- duration בין 20 ל-40 שניות.
 - intro קצר של 2-3 שניות.
-- בכל scene: title קצר + visual מרכזי אחד + לכל היותר הסבר תומך אחד.\n- אל תנסה לעצב x/y; מנוע Hyperframes מסדר את הפריסה.
+- בכל scene: title קצר + visual מרכזי אחד + לכל היותר הסבר תומך אחד.
+- אל תנסה לעצב x/y; מנוע Hyperframes מסדר את הפריסה.
 - השתמש בעיקר ב-background color "black" או "white".
 - transitions: "fade" או "slide" בלבד.
 - נוסחאות בלבד ב-type:"formula"; הסבר עברי ב-type:"text" או note.
@@ -633,8 +635,21 @@ async function streamSifra({
       0,
       {
         role: 'system',
-        content:
-          'המשתמש ביקש סרטון. חובה לכלול בתגובה הזו תג <video.lesson> מלא וסגור עם JSON תקין. אל תסתפק בהסבר טקסטואלי על הסרטון. הסרטון עצמו חייב להופיע בתגובה.'
+        content: String.raw`
+המשתמש ביקש סרטון. חובה לכלול בתגובה הזו תג <video.lesson> מלא וסגור עם JSON תקין.
+
+חשוב: זה storyboard סמנטי עבור מנוע Hyperframes של Sifra.
+- אל תעצב x/y/w/h ואל תנסה לפתור spacing.
+- אל תבנה "שקופיות". בחר מה הפעולה המתמטית שצריכה לקרות בכל scene.
+- 4-6 scenes, בדרך כלל 20-40 שניות.
+- hook ראשון של 2-3 שניות.
+- בכל scene: רעיון אחד, visual ראשי אחד, ועד הסבר קצר אחד.
+- אלגברה רב-שלבית => equation-sequence.
+- נושא ויזואלי => graph / fraction / rectangle / numberline / bars.
+- scene אחרון => summary קצר של 2-4 נקודות.
+- עברית לטקסט; LaTeX רק לנוסחאות.
+- אל תחזיר רק טקסט שמבטיח סרטון — התג עצמו חייב להופיע.
+`
       }
     );
   }
