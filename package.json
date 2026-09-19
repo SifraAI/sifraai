@@ -9,7 +9,8 @@
     "dev": "logging_to_file=true node dev.js",
     "check": "node --check server.js && node --check ai.js && node --check video.js",
     "video:doctor": "npx --no-install hyperframes doctor",
-    "video:test": "node scripts/video-smoke.js"
+    "video:test": "node scripts/video-smoke.js",
+    "video:smoke": "node scripts/video-smoke.js"
   },
   "engines": {
     "node": ">=22"
@@ -18,7 +19,7 @@
     "express": "4.21.2",
     "helmet": "8.3.0",
     "dotenv": "16.4.7",
-    "hyperframes": "0.8.45",
+    "hyperframes": "0.8.50",
     "gsap": "3.13.0",
     "katex": "0.16.22",
     "mathjs": "14.6.0"
