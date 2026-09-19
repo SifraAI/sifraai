@@ -1,5 +1,12 @@
 'use strict';
 
+/*
+ * Sifra Motion Engine.
+ * Workflow inspired by latent-spaces/brag (MIT): storyboard -> composition
+ * -> automated checks -> deterministic Hyperframes render -> poster/QA.
+ * The math renderer and lesson composition below are Sifra-specific.
+ */
+
 const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
@@ -321,11 +328,12 @@ function animationScript(duration){
     'scenes.forEach(function(scene,index){',
     'const start=Number(scene.dataset.start||0),dur=Number(scene.dataset.duration||0),end=start+dur;',
     'tl.set(scene,{autoAlpha:1},start);',
-    'const kicker=scene.querySelector(".scene-kicker"),title=scene.querySelector(".scene-title"),main=scene.querySelector(".scene-main"),badge=scene.querySelector(".scene-badge");',
+    'const kicker=scene.querySelector(".scene-kicker"),title=scene.querySelector(".scene-title"),main=scene.querySelector(".scene-main"),badge=scene.querySelector(".scene-badge"),bg=scene.querySelector(".scene-bg");',
+    'if(bg)tl.fromTo(bg,{scale:1.012,x:0,y:0},{scale:1.032,x:index%2===0?-5:5,y:-3,duration:Math.max(.8,dur),ease:"none"},start);',
     'if(kicker)tl.fromTo(kicker,{autoAlpha:0,y:12},{autoAlpha:1,y:0,duration:.28,ease:"power2.out"},start+.02);',
     'if(title)tl.fromTo(title,{autoAlpha:0,y:28},{autoAlpha:1,y:0,duration:.48,ease:"power3.out"},start+.06);',
     'const steps=Array.from(scene.querySelectorAll(".equation-step"));',
-    'if(steps.length){steps.forEach(function(step,stepIndex){const span=Math.max(1.2,dur-1.15)/steps.length;const at=start+.58+stepIndex*span;if(stepIndex>0)tl.to(steps[stepIndex-1],{autoAlpha:0,y:-24,duration:.22,ease:"power2.in"},Math.max(start,at-.18));tl.fromTo(step,{autoAlpha:0,y:30,scale:.985},{autoAlpha:1,y:0,scale:1,duration:.34,ease:"power3.out"},at);});}else if(main){tl.fromTo(main,{autoAlpha:0,y:26,scale:.99},{autoAlpha:1,y:0,scale:1,duration:.5,ease:"power3.out"},start+.34);}',
+    'if(steps.length){steps.forEach(function(step,stepIndex){const span=Math.max(1.2,dur-1.15)/steps.length;const at=start+.58+stepIndex*span;if(stepIndex>0)tl.to(steps[stepIndex-1],{autoAlpha:0,y:-24,duration:.22,ease:"power2.in"},Math.max(start,at-.18));tl.fromTo(step,{autoAlpha:0,y:30,scale:.985},{autoAlpha:1,y:0,scale:1,duration:.34,ease:"power3.out"},at);});if(main)tl.to(main,{y:-4,duration:Math.max(.8,dur-.8),ease:"none"},start+.72);}else if(main){tl.fromTo(main,{autoAlpha:0,y:26,scale:.99},{autoAlpha:1,y:0,scale:1,duration:.5,ease:"power3.out"},start+.34);tl.to(main,{y:-4,scale:1.006,duration:Math.max(.8,dur-.9),ease:"none"},start+.84);}',
     'Array.from(scene.querySelectorAll(".draw-path,.draw-line")).forEach(function(node,i){let length=500;try{length=node.getTotalLength()}catch(e){}gsap.set(node,{strokeDasharray:length,strokeDashoffset:length});tl.to(node,{strokeDashoffset:0,duration:Math.min(1.4,Math.max(.65,dur*.22)),ease:"power2.out"},start+.62+i*.08);});',
     'const cells=Array.from(scene.querySelectorAll(".fraction-cell,.area-cell"));if(cells.length)tl.fromTo(cells,{autoAlpha:.2,scale:.82},{autoAlpha:1,scale:1,duration:.25,stagger:.035,ease:"back.out(1.5)"},start+.62);',
     'const bars=Array.from(scene.querySelectorAll(".bar"));if(bars.length)tl.fromTo(bars,{scaleY:0},{scaleY:1,duration:.5,stagger:.08,ease:"power3.out"},start+.6);',
@@ -376,6 +384,101 @@ async function buildComposition(rawLesson,dir){
   await fsp.writeFile(path.join(dir,'index.html'),html,'utf8');
   await fsp.writeFile(path.join(dir,'lesson.json'),JSON.stringify(lesson,null,2),'utf8');
   return lesson;
+}
+
+
+function sceneVisualName(scene){
+  const visual=first(scene.elements,[
+    'equation-sequence','graph','rectangle','fraction',
+    'numberline','bars','formula','summary','text'
+  ]);
+
+  return visual?.type||'text';
+}
+
+async function writePlanningArtifacts(lesson,root){
+  const sceneLines=lesson.scenes.map((scene,index)=>{
+    const titleEl=first(scene.elements,['title']);
+    const title=titleEl?.text||('שלב '+(index+1));
+    return (
+      '### Scene '+(index+1)+' — '+title+' — '+
+      scene.seconds.toFixed(1)+'s\n'+
+      '- Main visual: '+sceneVisualName(scene)+'\n'+
+      '- Theme: '+scene.theme+' / '+scene.pattern+'\n'+
+      '- Goal: '+(
+        first(scene.elements,['text'])?.text||
+        first(scene.elements,['badge'])?.text||
+        'להמחיש את הצעד המתמטי בצורה ברורה.'
+      )+'\n'
+    );
+  }).join('\n');
+
+  const plan=[
+    '# Sifra Video Plan: '+lesson.title,
+    '',
+    '## Angle',
+    'שיעור מתמטי קצר, ויזואלי וממוקד: מראים את הפעולה המתמטית עצמה במקום שקופיות.',
+    '',
+    '## Hook',
+    'הסצנה הראשונה חייבת לתת רעיון או שאלה משמעותיים בתוך 2–3 שניות.',
+    '',
+    '## Format',
+    '- landscape — 1280x720',
+    '- duration: '+lesson.duration.toFixed(1)+'s',
+    '- language: Hebrew RTL; math LTR',
+    '',
+    '## Creative laws',
+    '- No empty scenes.',
+    '- No long static holds.',
+    '- One main visual idea per scene.',
+    '- Readable text first; motion supports the explanation.',
+    '- Algebra transforms in-place with equation-sequence.',
+    '',
+    '## Storyboard',
+    '',
+    sceneLines
+  ].join('\n');
+
+  const brief=[
+    '# Hyperframes Composition Brief: '+lesson.title,
+    '',
+    '## Objective',
+    'Render a polished Hebrew math explainer from the semantic Sifra storyboard.',
+    '',
+    '## Output',
+    '- 1280x720 @ 30fps',
+    '- H.264 MP4, high quality',
+    '- deterministic seek-safe GSAP timeline',
+    '',
+    '## Visual identity',
+    '- restrained black/white Sifra palette',
+    '- blue-violet accent for active math',
+    '- green for verified answers',
+    '- real KaTeX for formulas',
+    '',
+    '## Motion',
+    '- fast entrance, readable hold, subtle continuous drift',
+    '- graphs draw on',
+    '- fractions/area cells reveal sequentially',
+    '- equation steps replace each other in one focal position',
+    '- summaries arrive card-by-card',
+    '',
+    '## Quality gates',
+    '- Hyperframes lint',
+    '- Hyperframes validate',
+    '- Hyperframes inspect',
+    '- ffprobe output verification',
+    '- FFmpeg post-render freeze scan',
+    '- poster extraction + frame-0 bake',
+    '',
+    '## Storyboard source',
+    'See brag-plan.md and composition/lesson.json.'
+  ].join('\n');
+
+  await Promise.all([
+    fsp.writeFile(path.join(root,'brag-plan.md'),plan,'utf8'),
+    fsp.writeFile(path.join(root,'composition-brief.md'),brief,'utf8')
+  ]);
 }
 
 function runProcess(command,args,options={}){
@@ -436,6 +539,93 @@ async function probeVideo(file){
   return {codec:stream.codec_name||'',width:Number(stream.width),height:Number(stream.height),duration:Number(stream.duration||parsed?.format?.duration||0)};
 }
 
+
+async function analyzeRenderedVideo(video){
+  let freezeOutput='';
+
+  try{
+    const result=await runProcess(
+      'ffmpeg',
+      [
+        '-hide_banner',
+        '-i',video,
+        '-vf','freezedetect=n=-55dB:d=5',
+        '-an',
+        '-f','null',
+        '-'
+      ],
+      {
+        timeoutMs:120000,
+        onOutput(value,stream){
+          if(stream==='stderr')freezeOutput+=value;
+        }
+      }
+    );
+
+    freezeOutput+=result.stderr||'';
+  }catch(error){
+    // ffmpeg writes normal filter output to stderr; only preserve it as QA data.
+    freezeOutput+=(error?.stderr||'');
+  }
+
+  const freezes=[];
+  const lines=freezeOutput.split(/\r?\n/);
+
+  for(const line of lines){
+    const durationMatch=line.match(/freeze_duration:\s*([0-9.]+)/);
+    if(durationMatch){
+      const duration=Number(durationMatch[1]);
+      if(Number.isFinite(duration)){
+        freezes.push(duration);
+      }
+    }
+  }
+
+  const longestFreeze=freezes.length?Math.max(...freezes):0;
+
+  if(longestFreeze>8){
+    throw new Error(
+      'בדיקת הווידאו מצאה קטע סטטי ארוך מדי ('+
+      longestFreeze.toFixed(1)+
+      ' שניות).'
+    );
+  }
+
+  return {
+    longestFreeze,
+    freezes
+  };
+}
+
+async function bakePosterFrame(video,poster){
+  const temp=video.replace(/\.mp4$/i,'.poster.mp4');
+
+  await runProcess(
+    'ffmpeg',
+    [
+      '-y',
+      '-i',video,
+      '-i',poster,
+      '-filter_complex',
+      "[0:v][1:v]overlay=0:0:enable='eq(n,0)'[v]",
+      '-map','[v]',
+      '-map','0:a?',
+      '-c:v','libx264',
+      '-crf','17',
+      '-preset','slow',
+      '-pix_fmt','yuv420p',
+      '-c:a','copy',
+      '-movflags','+faststart',
+      temp
+    ],
+    {
+      timeoutMs:180000
+    }
+  );
+
+  await fsp.rename(temp,video);
+}
+
 async function makePoster(video,poster,lesson){
   const at=Math.max(.7,Math.min(1.8,(lesson.scenes[0]?.seconds||2.5)*.55));
   await runProcess('ffmpeg',['-y','-ss',at.toFixed(3),'-i',video,'-frames:v','1','-q:v','2',poster],{timeoutMs:45000});
@@ -454,18 +644,42 @@ async function renderLesson({lesson:rawLesson,jobId,onProgress}){
   await fsp.mkdir(composition,{recursive:true});
   onProgress?.(.02,'בונה סטוריבורד…');
 
-  const lesson=await buildComposition(rawLesson,composition);
+  const lesson=normalizeLesson(rawLesson);
+  await writePlanningArtifacts(lesson,root);
+  await buildComposition(lesson,composition);
+
   await checkComposition(composition,onProgress);
   await renderHyperframes(composition,output,onProgress);
-  const probe=await probeVideo(output);
-  onProgress?.(.95,'בוחר תמונת פתיחה…');
+
+  const probeBeforePoster=await probeVideo(output);
+
+  onProgress?.(.93,'בודק תנועה וקצב…');
+  const quality=await analyzeRenderedVideo(output);
+
+  onProgress?.(.96,'בוחר תמונת פתיחה…');
   await makePoster(output,poster,lesson);
+
+  onProgress?.(.98,'מסיים את קובץ ה-MP4…');
+  await bakePosterFrame(output,poster);
+
+  const probe=await probeVideo(output);
+
+  if(
+    Math.abs(
+      probe.duration-
+      probeBeforePoster.duration
+    )>.15
+  ){
+    throw new Error(
+      'בדיקת הווידאו נכשלה אחרי יצירת תמונת הפתיחה.'
+    );
+  }
 
   const stat=await fsp.stat(output);
   if(!stat.isFile()||stat.size<20000)throw new Error('קובץ הווידאו שנוצר קטן מדי.');
   onProgress?.(1,'הסרטון מוכן');
 
-  return {id,root,outputPath:output,posterPath:poster,lesson,probe,size:stat.size};
+  return {id,root,outputPath:output,posterPath:poster,lesson,probe,quality,size:stat.size};
 }
 
 async function ensureVideoEnvironment(){
