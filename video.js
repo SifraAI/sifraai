@@ -290,7 +290,8 @@ function composeScene(scene,index,start){
 const CSS=[
 '*{box-sizing:border-box}',
 'html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0d0e10}',
-'body{font-family:Arial,"Noto Sans Hebrew",sans-serif;-webkit-font-smoothing:antialiased}',
+'@font-face{font-family:"SifraSans";src:local("DejaVu Sans"),local("Liberation Sans"),local("Arial");font-style:normal;font-weight:100 900}',
+'body{font-family:"SifraSans",sans-serif;-webkit-font-smoothing:antialiased}',
 '#sifra-lesson{position:relative;width:1280px;height:720px;overflow:hidden;background:#0d0e10}',
 '.scene{position:absolute;inset:0;overflow:hidden;isolation:isolate}',
 '.scene-bg{position:absolute;inset:0;z-index:-2}',
@@ -368,7 +369,7 @@ async function buildComposition(rawLesson,dir){
   });
 
   const html=[
-    '<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8">',
+    '<!doctype html><html lang="he"><head><meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width,initial-scale=1">',
     '<title>'+esc(lesson.title)+'</title>',
     '<link rel="stylesheet" href="./katex.min.css">',
