@@ -673,9 +673,22 @@ app.post(
 const videoJobs = new Map();
 let videoQueue = Promise.resolve();
 let videoEnvironmentPromise = null;
+let videoEnvironmentCheckedAt = 0;
 
-function videoEnvironment() {
-  if (!videoEnvironmentPromise) {
+async function videoEnvironment(force = false) {
+  const stale =
+    Date.now() -
+    videoEnvironmentCheckedAt >
+    5 * 60 * 1000;
+
+  if (
+    force ||
+    !videoEnvironmentPromise ||
+    stale
+  ) {
+    videoEnvironmentCheckedAt =
+      Date.now();
+
     videoEnvironmentPromise =
       ensureVideoEnvironment()
         .catch((error) => ({
@@ -690,7 +703,16 @@ function videoEnvironment() {
         }));
   }
 
-  return videoEnvironmentPromise;
+  const result =
+    await videoEnvironmentPromise;
+
+  // Do not cache a broken environment forever. A user can install
+  // FFmpeg/Chrome/Hyperframes and retry without restarting Sifra.
+  if (!result.ok) {
+    videoEnvironmentPromise = null;
+  }
+
+  return result;
 }
 
 function videoJobPublic(job) {
@@ -1049,7 +1071,7 @@ app.get(
   '/api/video/health',
   async (_req, res) => {
     const environment =
-      await videoEnvironment();
+      await videoEnvironment(true);
 
     return res
       .status(
