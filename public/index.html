@@ -2049,11 +2049,344 @@ html[data-theme="dark"] .temporary-chat-btn.active{
   }
 }
 
+
+/* ===== first-time Sifra welcome ===== */
+.welcome-modal{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition:opacity .2s ease,visibility .2s ease;
+}
+.welcome-modal.open{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+.welcome-modal-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.58);
+  backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
+}
+.welcome-card{
+  position:relative;
+  width:min(430px,calc(100vw - 28px));
+  min-height:610px;
+  border:1px solid var(--line-strong);
+  border-radius:24px;
+  background:var(--surface);
+  color:var(--text);
+  box-shadow:0 28px 90px rgba(0,0,0,.35);
+  padding:22px 24px 20px;
+  direction:rtl;
+  overflow:hidden;
+  transform:translateY(12px) scale(.985);
+  transition:transform .22s cubic-bezier(.2,.75,.25,1);
+}
+.welcome-modal.open .welcome-card{
+  transform:translateY(0) scale(1);
+}
+.welcome-close{
+  position:absolute;
+  top:16px;
+  left:16px;
+  width:34px;
+  height:34px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:transparent;
+  color:var(--muted);
+  display:grid;
+  place-items:center;
+}
+.welcome-close:hover{
+  background:var(--surface-hover);
+  color:var(--text);
+}
+.welcome-close svg{
+  width:18px;
+  height:18px;
+}
+.welcome-brand{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  min-height:34px;
+  font-size:14px;
+  font-weight:700;
+}
+.welcome-brand img{
+  width:25px;
+  height:25px;
+  object-fit:contain;
+}
+.welcome-visual{
+  height:146px;
+  margin:18px 0 8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+  position:relative;
+}
+.welcome-orb{
+  width:78px;
+  height:78px;
+  border-radius:24px;
+  display:grid;
+  place-items:center;
+  border:1px solid var(--line);
+  box-shadow:0 12px 30px rgba(0,0,0,.11);
+  margin:0 -6px;
+  position:relative;
+}
+.welcome-orb:nth-child(2){
+  width:94px;
+  height:94px;
+  z-index:2;
+}
+.welcome-orb svg{
+  width:31px;
+  height:31px;
+  stroke-width:1.9;
+}
+.welcome-orb:nth-child(2) svg{
+  width:38px;
+  height:38px;
+}
+.welcome-orb-purple{
+  background:color-mix(in srgb,#8d63ff 14%,var(--surface));
+  color:#9d79ff;
+}
+.welcome-orb-blue{
+  background:color-mix(in srgb,#4f86ff 15%,var(--surface));
+  color:#6f9dff;
+}
+.welcome-orb-green{
+  background:color-mix(in srgb,#34b87a 14%,var(--surface));
+  color:#56c58f;
+}
+.welcome-copy{
+  text-align:center;
+}
+.welcome-eyebrow{
+  display:block;
+  margin-bottom:8px;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:700;
+}
+.welcome-copy h2{
+  margin:0;
+  font-size:28px;
+  line-height:1.15;
+  letter-spacing:-.03em;
+  font-weight:700;
+}
+.welcome-copy p{
+  margin:12px auto 0;
+  max-width:350px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.6;
+}
+.welcome-features{
+  margin-top:22px;
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+}
+.welcome-feature{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-height:68px;
+  padding:10px 11px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:color-mix(in srgb,var(--surface-hover) 55%,transparent);
+}
+.welcome-feature-icon{
+  width:38px;
+  height:38px;
+  border-radius:11px;
+  flex:none;
+  display:grid;
+  place-items:center;
+}
+.welcome-feature-icon svg{
+  width:19px;
+  height:19px;
+}
+.welcome-feature-icon.purple{
+  background:color-mix(in srgb,#8d63ff 20%,transparent);
+  color:#9d79ff;
+}
+.welcome-feature-icon.blue{
+  background:color-mix(in srgb,#4f86ff 20%,transparent);
+  color:#6f9dff;
+}
+.welcome-feature-icon.green{
+  background:color-mix(in srgb,#34b87a 20%,transparent);
+  color:#56c58f;
+}
+.welcome-feature div{
+  min-width:0;
+}
+.welcome-feature strong{
+  display:block;
+  margin-bottom:3px;
+  font-size:12.5px;
+}
+.welcome-feature span{
+  display:block;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.35;
+}
+.welcome-primary{
+  width:100%;
+  height:46px;
+  margin-top:20px;
+  border:0;
+  border-radius:12px;
+  background:var(--text);
+  color:var(--bg);
+  font-size:13px;
+  font-weight:700;
+}
+.welcome-primary:hover{
+  opacity:.92;
+}
+.welcome-never{
+  width:100%;
+  height:34px;
+  margin-top:5px;
+  border:0;
+  background:transparent;
+  color:var(--muted);
+  font-size:11.5px;
+}
+.welcome-never:hover{
+  color:var(--text);
+}
+.welcome-note{
+  margin:6px 0 0;
+  text-align:center;
+  color:var(--muted-2);
+  font-size:10px;
+}
+html[data-theme="dark"] .welcome-card{
+  background:#171717;
+}
+@media(max-width:520px){
+  .welcome-modal{
+    padding:12px;
+  }
+  .welcome-card{
+    width:min(400px,100%);
+    min-height:auto;
+    max-height:calc(100dvh - 24px);
+    overflow-y:auto;
+    border-radius:20px;
+    padding:18px 18px 16px;
+  }
+  .welcome-visual{
+    height:120px;
+    margin-top:12px;
+  }
+  .welcome-orb{
+    width:64px;
+    height:64px;
+    border-radius:20px;
+  }
+  .welcome-orb:nth-child(2){
+    width:78px;
+    height:78px;
+  }
+  .welcome-copy h2{
+    font-size:24px;
+  }
+}
+
 </style>
 </head>
 <body>
 <div class="overlay" id="overlay"></div>
 <div class="toast" id="toast" role="status"></div>
+
+<div class="welcome-modal" id="welcomeModal" aria-hidden="true">
+  <div class="welcome-modal-backdrop" id="welcomeModalBackdrop"></div>
+
+  <section class="welcome-card" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+    <button class="welcome-close" id="welcomeClose" type="button" aria-label="סגור">
+      <i data-lucide="x" aria-hidden="true"></i>
+    </button>
+
+    <div class="welcome-brand">
+      <img id="welcomeLogo" src="/assets/whitelogo.png" alt="">
+      <span>Sifra</span>
+    </div>
+
+    <div class="welcome-visual" aria-hidden="true">
+      <div class="welcome-orb welcome-orb-purple">
+        <i data-lucide="sparkles"></i>
+      </div>
+      <div class="welcome-orb welcome-orb-blue">
+        <i data-lucide="function-square"></i>
+      </div>
+      <div class="welcome-orb welcome-orb-green">
+        <i data-lucide="play"></i>
+      </div>
+    </div>
+
+    <div class="welcome-copy">
+      <span class="welcome-eyebrow">ברוכים הבאים ל-Sifra</span>
+      <h2 id="welcomeTitle">מתמטיקה, אבל הרבה יותר ברורה.</h2>
+      <p>פתרו תרגילים, קבלו הסברים ויזואליים, צרו גרפים וסרטוני לימוד — מאותה שיחה.</p>
+    </div>
+
+    <div class="welcome-features">
+      <div class="welcome-feature">
+        <span class="welcome-feature-icon purple"><i data-lucide="sigma"></i></span>
+        <div>
+          <strong>פתרון שלב־שלב</strong>
+          <span>Sifra מסבירה את הדרך, לא רק זורקת תשובה.</span>
+        </div>
+      </div>
+
+      <div class="welcome-feature">
+        <span class="welcome-feature-icon blue"><i data-lucide="line-chart"></i></span>
+        <div>
+          <strong>גרפים ודיאגרמות חיות</strong>
+          <span>המחשות שמופיעות בתוך הצ׳אט ועוזרות להבין באמת.</span>
+        </div>
+      </div>
+
+      <div class="welcome-feature">
+        <span class="welcome-feature-icon green"><i data-lucide="clapperboard"></i></span>
+        <div>
+          <strong>סרטוני הסבר</strong>
+          <span>שיעורים קצרים בעברית שאפשר לצפות בהם ולהוריד.</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="welcome-primary" id="welcomeStart" type="button">יאללה, מתחילים</button>
+    <button class="welcome-never" id="welcomeNever" type="button">אל תציג את זה שוב</button>
+
+    <p class="welcome-note">אפשר לפתוח את כל היכולות גם מהכפתורים שמתחת לשורת ההקלדה.</p>
+  </section>
+</div>
 
 <div class="math-modal" id="mathModal" aria-hidden="true">
   <div class="math-modal-backdrop" id="mathModalBackdrop"></div>
@@ -2364,6 +2697,73 @@ html[data-theme="dark"] .temporary-chat-btn.active{
   const sidebar=$('#sidebar'),overlay=$('#overlay'),home=$('#home'),chat=$('#chat'),chatInner=$('#chatInner'),bottomZone=$('#bottomZone'),homeInput=$('#homeInput'),chatInput=$('#chatInput'),sendHome=$('#sendHome'),sendChat=$('#sendChat'),fileInput=$('#fileInput'),homeAttachments=$('#homeAttachments'),chatAttachments=$('#chatAttachments'),homeComposer=$('#homeComposer'),chatComposer=$('#chatComposer'),toast=$('#toast'),themeColor=$('#themeColor'),accountMenu=$('#accountMenu'),accountButton=$('#accountButton'),dailyUsage=$('#dailyUsage'),dailyUsageFill=$('#dailyUsageFill'),brandLogo=$('#brandLogo'),scrollDownBtn=$('#scrollDownBtn'),mathModal=$('#mathModal'),mathModalBackdrop=$('#mathModalBackdrop'),mathModalContent=$('#mathModalContent'),mathModalViewport=$('#mathModalViewport'),mathZoomLabel=$('#mathZoomLabel');
   const state={messages:[],images:[],busy:false,temporary:false};
   const MAX_IMAGES=2;
+
+  const welcomeModal=$('#welcomeModal');
+  const welcomeClose=$('#welcomeClose');
+  const welcomeStart=$('#welcomeStart');
+  const welcomeNever=$('#welcomeNever');
+  const welcomeLogo=$('#welcomeLogo');
+  const WELCOME_COOKIE='sifra_welcome_hidden';
+
+  function getCookie(name){
+    const prefix=name+'=';
+    const parts=document.cookie
+      .split(';')
+      .map(function(part){return part.trim()});
+
+    const found=parts.find(function(part){
+      return part.indexOf(prefix)===0;
+    });
+
+    return found
+      ? decodeURIComponent(found.slice(prefix.length))
+      : '';
+  }
+
+  function setCookie(name,value,days){
+    const maxAge=Math.max(0,Math.floor(days*86400));
+    document.cookie=
+      name+'='+encodeURIComponent(value)+
+      '; Path=/; Max-Age='+maxAge+
+      '; SameSite=Lax';
+  }
+
+  function openWelcomeModal(){
+    welcomeModal.classList.add('open');
+    welcomeModal.setAttribute('aria-hidden','false');
+
+    if(
+      window.lucide&&
+      typeof window.lucide.createIcons==='function'
+    ){
+      window.lucide.createIcons();
+    }
+  }
+
+  function closeWelcomeModal(){
+    welcomeModal.classList.remove('open');
+    welcomeModal.setAttribute('aria-hidden','true');
+  }
+
+  function neverShowWelcomeAgain(){
+    setCookie(
+      WELCOME_COOKIE,
+      '1',
+      365
+    );
+    closeWelcomeModal();
+  }
+
+  welcomeClose.addEventListener('click',closeWelcomeModal);
+  welcomeStart.addEventListener('click',closeWelcomeModal);
+  welcomeNever.addEventListener('click',neverShowWelcomeAgain);
+
+  if(!getCookie(WELCOME_COOKIE)){
+    setTimeout(
+      openWelcomeModal,
+      350
+    );
+  }
 
   const homeGreeting=$('#homeGreeting');
   const homeGreetingText=$('#homeGreetingText');
@@ -10382,6 +10782,7 @@ html[data-theme="dark"] .temporary-chat-btn.active{
     $('#themeText').textContent=dark?'מצב בהיר':'מצב כהה';if($('#accountThemeText'))$('#accountThemeText').textContent=dark?'מצב בהיר':'מצב כהה';
     themeColor.setAttribute('content',dark?'#111111':'#fcfcfc');
     if(brandLogo)brandLogo.src=dark?'/assets/whitelogo.png':'/assets/blacklogo.png';
+    if(welcomeLogo)welcomeLogo.src=dark?'/assets/whitelogo.png':'/assets/blacklogo.png';
     $('#themeIcon').innerHTML=dark?'<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>':'<path d="M20.5 15.5A8 8 0 1 1 8.5 3.6a6.6 6.6 0 0 0 12 11.9Z"></path>';
   }
   const savedTheme=localStorage.getItem('sifra-theme');
