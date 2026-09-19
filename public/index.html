@@ -15,6 +15,7 @@
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjs@14.6.0/lib/browser/math.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
 <style>
 :root{
   --bg:#fcfcfc;
@@ -1989,6 +1990,65 @@ html[data-theme="dark"] .temporary-chat-btn.active{
   .model-menu-desc{font-size:11px}
 }
 
+
+/* ===== greeting: real icons + restore original vertical position ===== */
+.home-inner{
+  transform:translateY(-14px) !important;
+}
+
+.home-greeting{
+  min-height:26px;
+  margin:0 0 2px;
+  gap:7px;
+  font-size:14px;
+  font-weight:600;
+}
+
+.home-greeting-icon{
+  width:24px;
+  height:24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:none;
+}
+
+.home-greeting-icon i,
+.home-greeting-icon svg{
+  width:21px !important;
+  height:21px !important;
+  display:block;
+  stroke:currentColor;
+  fill:none;
+}
+
+.home h1{
+  margin-top:0;
+}
+
+@media(max-width:860px){
+  .home-inner{
+    transform:none !important;
+    margin-top:5vh;
+  }
+}
+
+@media(max-width:560px){
+  .home-greeting{
+    font-size:13px;
+    gap:6px;
+  }
+  .home-greeting-icon{
+    width:22px;
+    height:22px;
+  }
+  .home-greeting-icon i,
+  .home-greeting-icon svg{
+    width:19px !important;
+    height:19px !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -2310,15 +2370,31 @@ html[data-theme="dark"] .temporary-chat-btn.active{
   const homeGreetingIcon=$('#homeGreetingIcon');
 
   const greetingIcons={
-    morning:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17h16"></path><path d="M7 17a5 5 0 0 1 10 0"></path><path d="M12 3v3"></path><path d="m5.6 6.6 2.1 2.1"></path><path d="m18.4 6.6-2.1 2.1"></path><path d="M3 12h3"></path><path d="M18 12h3"></path></svg>',
-    afternoon:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>',
-    evening:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h18"></path><path d="M7 17a5 5 0 0 1 10 0"></path><path d="M12 8V5"></path><path d="m7.5 9.5-2-2"></path><path d="m16.5 9.5 2-2"></path><path d="M4 20h16"></path></svg>',
-    night:
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.2 15.4A8 8 0 1 1 8.6 3.8a6.6 6.6 0 0 0 11.6 11.6Z"></path><path d="m16.5 4 .45 1.05L18 5.5l-1.05.45L16.5 7l-.45-1.05L15 5.5l1.05-.45z"></path></svg>'
+    morning:'sunrise',
+    afternoon:'sun',
+    evening:'sunset',
+    night:'moon-star'
   };
+
+  function renderGreetingIcon(name){
+    homeGreetingIcon.innerHTML=
+      '<i data-lucide="'+
+      name+
+      '" aria-hidden="true"></i>';
+
+    if(
+      window.lucide&&
+      typeof window.lucide.createIcons==='function'
+    ){
+      window.lucide.createIcons({
+        attrs:{
+          'stroke-width':'2',
+          'stroke-linecap':'round',
+          'stroke-linejoin':'round'
+        }
+      });
+    }
+  }
 
   function getIsraelHour(){
     const parts=
@@ -2358,8 +2434,9 @@ html[data-theme="dark"] .temporary-chat-btn.active{
 
     homeGreeting.dataset.period=period;
     homeGreetingText.textContent=text;
-    homeGreetingIcon.innerHTML=
-      greetingIcons[period];
+    renderGreetingIcon(
+      greetingIcons[period]
+    );
   }
 
   updateIsraelGreeting();
