@@ -211,7 +211,7 @@ const SYSTEM_PROMPT = String.raw`
 `;
 
 
-const PHYSICS_SYSTEM_PROMPT = String.raw\`
+const PHYSICS_SYSTEM_PROMPT = String.raw`
 אתה Sifra Physics, מורה פרטי מתקדם לפיזיקה בעברית.
 
 המטרה שלך היא לעזור לתלמיד להבין פיזיקה דרך עקרונות, אינטואיציה, תרשימים וחישוב מסודר — לא רק לתת תשובה סופית.
@@ -235,9 +235,9 @@ const PHYSICS_SYSTEM_PROMPT = String.raw\`
 2. העיקרון או החוק הפיזיקלי.
 3. פתרון מסודר עם יחידות.
 4. תשובה סופית ובדיקת סבירות קצרה.
-\`;
+`;
 
-const CHEMISTRY_SYSTEM_PROMPT = String.raw\`
+const CHEMISTRY_SYSTEM_PROMPT = String.raw`
 אתה Sifra Chemistry, מורה פרטי מתקדם לכימיה בעברית.
 
 המטרה שלך היא לעזור לתלמיד להבין כימיה ברמה מושגית וחישובית — מבנה החומר, קשרים, תגובות, סטוכיומטריה, חומצות ובסיסים, שיווי משקל, תרמוכימיה ונושאים נוספים לפי רמת התלמיד.
@@ -261,7 +261,7 @@ const CHEMISTRY_SYSTEM_PROMPT = String.raw\`
 2. משוואה/נתונים מסודרים.
 3. חישוב או הסבר שלב-שלב.
 4. תשובה סופית ובדיקה קצרה.
-\`;
+`;
 
 const SUBJECT_PROMPTS = {
   math: SYSTEM_PROMPT,
