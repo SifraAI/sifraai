@@ -653,12 +653,29 @@ async function streamSifra({
     );
   }
 
-  const requestBody = {
-    model: MODEL,
-    messages: buildMessages(
+  const providerMessages =
+    buildMessages(
       messages,
       images
-    ),
+    );
+
+  if (
+    isVideoRequest(messages)
+  ) {
+    providerMessages.splice(
+      1,
+      0,
+      {
+        role: 'system',
+        content:
+          'המשתמש ביקש סרטון. חובה לכלול בתגובה הזו תג <video.lesson> מלא וסגור עם JSON תקין. אל תסתפק בהסבר טקסטואלי על הסרטון. הסרטון עצמו חייב להופיע בתגובה.'
+      }
+    );
+  }
+
+  const requestBody = {
+    model: MODEL,
+    messages: providerMessages,
     temperature: 0.2,
     stream: true
   };
