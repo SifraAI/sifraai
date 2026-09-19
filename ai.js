@@ -288,6 +288,98 @@ function buildMessages(messages, images = []) {
   ];
 }
 
+function isVideoRequest(messages) {
+  for (
+    let i = messages.length - 1;
+    i >= 0;
+    i -= 1
+  ) {
+    const message = messages[i];
+
+    if (message?.role !== 'user') {
+      continue;
+    }
+
+    const content =
+      typeof message.content === 'string'
+        ? message.content
+        : '';
+
+    return /(?:\bvideo\b|\bvideos\b|animation|animated|סרטון|וידאו|אנימציה)/i.test(
+      content
+    );
+  }
+
+  return false;
+}
+
+function latestUserText(messages) {
+  for (
+    let i = messages.length - 1;
+    i >= 0;
+    i -= 1
+  ) {
+    if (
+      messages[i]?.role === 'user' &&
+      typeof messages[i]?.content === 'string'
+    ) {
+      return messages[i].content.trim();
+    }
+  }
+
+  return 'שיעור מתמטיקה';
+}
+
+function hasLessonTag(answer) {
+  return /<video\.lesson>[\s\S]*?<\/video\.lesson>/i.test(
+    String(answer || '')
+  );
+}
+
+function buildVideoRecoveryMessages(messages) {
+  const topic =
+    latestUserText(messages)
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .slice(0, 1200);
+
+  return [
+    {
+      role: 'system',
+      content: String.raw`
+אתה מחולל JSON של סרטוני Sifra. המשתמש ביקש סרטון, ולכן התגובה שלך חייבת להיות בדיוק תג video.lesson אחד, בלי Markdown ובלי טקסט לפניו או אחריו.
+
+החזר:
+<video.lesson>{"title":"...","duration":45,"scenes":[...]}</video.lesson>
+
+דרישות קשיחות:
+- JSON תקני לחלוטין.
+- כל טקסט לצופה בעברית.
+- 4 עד 7 scenes.
+- duration בין 25 ל-60 שניות.
+- intro קצר של 2-3 שניות.
+- בכל scene: title קצר + visual מרכזי אחד + לכל היותר הסבר תומך אחד.
+- השתמש בעיקר ב-background color "black" או "white".
+- transitions: "fade" או "slide" בלבד.
+- נוסחאות בלבד ב-type:"formula"; הסבר עברי ב-type:"text" או note.
+- באלגברה מרובת שלבים השתמש ב-type:"equation-sequence".
+- אפשר elements: title, text, formula, equation-sequence, graph, numberline, fraction, rectangle, bars, arrow, badge, summary.
+- formula ו-equation-sequence משתמשים ב-LaTeX עם backslash כפול בתוך JSON, למשל "\\frac{3}{4}".
+- summary בסוף עם 2-4 items, label בעברית ו-value קצר.
+- אין trailing commas.
+- אל תשתמש ב-code fences.
+- אל תחזיר שום דבר חוץ מהתג המלא.
+`
+    },
+    {
+      role: 'user',
+      content:
+        'צור עכשיו סרטון Sifra מלא בעברית בנושא הבא:\n' +
+        topic
+    }
+  ];
+}
+
 function readJson(raw) {
   try {
     return JSON.parse(raw);
@@ -656,10 +748,94 @@ async function streamSifra({
       }
 
       try {
-        return await consumeProviderStream(
-          response,
-          onToken
-        );
+        const primary =
+          await consumeProviderStream(
+            response,
+            onToken
+          );
+
+        if (
+          isVideoRequest(messages) &&
+          !hasLessonTag(primary.answer)
+        ) {
+          console.warn(
+            'Sifra video tag missing; requesting focused video recovery'
+          );
+
+          const timeoutSignal =
+            AbortSignal.timeout(90_000);
+
+          const combinedSignal = signal
+            ? AbortSignal.any([
+                signal,
+                timeoutSignal
+              ])
+            : timeoutSignal;
+
+          const recoveryResponse =
+            await fetch(
+              API_URL,
+              {
+                method: 'POST',
+                signal: combinedSignal,
+                headers: {
+                  Authorization:
+                    `Bearer ${apiKey}`,
+                  'Content-Type':
+                    'application/json'
+                },
+                body: JSON.stringify({
+                  model: MODEL,
+                  messages:
+                    buildVideoRecoveryMessages(
+                      messages
+                    ),
+                  temperature: 0.1,
+                  stream: true
+                })
+              }
+            );
+
+          if (
+            recoveryResponse.ok
+          ) {
+            await onToken('\n\n');
+
+            const recovery =
+              await consumeProviderStream(
+                recoveryResponse,
+                onToken
+              );
+
+            if (
+              hasLessonTag(
+                recovery.answer
+              )
+            ) {
+              return {
+                answer:
+                  primary.answer +
+                  '\n\n' +
+                  recovery.answer,
+                model:
+                  recovery.model ||
+                  primary.model,
+                delivered: true
+              };
+            }
+
+            console.error(
+              'Sifra focused video recovery returned no video.lesson tag'
+            );
+          } else {
+            console.error(
+              'Sifra focused video recovery failed:',
+              recoveryResponse.status
+            );
+          }
+        }
+
+        return primary;
       } catch (error) {
         if (
           error instanceof ProviderError &&
