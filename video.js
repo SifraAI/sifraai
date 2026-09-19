@@ -140,12 +140,67 @@ function graphSvg(equation){
 
   const pts=[];
   const ys=[];
+  const roots=[];
+  let previousFinite=null;
+
   for(let i=0;i<=280;i+=1){
     const x=-10+20*i/280;
     let y=NaN;
-    try{y=Number(compiled.evaluate({x,pi:Math.PI,e:Math.E}))}catch{}
-    if(Number.isFinite(y)&&Math.abs(y)<1e5){pts.push([x,y]);ys.push(y)}else pts.push([x,NaN]);
+
+    try{
+      y=Number(
+        compiled.evaluate({
+          x,
+          pi:Math.PI,
+          e:Math.E
+        })
+      );
+    }catch{}
+
+    if(Number.isFinite(y)&&Math.abs(y)<1e5){
+      pts.push([x,y]);
+      ys.push(y);
+
+      if(previousFinite){
+        const previousX=previousFinite[0];
+        const previousY=previousFinite[1];
+
+        if(
+          previousY===0||
+          y===0||
+          (previousY<0&&y>0)||
+          (previousY>0&&y<0)
+        ){
+          const delta=y-previousY;
+          const root=
+            Math.abs(delta)<1e-9
+              ? x
+              : previousX+
+                (0-previousY)*
+                (x-previousX)/
+                delta;
+
+          if(
+            Number.isFinite(root)&&
+            root>=-10&&
+            root<=10&&
+            roots.every(
+              existing=>
+                Math.abs(existing-root)>.22
+            )
+          ){
+            roots.push(root);
+          }
+        }
+      }
+
+      previousFinite=[x,y];
+    }else{
+      pts.push([x,NaN]);
+      previousFinite=null;
+    }
   }
+
   if(ys.length<4)return '';
 
   const sorted=ys.slice().sort((a,b)=>a-b);
@@ -181,7 +236,36 @@ function graphSvg(equation){
     grid+='<line x1="'+L+'" y1="'+gy+'" x2="'+(L+pw)+'" y2="'+gy+'"/>';
   }
 
-  return '<svg class="math-graph" viewBox="0 0 '+W+' '+H+'"><g class="graph-grid">'+grid+'</g><g class="graph-axes"><line x1="'+L+'" y1="'+xAxis+'" x2="'+(L+pw)+'" y2="'+xAxis+'"/><line x1="'+yAxis+'" y1="'+T+'" x2="'+yAxis+'" y2="'+(T+ph)+'"/></g><path class="graph-path draw-path" d="'+esc(d.trim())+'"/></svg>';
+  const rootSvg=
+    (
+      yMin<=0&&
+      yMax>=0
+    )
+      ? roots
+          .slice(0,4)
+          .map((root,index)=>{
+            const x=px(root);
+            const rounded=
+              Math.abs(
+                root-
+                Math.round(root)
+              )<.045
+                ? Math.round(root)
+                : Math.round(root*10)/10;
+
+            return (
+              '<g class="graph-root" data-root-index="'+index+'">'+
+                '<circle cx="'+x+'" cy="'+xAxis+'" r="8"/>'+
+                '<text x="'+x+'" y="'+(xAxis+31)+'">'+
+                  esc(String(rounded))+
+                '</text>'+
+              '</g>'
+            );
+          })
+          .join('')
+      : '';
+
+  return '<svg class="math-graph" viewBox="0 0 '+W+' '+H+'"><g class="graph-grid">'+grid+'</g><g class="graph-axes"><line x1="'+L+'" y1="'+xAxis+'" x2="'+(L+pw)+'" y2="'+xAxis+'"/><line x1="'+yAxis+'" y1="'+T+'" x2="'+yAxis+'" y2="'+(T+ph)+'"/></g><path class="graph-path draw-path" d="'+esc(d.trim())+'"/>'+rootSvg+'</svg>';
 }
 
 function fractionHtml(el){
@@ -315,7 +399,7 @@ const CSS=[
 '.formula-card{min-width:430px;text-align:center}.formula-card .katex-display,.support-formula .katex-display{margin:0}.formula-card .katex{font-size:2.1em}.support-formula .katex{font-size:1.45em}.formula-fallback{font-size:44px;font-weight:700;direction:ltr}',
 '.split-layout{width:100%;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:38px;align-items:center;direction:ltr}.visual-pane,.support-pane{min-width:0}.visual-pane{display:flex;align-items:center;justify-content:center}.support-pane{direction:rtl;display:flex;flex-direction:column;gap:18px}',
 '.support-text{margin:0;direction:rtl;text-align:right;color:var(--muted);font-size:26px;line-height:1.55;font-weight:600}.support-text.center{text-align:center}.visual-focus,.formula-focus{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px}',
-'.math-graph{width:100%;max-width:720px;max-height:410px;overflow:visible;color:var(--text)}.graph-grid{stroke:var(--line);stroke-width:1}.graph-axes{stroke:var(--muted);stroke-width:1.8}.graph-path{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}',
+'.math-graph{width:100%;max-width:720px;max-height:410px;overflow:visible;color:var(--text)}.graph-grid{stroke:var(--line);stroke-width:1}.graph-axes{stroke:var(--muted);stroke-width:1.8}.graph-path{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}.graph-root{opacity:0;transform-box:fill-box;transform-origin:center}.graph-root circle{fill:var(--bg);stroke:var(--accent);stroke-width:5}.graph-root text{fill:var(--text);font-size:20px;font-weight:800;text-anchor:middle}',
 '.equation-sequence{position:relative;width:min(940px,100%);height:330px;display:flex;align-items:center;justify-content:center}.equation-step{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;opacity:0}.equation-step-formula{min-width:600px;max-width:930px;padding:24px 34px;border:1px solid var(--line);background:var(--panel);border-radius:24px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.08)}.equation-step-formula .katex{font-size:2em}.equation-step-note{max-width:800px;direction:rtl;text-align:center;color:var(--muted);font-size:27px;line-height:1.45;font-weight:650}',
 '.fraction-visual{display:flex;flex-direction:column;align-items:center;gap:20px}.fraction-grid{width:430px;display:grid;grid-template-columns:repeat(var(--parts),1fr);gap:10px}.fraction-cell{aspect-ratio:1;border:2px solid var(--line);border-radius:14px;background:var(--panel)}.fraction-cell.filled{background:var(--accent);border-color:var(--accent)}.fraction-caption{font-size:42px;font-weight:800}',
 '.rectangle-visual{display:flex;flex-direction:column;align-items:center;gap:12px}.rectangle-width,.rectangle-height{color:var(--muted);font-size:22px;font-weight:700}.rectangle-row{display:flex;align-items:center;gap:18px}.rectangle-grid{width:460px;height:290px;display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);border:3px solid var(--text);border-radius:12px;overflow:hidden}.area-cell{border:1px solid var(--line);background:color-mix(in srgb,var(--accent) 12%,var(--panel))}.rectangle-answer{margin-top:8px;padding:9px 18px;border-radius:999px;background:color-mix(in srgb,var(--green) 14%,var(--panel));color:var(--green);font-size:28px;font-weight:800}',
@@ -340,6 +424,7 @@ function animationScript(duration){
     'const steps=Array.from(scene.querySelectorAll(".equation-step"));',
     'if(steps.length){steps.forEach(function(step,stepIndex){const span=Math.max(1.2,dur-1.15)/steps.length;const at=start+.58+stepIndex*span;if(stepIndex>0)tl.to(steps[stepIndex-1],{opacity:0,y:-24,duration:.22,ease:"power2.in"},Math.max(start,at-.18));tl.fromTo(step,{opacity:0,y:30,scale:.985},{opacity:1,y:0,scale:1,duration:.34,ease:"power3.out"},at);});}else if(main){tl.fromTo(main,{opacity:0,y:26,scale:.99},{opacity:1,y:0,scale:1,duration:.5,ease:"power3.out"},start+.34);}',
     'Array.from(scene.querySelectorAll(".draw-path,.draw-line")).forEach(function(node,i){let length=500;try{length=node.getTotalLength()}catch(e){}gsap.set(node,{strokeDasharray:length,strokeDashoffset:length});tl.to(node,{strokeDashoffset:0,duration:Math.min(1.4,Math.max(.65,dur*.22)),ease:"power2.out"},start+.62+i*.08);});',
+    'const roots=Array.from(scene.querySelectorAll(".graph-root"));if(roots.length)tl.fromTo(roots,{opacity:0,scale:.55},{opacity:1,scale:1,duration:.28,stagger:.16,ease:"back.out(1.8)"},start+Math.min(2.05,Math.max(1.25,dur*.34)));',
     'const cells=Array.from(scene.querySelectorAll(".fraction-cell,.area-cell"));if(cells.length)tl.fromTo(cells,{opacity:.2,scale:.82},{opacity:1,scale:1,duration:.25,stagger:.035,ease:"back.out(1.5)"},start+.62);',
     'const bars=Array.from(scene.querySelectorAll(".bar"));if(bars.length)tl.fromTo(bars,{scaleY:0},{scaleY:1,duration:.5,stagger:.08,ease:"power3.out"},start+.6);',
     'const cards=Array.from(scene.querySelectorAll(".summary-card"));if(cards.length)tl.fromTo(cards,{opacity:0,y:28,scale:.97},{opacity:1,y:0,scale:1,duration:.38,stagger:.12,ease:"power3.out"},start+.5);',
@@ -617,7 +702,7 @@ async function analyzeRenderedVideo(video){
 
   const longestFreeze=freezes.length?Math.max(...freezes):0;
 
-  if(longestFreeze>8){
+  if(longestFreeze>6.5){
     throw new Error(
       'בדיקת הווידאו מצאה קטע סטטי ארוך מדי ('+
       longestFreeze.toFixed(1)+
