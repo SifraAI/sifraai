@@ -10134,11 +10134,128 @@ html[data-theme="dark"] .welcome-card{
       }
     }
   }
+  function prepareHyperframesLessonPayload(raw){
+    const data=
+      parseLessonPayload(raw);
+
+    const sourceScenes=
+      Array.isArray(data.scenes)
+        ? data.scenes
+        : Array.isArray(data.pages)
+          ? data.pages
+          : [];
+
+    if(!sourceScenes.length){
+      throw new Error(
+        'אין סצנות לסרטון'
+      );
+    }
+
+    const scenes=
+      sourceScenes
+        .slice(0,7)
+        .map(function(scene,index){
+          const value=
+            scene&&
+            typeof scene==='object'
+              ? Object.assign({},scene)
+              : {};
+
+          if(
+            !Array.isArray(value.elements)||
+            !value.elements.length
+          ){
+            const elements=[];
+
+            if(value.title){
+              elements.push({
+                type:'title',
+                text:String(value.title)
+              });
+            }
+
+            if(value.formula){
+              elements.push({
+                type:'formula',
+                text:repairLessonFormulaValue(
+                  value.formula
+                )
+              });
+            }
+
+            if(value.body){
+              elements.push({
+                type:'text',
+                text:String(value.body)
+              });
+            }
+
+            if(
+              Array.isArray(value.bullets)&&
+              value.bullets.length
+            ){
+              elements.push({
+                type:'bullets',
+                items:value.bullets
+                  .slice(0,4)
+                  .map(String)
+              });
+            }
+
+            if(!elements.length){
+              elements.push({
+                type:'title',
+                text:'שלב '+(index+1)
+              });
+            }
+
+            value.elements=elements;
+          }
+
+          return value;
+        });
+
+    const duration=
+      scenes.reduce(
+        function(sum,scene,index){
+          return (
+            sum+
+            clamp(
+              Number(
+                scene.seconds??
+                scene.duration??
+                (index===0?2.6:6)
+              ),
+              index===0?2:3,
+              11
+            )
+          );
+        },
+        0
+      );
+
+    return {
+      title:
+        String(
+          data.title||
+          'סרטון הסבר במתמטיקה'
+        ).slice(0,100),
+      duration:duration,
+      scenes:scenes
+    };
+  }
+
   function renderLessonViz(target,payload){
     let lesson;
 
     try{
-      lesson=normalizeLesson(payload);
+      // Do not run the old canvas auto-layout anymore. The AI now supplies
+      // semantic lesson data and the server-side Hyperframes renderer owns
+      // composition, spacing, motion and MP4 output.
+      lesson=
+        prepareHyperframesLessonPayload(
+          payload
+        );
     }catch(error){
       console.error(
         'Sifra lesson normalization failed:',
