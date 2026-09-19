@@ -2851,9 +2851,10 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
     const uploaded=[];
     try{
       for(const image of images){
-        const blob=await fetch(image.dataUrl).then(function(response){return response.blob()});
-        const path=state.user.id+'/'+state.conversationId+'/'+crypto.randomUUID()+'.jpg';
-        const result=await state.supabase.storage.from('chat-attachments').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+        const blob=dataUrlToBlob(image.dataUrl);
+        const extension=blob.type==='image/png'?'png':blob.type==='image/webp'?'webp':'jpg';
+        const path=state.user.id+'/'+state.conversationId+'/'+crypto.randomUUID()+'.'+extension;
+        const result=await state.supabase.storage.from('chat-attachments').upload(path,blob,{contentType:blob.type||'image/jpeg',upsert:false});
         if(result.error)throw result.error;
         uploaded.push({path:path,name:image.name||'image.jpg',mimeType:'image/jpeg'});
       }
@@ -11491,6 +11492,14 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
   }
 
   function blobToDataUrl(blob){return new Promise(function(resolve,reject){const reader=new FileReader();reader.onload=function(){resolve(reader.result)};reader.onerror=reject;reader.readAsDataURL(blob)})}
+  function dataUrlToBlob(dataUrl){
+    const match=String(dataUrl||'').match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
+    if(!match)throw new Error('נתוני התמונה לא תקינים');
+    const binary=atob(match[2]);
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i+=1)bytes[i]=binary.charCodeAt(i);
+    return new Blob([bytes],{type:match[1]});
+  }
   async function compressImage(file){
     if(!/^image\/(png|jpeg|webp)$/.test(file.type))throw new Error('אפשר להעלות PNG, JPG או WebP בלבד');
     if(file.size>10*1024*1024)throw new Error('התמונה גדולה מדי');
