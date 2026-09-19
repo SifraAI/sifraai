@@ -607,6 +607,16 @@ app.post(
         req.body?.requestChatName === true &&
         !messages.some((message) => message.role === 'assistant');
 
+      const requestedSubject =
+        typeof req.body?.subject === 'string'
+          ? req.body.subject
+          : 'math';
+
+      const subject =
+        ['math', 'physics', 'chemistry'].includes(requestedSubject)
+          ? requestedSubject
+          : 'math';
+
       contextRequestId =
         String(
           res.getHeader('X-Request-Id') ||
@@ -632,6 +642,9 @@ app.post(
           '\n' +
           '- images: ' +
           images.length +
+          '\n' +
+          '- subject: ' +
+          subject +
           '\n\n' +
           '**User:**\n\n' +
           (
@@ -664,6 +677,7 @@ app.post(
           messages,
           images,
           firstResponse,
+          subject,
           signal:
             abortController.signal,
           onToken: async (token) => {
