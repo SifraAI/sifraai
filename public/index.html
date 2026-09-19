@@ -2318,6 +2318,112 @@ html[data-theme="dark"] .welcome-card{
   }
 }
 
+
+/* ===== Hyperframes lesson renderer ===== */
+.lesson-card-hyperframes .lesson-stage{
+  position:relative;
+  aspect-ratio:16/9;
+  min-height:0;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 42%,rgba(124,141,255,.10),transparent 42%),
+    #101113;
+}
+
+.lesson-card-hyperframes .lesson-render-overlay{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:
+    radial-gradient(circle at 50% 40%,rgba(124,141,255,.08),transparent 44%),
+    color-mix(in srgb,var(--bg) 88%,#101113);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .18s ease;
+}
+
+.lesson-card-hyperframes .lesson-render-overlay.show{
+  opacity:1;
+  pointer-events:auto;
+}
+
+.lesson-render-idle{
+  width:min(440px,80%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+}
+
+.lesson-render-engine{
+  margin-bottom:10px;
+  padding:5px 9px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  color:var(--muted);
+  font-size:10px;
+  letter-spacing:.02em;
+}
+
+.lesson-render-title{
+  color:var(--text);
+  font-size:16px;
+  font-weight:700;
+}
+
+.lesson-render-sub{
+  margin-top:5px;
+  color:var(--muted);
+  font-size:11px;
+  min-height:17px;
+}
+
+.lesson-render-progress{
+  width:100%;
+  height:6px;
+  margin-top:20px;
+  border-radius:999px;
+  overflow:hidden;
+  background:var(--surface-hover);
+  border:1px solid var(--line);
+}
+
+.lesson-render-progress-fill{
+  display:block;
+  width:0;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#6d7cff,#9a77ff);
+  box-shadow:0 0 18px rgba(124,141,255,.35);
+  transition:width .28s ease;
+}
+
+.lesson-render-progress-fill.error{
+  background:#ff6873;
+  box-shadow:none;
+}
+
+.lesson-render-percent{
+  margin-top:8px;
+  color:var(--muted);
+  font-size:10px;
+  font-variant-numeric:tabular-nums;
+}
+
+.lesson-card-hyperframes .lesson-video{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:#000;
+  z-index:1;
+}
+
+.lesson-card-hyperframes .lesson-render-overlay{
+  z-index:2;
+}
+
 </style>
 </head>
 <body>
@@ -9747,430 +9853,287 @@ html[data-theme="dark"] .welcome-card{
   }
 
   async function renderLessonMp4(card,lesson){
-    const renderButton=card.querySelector('.lesson-render-button');
-    const overlay=card.querySelector('.lesson-render-overlay');
-    const stage=card.querySelector('.lesson-stage');
+    if(card._lessonRendering)return;
 
-    if(renderButton)renderButton.disabled=true;
-    if(overlay)overlay.classList.add('show');
+    const renderButton=
+      card.querySelector(
+        '.lesson-render-button'
+      );
 
-    stopLessonPreview(card);
+    const overlay=
+      card.querySelector(
+        '.lesson-render-overlay'
+      );
+
+    const stage=
+      card.querySelector(
+        '.lesson-stage'
+      );
+
+    const statusEl=
+      overlay?.querySelector(
+        '.lesson-render-sub'
+      );
+
+    const bar=
+      overlay?.querySelector(
+        '.lesson-render-progress-fill'
+      );
+
+    const percent=
+      overlay?.querySelector(
+        '.lesson-render-percent'
+      );
+
+    const download=
+      card.querySelector(
+        '.lesson-download'
+      );
+
+    card._lessonRendering=true;
+
+    if(renderButton){
+      renderButton.disabled=true;
+      renderButton.hidden=true;
+    }
+
+    if(download){
+      download.hidden=true;
+    }
+
+    if(overlay){
+      overlay.classList.add('show');
+    }
+
+    const oldVideo=
+      stage.querySelector(
+        '.lesson-video'
+      );
+
+    if(oldVideo){
+      oldVideo.remove();
+    }
+
+    function updateProgress(job){
+      const value=
+        Math.max(
+          0,
+          Math.min(
+            1,
+            Number(job?.progress)||0
+          )
+        );
+
+      if(bar){
+        bar.style.width=
+          Math.round(value*100)+'%';
+      }
+
+      if(percent){
+        percent.textContent=
+          Math.round(value*100)+'%';
+      }
+
+      if(
+        statusEl&&
+        job?.message
+      ){
+        statusEl.textContent=
+          job.message;
+      }
+    }
 
     try{
-      const preflight=
-        lessonQualityAudit(lesson);
-
-      if(
-        preflight.warnings&&
-        preflight.warnings.length
-      ){
-        console.warn(
-          'Sifra video layout warnings were auto-repaired:',
-          preflight.warnings
-        );
-      }
-
-      if(!preflight.ok){
-        throw new Error(
-          'הווידאו לא עבר בדיקת איכות: '+
-          preflight.issues
-            .slice(0,3)
-            .join(' • ')
-        );
-      }
-
-      await document.fonts.ready;
-      await document.fonts.load('700 54px Huninn');
-      await document.fonts.load('500 28px Huninn');
-
-      const renderStatus=
-        overlay?.querySelector(
-          '.lesson-render-sub'
-        );
-
-      if(renderStatus){
-        renderStatus.textContent=
-          'מכין נוסחאות וגרפיקה…';
-      }
-
-      await prepareLessonAssets(lesson);
-
-      if(renderStatus){
-        renderStatus.textContent=
-          'מרנדר את הווידאו…';
-      }
-
-      const media=await loadMediaBunny();
-
-      const {
-        Output,
-        BufferTarget,
-        CanvasSource,
-        Mp4OutputFormat,
-        Quality,
-        Input,
-        BlobSource,
-        ALL_FORMATS,
-        CanvasSink,
-        getFirstEncodableVideoCodec
-      }=media;
-
-      const width=1280;
-      const height=720;
-      const fps=30;
-
-      const canvas=document.createElement('canvas');
-      canvas.width=width;
-      canvas.height=height;
-
-      const ctx=canvas.getContext('2d',{alpha:false});
-
-      const format=
-        new Mp4OutputFormat({
-          fastStart:'in-memory'
-        });
-
-      const probeQuality=
-        new Quality({
-          quantizer:20,
-          bitrate:10_000_000
-        });
-
-      const avcCodec=
-        await getFirstEncodableVideoCodec(
-          ['avc'],
-          {
-            width:width,
-            height:height,
-            frameRate:fps,
-            quality:probeQuality
-          }
-        );
-
-      const codec=
-        avcCodec||
-        await getFirstEncodableVideoCodec(
-          format.getSupportedVideoCodecs(),
-          {
-            width:width,
-            height:height,
-            frameRate:fps,
-            quality:probeQuality
-          }
-        );
-
-      if(!codec){
-        throw new Error(
-          'הדפדפן לא תומך כרגע ביצירת MP4.'
-        );
-      }
-
-      const target=new BufferTarget();
-
-      const output=new Output({
-        format:format,
-        target:target
+      updateProgress({
+        progress:.01,
+        message:'שולח את הסטוריבורד למנוע הווידאו…'
       });
 
-      const encodingConfig={
-        codec:codec,
-        quality:new Quality({
-          quantizer:20,
-          bitrate:10_000_000
-        }),
-        keyFrameInterval:2,
-        latencyMode:'quality',
-        contentHint:'detail',
-        hardwareAcceleration:'prefer-software'
-      };
+      const startResponse=
+        await fetch(
+          '/api/video/render',
+          {
+            method:'POST',
+            headers:{
+              'Content-Type':'application/json'
+            },
+            body:JSON.stringify({
+              lesson:lesson
+            })
+          }
+        );
 
-      if(
-        codec==='avc'&&
-        window.VideoEncoder&&
-        typeof window.VideoEncoder.isConfigSupported==='function'
-      ){
-        try{
-          const avcSupport=
-            await window.VideoEncoder.isConfigSupported({
-              codec:'avc1.42001f',
-              width:width,
-              height:height,
-              bitrate:10_000_000,
-              framerate:fps,
-              latencyMode:'quality',
-              hardwareAcceleration:'prefer-software'
+      const startData=
+        await startResponse.json()
+          .catch(function(){
+            return {};
+          });
+
+      if(!startResponse.ok){
+        throw new Error(
+          startData.error||
+          'לא הצלחתי להתחיל את יצירת הסרטון.'
+        );
+      }
+
+      const jobId=
+        startData.id;
+
+      if(!jobId){
+        throw new Error(
+          'מנוע הווידאו לא החזיר מזהה עבודה.'
+        );
+      }
+
+      card._lessonVideoJob=
+        jobId;
+
+      let job=startData;
+
+      while(true){
+        updateProgress(job);
+
+        if(job.status==='ready'){
+          const video=
+            document.createElement(
+              'video'
+            );
+
+          video.className=
+            'lesson-video';
+
+          video.src=
+            job.fileUrl;
+
+          if(job.posterUrl){
+            video.poster=
+              job.posterUrl;
+          }
+
+          video.controls=true;
+          video.playsInline=true;
+          video.preload='metadata';
+
+          stage.insertBefore(
+            video,
+            overlay
+          );
+
+          if(download){
+            download.href=
+              job.fileUrl;
+
+            download.download=
+              'sifra-'+
+              Date.now()+
+              '.mp4';
+
+            download.hidden=false;
+          }
+
+          if(renderButton){
+            renderButton.textContent=
+              'צור מחדש';
+            renderButton.hidden=false;
+          }
+
+          if(statusEl){
+            statusEl.textContent=
+              'הסרטון מוכן';
+          }
+
+          if(bar){
+            bar.style.width='100%';
+          }
+
+          if(percent){
+            percent.textContent='100%';
+          }
+
+          setTimeout(function(){
+            overlay?.classList.remove(
+              'show'
+            );
+          },260);
+
+          break;
+        }
+
+        if(job.status==='error'){
+          throw new Error(
+            job.error||
+            'יצירת הסרטון נכשלה.'
+          );
+        }
+
+        await new Promise(
+          function(resolve){
+            setTimeout(
+              resolve,
+              700
+            );
+          }
+        );
+
+        const response=
+          await fetch(
+            '/api/video/render/'+
+            encodeURIComponent(jobId),
+            {
+              cache:'no-store'
+            }
+          );
+
+        job=
+          await response.json()
+            .catch(function(){
+              return {};
             });
 
-          if(avcSupport.supported){
-            encodingConfig.fullCodecString=
-              'avc1.42001f';
-          }
-        }catch(error){
-          console.warn(
-            'AVC baseline probe failed:',
-            error
-          );
-        }
-      }
-
-      const source=new CanvasSource(
-        canvas,
-        encodingConfig
-      );
-
-      output.addVideoTrack(
-        source,
-        {
-          frameRate:fps
-        }
-      );
-
-      output.setMetadataTags({
-        title:lesson.title,
-        artist:'Sifra',
-        comment:'Generated by Sifra'
-      });
-
-      await output.start();
-
-      const totalFrames=Math.max(
-        1,
-        Math.round(lesson.duration*fps)
-      );
-
-      for(let frame=0;frame<totalFrames;frame+=1){
-        const time=frame/fps;
-
-        drawLessonFrame(
-          ctx,
-          lesson,
-          time,
-          width,
-          height
-        );
-
-        await source.add(
-          time,
-          1/fps
-        );
-
-        if(frame%24===0){
-          await new Promise(function(resolve){
-            requestAnimationFrame(resolve);
-          });
-        }
-      }
-
-      await output.finalize();
-
-      const blob=
-        new Blob(
-          [target.buffer],
-          {type:'video/mp4'}
-        );
-
-      if(renderStatus){
-        renderStatus.textContent=
-          'בודק את קובץ ה-MP4…';
-      }
-
-      const validationInput=
-        new Input({
-          source:
-            new BlobSource(blob),
-          formats:
-            ALL_FORMATS
-        });
-
-      try{
-        const readable=
-          await validationInput.canRead();
-
-        if(!readable){
+        if(!response.ok){
           throw new Error(
-            'קובץ ה-MP4 שנוצר אינו קריא.'
+            job.error||
+            'איבדתי את עבודת הווידאו.'
           );
         }
-
-        const track=
-          await validationInput.getPrimaryVideoTrack();
-
-        if(!track){
-          throw new Error(
-            'לא נמצא ערוץ וידאו בקובץ.'
-          );
-        }
-
-        const [
-          decodable,
-          outWidth,
-          outHeight,
-          outDuration,
-          fpsMetrics
-        ]=await Promise.all([
-          track.canDecode(),
-          track.getDisplayWidth(),
-          track.getDisplayHeight(),
-          validationInput.computeDuration(),
-          track.computeFrameRateMetrics()
-        ]);
-
-        if(!decodable){
-          throw new Error(
-            'הדפדפן לא מצליח לפענח את ה-MP4 שנוצר.'
-          );
-        }
-
-        if(
-          outWidth!==width||
-          outHeight!==height
-        ){
-          throw new Error(
-            'רזולוציית ה-MP4 אינה תקינה.'
-          );
-        }
-
-        if(
-          !Number.isFinite(outDuration)||
-          Math.abs(
-            outDuration-
-            lesson.duration
-          )>.35
-        ){
-          throw new Error(
-            'משך ה-MP4 אינו תואם לשיעור.'
-          );
-        }
-
-        const measuredFps=
-          Number(
-            fpsMetrics?.
-              bestGuessFrameRate
-          );
-
-        if(
-          Number.isFinite(
-            measuredFps
-          )&&
-          Math.abs(
-            measuredFps-fps
-          )>2
-        ){
-          throw new Error(
-            'קצב הפריימים של ה-MP4 אינו יציב.'
-          );
-        }
-
-        if(renderStatus){
-          renderStatus.textContent=
-            'צופה בפריימים ובודק התאמה…';
-        }
-
-        const visualQa=
-          await lessonVerifyExportFrames(
-            track,
-            lesson,
-            CanvasSink,
-            width,
-            height
-          );
-
-        console.info(
-          'Sifra video QA passed:',
-          visualQa
-        );
-      }finally{
-        if(
-          typeof validationInput.dispose===
-          'function'
-        ){
-          validationInput.dispose();
-        }
-      }
-
-      const url=
-        URL.createObjectURL(blob);
-
-      if(card._lessonVideoUrl){
-        URL.revokeObjectURL(
-          card._lessonVideoUrl
-        );
-      }
-
-      card._lessonVideoUrl=url;
-
-      const oldVideo=
-        stage.querySelector('.lesson-video');
-
-      if(oldVideo)oldVideo.remove();
-
-      const video=
-        document.createElement('video');
-
-      video.className='lesson-video';
-      video.src=url;
-      video.controls=true;
-      video.playsInline=true;
-      video.preload='metadata';
-
-      stage.appendChild(video);
-
-      const download=
-        card.querySelector(
-          '.lesson-download'
-        );
-
-      if(download){
-        download.href=url;
-        download.download=
-          'sifra-'+Date.now()+'.mp4';
-        download.hidden=false;
-      }
-
-      if(renderStatus){
-        renderStatus.textContent=
-          'הסרטון מוכן';
-      }
-
-      if(overlay){
-        overlay.classList.remove('show');
       }
     }catch(error){
       console.error(
-        'Video render failed:',
+        'Hyperframes video render failed:',
         error
       );
 
-      if(overlay){
-        const sub=
-          overlay.querySelector(
-            '.lesson-render-sub'
-          );
+      if(statusEl){
+        statusEl.textContent=
+          error.message||
+          'יצירת הסרטון נכשלה.';
 
-        if(sub){
-          sub.textContent=
-            error.message||
-            'יצירת הסרטון נכשלה.';
-          sub.style.color='#ff9da3';
-        }
+        statusEl.style.color=
+          '#ff8f98';
+      }
 
-        setTimeout(function(){
-          overlay.classList.remove('show');
+      if(bar){
+        bar.style.width='100%';
+        bar.classList.add('error');
+      }
 
-          if(sub){
-            sub.textContent=
-              'הסרטון יופיע כאן כשהוא מוכן';
-            sub.style.color='';
-          }
-        },2200);
+      if(renderButton){
+        renderButton.textContent=
+          'נסה שוב';
+        renderButton.hidden=false;
+      }
+
+      if(percent){
+        percent.textContent='!';
       }
     }finally{
+      card._lessonRendering=false;
+
       if(renderButton){
         renderButton.disabled=false;
       }
     }
   }
-
   function renderLessonViz(target,payload){
     let lesson;
 
@@ -10189,10 +10152,14 @@ html[data-theme="dark"] .welcome-card{
         'Video'
       );
 
-      target.appendChild(shell.card);
+      target.appendChild(
+        shell.card
+      );
 
       const el=
-        document.createElement('div');
+        document.createElement(
+          'div'
+        );
 
       el.className='viz-error';
       el.textContent=
@@ -10205,101 +10172,73 @@ html[data-theme="dark"] .welcome-card{
     const card=
       document.createElement('div');
 
-    card.className='lesson-card';
-    card._lessonTime=0;
+    card.className=
+      'lesson-card lesson-card-hyperframes';
 
     const meta=
       document.createElement('div');
 
-    meta.className='lesson-meta';
+    meta.className=
+      'lesson-meta';
 
     const title=
       document.createElement('div');
 
-    title.className='lesson-meta-title';
-    title.textContent=lesson.title;
+    title.className=
+      'lesson-meta-title';
+
+    title.textContent=
+      lesson.title;
 
     const sub=
       document.createElement('div');
 
-    sub.className='lesson-meta-sub';
+    sub.className=
+      'lesson-meta-sub';
+
     sub.textContent=
       Math.round(lesson.duration)+
       ' שניות • '+
       lesson.scenes.length+
-      ' סצנות • 1280×720';
+      ' סצנות • Hyperframes';
 
-    meta.append(title,sub);
+    meta.append(
+      title,
+      sub
+    );
 
     const stage=
       document.createElement('div');
 
-    stage.className='lesson-stage';
-
-    const canvas=
-      document.createElement('canvas');
-
-    canvas.className='lesson-canvas';
-    canvas.width=1280;
-    canvas.height=720;
+    stage.className=
+      'lesson-stage';
 
     const overlay=
       document.createElement('div');
 
-    overlay.className='lesson-render-overlay';
+    overlay.className=
+      'lesson-render-overlay show';
+
     overlay.innerHTML=
       '<div class="lesson-render-idle">'+
-        '<div class="lesson-render-title">יוצר את הסרטון…</div>'+
-        '<div class="lesson-render-sub">הסרטון יופיע כאן כשהוא מוכן</div>'+
-        '<div class="lesson-loader"></div>'+
+        '<div class="lesson-render-engine">Sifra Motion Engine</div>'+
+        '<div class="lesson-render-title">בונה את הסרטון שלך…</div>'+
+        '<div class="lesson-render-sub">מתכנן קומפוזיציה, תנועה וטיימינג</div>'+
+        '<div class="lesson-render-progress">'+
+          '<span class="lesson-render-progress-fill"></span>'+
+        '</div>'+
+        '<div class="lesson-render-percent">0%</div>'+
       '</div>';
 
-    stage.append(canvas,overlay);
-
-    const toolbar=
-      document.createElement('div');
-
-    toolbar.className='lesson-toolbar';
-
-    const play=
-      document.createElement('button');
-
-    play.className='lesson-play';
-    play.type='button';
-    play.textContent='▶';
-    play.setAttribute(
-      'aria-label',
-      'נגן או עצור'
-    );
-
-    const scrubber=
-      document.createElement('input');
-
-    scrubber.className='lesson-scrubber';
-    scrubber.type='range';
-    scrubber.min='0';
-    scrubber.max='1';
-    scrubber.step='0.001';
-    scrubber.value='0';
-
-    const time=
-      document.createElement('div');
-
-    time.className='lesson-time';
-    time.textContent=
-      '0:00 / '+
-      formatLessonTime(lesson.duration);
-
-    toolbar.append(
-      play,
-      scrubber,
-      time
+    stage.appendChild(
+      overlay
     );
 
     const actions=
       document.createElement('div');
 
-    actions.className='lesson-actions';
+    actions.className=
+      'lesson-actions';
 
     const render=
       document.createElement('button');
@@ -10308,7 +10247,9 @@ html[data-theme="dark"] .welcome-card{
       'lesson-action primary lesson-render-button';
 
     render.type='button';
-    render.textContent='צור MP4';
+    render.textContent=
+      'צור מחדש';
+    render.hidden=true;
 
     const download=
       document.createElement('a');
@@ -10316,13 +10257,15 @@ html[data-theme="dark"] .welcome-card{
     download.className=
       'lesson-action lesson-download';
 
-    download.textContent='הורד MP4';
+    download.textContent=
+      'הורד MP4';
     download.hidden=true;
 
     const spacer=
       document.createElement('div');
 
-    spacer.className='lesson-spacer';
+    spacer.className=
+      'lesson-spacer';
 
     actions.append(
       spacer,
@@ -10333,106 +10276,52 @@ html[data-theme="dark"] .welcome-card{
     card.append(
       meta,
       stage,
-      toolbar,
       actions
     );
 
-    target.appendChild(card);
-
-    renderLessonPreviewFrame(
-      card,
-      lesson,
-      0
-    );
-
-    Promise.all([
-      document.fonts.ready,
-      prepareLessonAssets(lesson)
-    ]).then(function(){
-      renderLessonPreviewFrame(
-        card,
-        lesson,
-        card._lessonTime||0
-      );
-    }).catch(function(error){
-      console.warn(
-        'Lesson asset preparation failed:',
-        error
-      );
-    });
-
-    play.addEventListener(
-      'click',
-      function(){
-        const video=
-          stage.querySelector(
-            '.lesson-video'
-          );
-
-        if(video){
-          if(video.paused)video.play();
-          else video.pause();
-          return;
-        }
-
-        if(card._lessonPlaying){
-          stopLessonPreview(card);
-        }else{
-          if(card._lessonTime>=lesson.duration-.05){
-            card._lessonTime=0;
-          }
-
-          startLessonPreview(
-            card,
-            lesson
-          );
-        }
-      }
-    );
-
-    canvas.addEventListener(
-      'click',
-      function(){
-        if(card._lessonPlaying){
-          stopLessonPreview(card);
-        }else{
-          if(card._lessonTime>=lesson.duration-.05){
-            card._lessonTime=0;
-          }
-
-          startLessonPreview(
-            card,
-            lesson
-          );
-        }
-      }
-    );
-
-    scrubber.addEventListener(
-      'input',
-      function(){
-        stopLessonPreview(card);
-
-        card._lessonTime=
-          Number(scrubber.value)*
-          lesson.duration;
-
-        renderLessonPreviewFrame(
-          card,
-          lesson,
-          card._lessonTime
-        );
-      }
+    target.appendChild(
+      card
     );
 
     render.addEventListener(
       'click',
       function(){
+        const fill=
+          overlay.querySelector(
+            '.lesson-render-progress-fill'
+          );
+
+        const subEl=
+          overlay.querySelector(
+            '.lesson-render-sub'
+          );
+
+        if(fill){
+          fill.classList.remove(
+            'error'
+          );
+          fill.style.width='0%';
+        }
+
+        if(subEl){
+          subEl.style.color='';
+        }
+
         renderLessonMp4(
           card,
           lesson
         );
       }
+    );
+
+    setTimeout(
+      function(){
+        renderLessonMp4(
+          card,
+          lesson
+        );
+      },
+      40
     );
   }
 
