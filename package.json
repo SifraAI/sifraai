@@ -6,7 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js",
+    "dev": "logging_to_file=true node dev.js",
     "check": "node --check server.js && node --check ai.js"
   },
   "engines": {
