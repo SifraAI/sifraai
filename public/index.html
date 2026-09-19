@@ -2656,7 +2656,7 @@ html[data-theme="dark"] .welcome-card{
           <span class="home-greeting-icon" id="homeGreetingIcon" aria-hidden="true"></span>
           <span class="home-greeting-text" id="homeGreetingText"></span>
         </div>
-        <h1>מה נפתור היום?</h1>
+        <h1 id="homeTitle" aria-live="polite">מה נפתור היום?</h1>
 
         <div class="attachments" id="homeAttachments"></div>
 
@@ -11282,6 +11282,94 @@ html[data-theme="dark"] .welcome-card{
       state.busy=false;updateButtons();
       updateScrollButton();
     }
+  }
+
+  // Keep the empty home screen alive without distracting from actual typing.
+  const homeTitle=$('#homeTitle');
+  const homeTitlePhrases=[
+    'מה נפתור היום?',
+    'במה צריך עזרה היום?',
+    'על מה עובדים היום?',
+    'איזה תרגיל נפתור יחד?',
+    'מה לא מסתדר?'
+  ];
+  const homePlaceholderPhrases=[
+    'תכתוב כאן תרגיל...',
+    'אפשר גם לצרף תמונה...',
+    'שאל אותי על משוואות, גיאומטריה ועוד...',
+    'נתקעת בשיעורי הבית? אני כאן.'
+  ];
+  const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let titlePhraseIndex=0;
+  let placeholderPhraseIndex=0;
+  let placeholderCharIndex=0;
+  let placeholderDeleting=false;
+  let placeholderTimer=0;
+  let placeholderStopped=false;
+
+  function cycleHomeTitle(){
+    if(!homeTitle||reduceMotion||chat.classList.contains('on'))return;
+    titlePhraseIndex=(titlePhraseIndex+1)%homeTitlePhrases.length;
+    const next=homeTitlePhrases[titlePhraseIndex];
+    const out=homeTitle.animate(
+      [{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(-7px)'}],
+      {duration:180,easing:'ease-in',fill:'forwards'}
+    );
+    out.finished.then(function(){
+      homeTitle.textContent=next;
+      homeTitle.animate(
+        [{opacity:0,transform:'translateY(7px)'},{opacity:1,transform:'translateY(0)'}],
+        {duration:260,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'}
+      );
+    }).catch(function(){});
+  }
+
+  function schedulePlaceholder(delay){
+    clearTimeout(placeholderTimer);
+    if(!placeholderStopped)placeholderTimer=setTimeout(stepPlaceholder,delay);
+  }
+
+  function stepPlaceholder(){
+    if(placeholderStopped||reduceMotion||chat.classList.contains('on'))return;
+    const phrase=homePlaceholderPhrases[placeholderPhraseIndex];
+
+    if(!placeholderDeleting){
+      placeholderCharIndex=Math.min(phrase.length,placeholderCharIndex+1);
+      homeInput.placeholder=phrase.slice(0,placeholderCharIndex);
+      if(placeholderCharIndex===phrase.length){
+        placeholderDeleting=true;
+        schedulePlaceholder(1450);
+      }else{
+        schedulePlaceholder(46+Math.random()*34);
+      }
+      return;
+    }
+
+    placeholderCharIndex=Math.max(0,placeholderCharIndex-1);
+    homeInput.placeholder=phrase.slice(0,placeholderCharIndex);
+    if(placeholderCharIndex===0){
+      placeholderDeleting=false;
+      placeholderPhraseIndex=(placeholderPhraseIndex+1)%homePlaceholderPhrases.length;
+      schedulePlaceholder(320);
+    }else{
+      schedulePlaceholder(24+Math.random()*20);
+    }
+  }
+
+  function stopHomePlaceholder(){
+    if(placeholderStopped)return;
+    placeholderStopped=true;
+    clearTimeout(placeholderTimer);
+    homeInput.placeholder='שאל את Sifra';
+  }
+
+  if(reduceMotion){
+    homeInput.placeholder='שאל את Sifra';
+  }else{
+    setInterval(cycleHomeTitle,4200);
+    schedulePlaceholder(650);
+    homeInput.addEventListener('focus',stopHomePlaceholder,{once:true});
+    homeInput.addEventListener('input',stopHomePlaceholder,{once:true});
   }
 
   homeInput.addEventListener('input',function(){resizeTextarea(homeInput);updateButtons()});
