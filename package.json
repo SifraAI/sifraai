@@ -8,7 +8,8 @@
     "start": "node server.js",
     "dev": "logging_to_file=true node dev.js",
     "check": "node --check server.js && node --check ai.js && node --check video.js",
-    "video:doctor": "npx --no-install hyperframes doctor"
+    "video:doctor": "npx --no-install hyperframes doctor",
+    "video:test": "node scripts/video-smoke.js"
   },
   "engines": {
     "node": ">=22"
