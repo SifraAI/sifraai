@@ -6,14 +6,18 @@ const fs = require('fs');
 const crypto = require('crypto');
 const helmet = require('helmet');
 const { streamSifra, ProviderError } = require('./ai');
-const {
-  renderLesson,
-  ensureVideoEnvironment,
-  removeJobFiles
-} = require('./video');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
+const SUPABASE_ANON_KEY = String(process.env.SUPABASE_ANON_KEY || '');
+let supabaseOrigin = null;
+
+try {
+  if (SUPABASE_URL) supabaseOrigin = new URL(SUPABASE_URL).origin;
+} catch (_error) {
+  console.error('SUPABASE_URL is not a valid URL.');
+}
 
 const LOGGING_TO_FILE = /^(?:1|true|yes|on)$/i.test(
   String(
@@ -140,8 +144,6 @@ const LIMITS = {
   apiPerMinute: 120,
   chatPerMinute: 15,
   chatPerDay: 150,
-  videoPerHour: 6,
-  maxVideoJobs: 24,
   maxImages: 2,
   maxImageBytes: 1_500_000,
   maxTotalImageBytes: 2_700_000,
@@ -161,8 +163,8 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "blob:", ...(supabaseOrigin ? [supabaseOrigin] : [])],
+      connectSrc: ["'self'", ...(supabaseOrigin ? [supabaseOrigin] : [])],
       mediaSrc: ["'self'", "blob:"],
       workerSrc: ["'self'", "blob:"],
       fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
@@ -405,8 +407,141 @@ function validateMessages(body) {
   return clean;
 }
 
+function cleanChatName(value) {
+  const words = String(value || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/^["'״׳`]+|["'״׳`]+$/g, '')
+    .trim()
+    .split(/\s+/u)
+    .filter(Boolean)
+    .slice(0, 3);
+
+  return words.join(' ').slice(0, 72).trim();
+}
+
+function fallbackChatName(messages) {
+  const firstUser = messages.find((message) => message.role === 'user');
+  return cleanChatName(firstUser?.content) || 'שיחה חדשה';
+}
+
+function createChatNameFilter({ onText, onName }) {
+  const openTag = '<setchatname>';
+  const closeTag = '</setchatname>';
+  let buffer = '';
+  let insideTag = false;
+  let foundName = false;
+
+  function matchingSuffixLength(value, target) {
+    const lower = value.toLowerCase();
+    const maximum = Math.min(lower.length, target.length - 1);
+    for (let length = maximum; length > 0; length -= 1) {
+      if (lower.endsWith(target.slice(0, length))) return length;
+    }
+    return 0;
+  }
+
+  async function feed(token) {
+    buffer += String(token || '');
+
+    while (buffer) {
+      if (insideTag) {
+        const closeIndex = buffer.toLowerCase().indexOf(closeTag);
+        if (closeIndex === -1) return;
+
+        const name = cleanChatName(buffer.slice(0, closeIndex));
+        buffer = buffer.slice(closeIndex + closeTag.length);
+        insideTag = false;
+
+        if (name && !foundName) {
+          foundName = true;
+          await onName(name);
+        }
+        continue;
+      }
+
+      const openIndex = buffer.toLowerCase().indexOf(openTag);
+      if (openIndex !== -1) {
+        if (openIndex > 0) await onText(buffer.slice(0, openIndex));
+        buffer = buffer.slice(openIndex + openTag.length);
+        insideTag = true;
+        continue;
+      }
+
+      const held = matchingSuffixLength(buffer, openTag);
+      const visibleLength = buffer.length - held;
+      if (visibleLength > 0) await onText(buffer.slice(0, visibleLength));
+      buffer = buffer.slice(visibleLength);
+      return;
+    }
+  }
+
+  async function finish() {
+    if (!insideTag && buffer) await onText(buffer);
+    buffer = '';
+    return foundName;
+  }
+
+  return { feed, finish };
+}
+
+async function requireAuthenticatedUser(req, res, next) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return res.status(503).json({
+      error: 'האימות עדיין לא הוגדר בשרת.',
+      code: 'auth_not_configured'
+    });
+  }
+
+  const authorization = String(req.get('authorization') || '');
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+
+  if (!match) {
+    return res.status(401).json({
+      error: 'צריך להתחבר כדי להמשיך.',
+      code: 'authentication_required'
+    });
+  }
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${match[1]}`
+      },
+      signal: AbortSignal.timeout(8000)
+    });
+
+    if (!response.ok) {
+      return res.status(401).json({
+        error: 'ההתחברות פגה. התחבר שוב.',
+        code: 'invalid_session'
+      });
+    }
+
+    const user = await response.json();
+    if (!user?.id) throw new Error('Supabase returned an invalid user');
+    req.user = { id: user.id };
+    return next();
+  } catch (error) {
+    if (error?.name === 'TimeoutError') {
+      return res.status(503).json({
+        error: 'שירות ההתחברות לא זמין כרגע.',
+        code: 'auth_unavailable'
+      });
+    }
+
+    console.error('Supabase auth verification failed:', error?.message || error);
+    return res.status(503).json({
+      error: 'לא ניתן לאמת את ההתחברות כרגע.',
+      code: 'auth_unavailable'
+    });
+  }
+}
+
 app.post(
   '/api/chat',
+  requireAuthenticatedUser,
   rateLimit(
     'chat-minute',
     LIMITS.chatPerMinute,
@@ -468,6 +603,10 @@ app.post(
       const images =
         validateImages(req.body?.images);
 
+      const firstResponse =
+        req.body?.requestChatName === true &&
+        !messages.some((message) => message.role === 'assistant');
+
       contextRequestId =
         String(
           res.getHeader('X-Request-Id') ||
@@ -506,23 +645,37 @@ app.post(
         contextRequestStarted = true;
       }
 
+      let emittedChatName = false;
+      const emitVisibleToken = async (token) => {
+        await appendContext(token);
+        sendEvent('token', { text: token });
+      };
+      const emitChatName = async (name) => {
+        if (emittedChatName) return;
+        emittedChatName = true;
+        sendEvent('chat_name', { name });
+      };
+      const chatNameFilter = firstResponse
+        ? createChatNameFilter({ onText: emitVisibleToken, onName: emitChatName })
+        : null;
+
       const result =
         await streamSifra({
           messages,
           images,
+          firstResponse,
           signal:
             abortController.signal,
           onToken: async (token) => {
-            // Write every provider token immediately, in the same order
-            // it is streamed to the browser.
-            await appendContext(token);
-
-            sendEvent(
-              'token',
-              { text: token }
-            );
+            if (chatNameFilter) await chatNameFilter.feed(token);
+            else await emitVisibleToken(token);
           }
         });
+
+      if (chatNameFilter) {
+        const foundName = await chatNameFilter.finish();
+        if (!foundName) await emitChatName(fallbackChatName(messages));
+      }
 
       if (
         LOGGING_TO_FILE &&
@@ -670,423 +823,24 @@ app.post(
 );
 
 
-const videoJobs = new Map();
-let videoQueue = Promise.resolve();
-let videoEnvironmentPromise = null;
-let videoEnvironmentCheckedAt = 0;
-
-async function videoEnvironment(force = false) {
-  const stale =
-    Date.now() -
-    videoEnvironmentCheckedAt >
-    5 * 60 * 1000;
-
-  if (
-    force ||
-    !videoEnvironmentPromise ||
-    stale
-  ) {
-    videoEnvironmentCheckedAt =
-      Date.now();
-
-    videoEnvironmentPromise =
-      ensureVideoEnvironment()
-        .catch((error) => ({
-          ok: false,
-          results: [{
-            command: 'environment',
-            ok: false,
-            error:
-              error?.message ||
-              String(error)
-          }]
-        }));
-  }
-
-  const result =
-    await videoEnvironmentPromise;
-
-  // Do not cache a broken environment forever. A user can install
-  // FFmpeg/Chrome/Hyperframes and retry without restarting Sifra.
-  if (!result.ok) {
-    videoEnvironmentPromise = null;
-  }
-
-  return result;
-}
-
-function videoJobPublic(job) {
-  return {
-    id: job.id,
-    status: job.status,
-    progress: job.progress,
-    message: job.message,
-    error: job.error || null,
-    createdAt: job.createdAt,
-    startedAt: job.startedAt || null,
-    finishedAt: job.finishedAt || null,
-    fileUrl:
-      job.status === 'ready'
-        ? '/api/video/render/' +
-          job.id +
-          '/file'
-        : null,
-    posterUrl:
-      job.status === 'ready'
-        ? '/api/video/render/' +
-          job.id +
-          '/poster'
-        : null,
-    metadata:
-      job.status === 'ready'
-        ? job.metadata
-        : null
-  };
-}
-
-async function cleanupVideoJobs() {
-  const now = Date.now();
-
-  const removable =
-    Array.from(videoJobs.values())
-      .filter((job) => (
-        (
-          job.status === 'ready' ||
-          job.status === 'error'
-        ) &&
-        now - job.createdAt >
-          2 * 60 * 60 * 1000
-      ));
-
-  for (const job of removable) {
-    videoJobs.delete(job.id);
-
-    try {
-      await removeJobFiles(job.id);
-    } catch {}
-  }
-
-  if (
-    videoJobs.size <=
-    LIMITS.maxVideoJobs
-  ) {
-    return;
-  }
-
-  const oldest =
-    Array.from(videoJobs.values())
-      .filter((job) => (
-        job.status === 'ready' ||
-        job.status === 'error'
-      ))
-      .sort((a, b) =>
-        a.createdAt - b.createdAt
-      );
-
-  while (
-    videoJobs.size >
-      LIMITS.maxVideoJobs &&
-    oldest.length
-  ) {
-    const job = oldest.shift();
-
-    videoJobs.delete(job.id);
-
-    try {
-      await removeJobFiles(job.id);
-    } catch {}
-  }
-}
-
-function queueVideoRender(job, lesson) {
-  const task = async () => {
-    job.status = 'checking';
-    job.startedAt = Date.now();
-    job.progress = 0.01;
-    job.message =
-      'בודק את מנוע הווידאו…';
-
-    try {
-      const environment =
-        await videoEnvironment();
-
-      if (!environment.ok) {
-        const detail =
-          environment.results
-            ?.filter((item) => !item.ok)
-            .map((item) =>
-              item.command +
-              ': ' +
-              item.error
-            )
-            .join(' | ');
-
-        throw new Error(
-          'מנוע הווידאו לא מוכן. ' +
-          (
-            detail ||
-            'בדוק FFmpeg, Node 22 ו-Hyperframes.'
-          )
-        );
-      }
-
-      job.status = 'rendering';
-
-      const result =
-        await renderLesson({
-          lesson,
-          jobId: job.id,
-          onProgress(progress, message) {
-            job.progress =
-              Math.max(
-                job.progress,
-                Math.min(
-                  1,
-                  Number(progress) || 0
-                )
-              );
-
-            if (message) {
-              job.message =
-                String(message);
-            }
-          }
-        });
-
-      job.status = 'ready';
-      job.progress = 1;
-      job.message = 'הסרטון מוכן';
-      job.finishedAt = Date.now();
-      job.outputPath =
-        result.outputPath;
-      job.posterPath =
-        result.posterPath;
-      job.metadata = {
-        width:
-          result.probe?.width ||
-          1280,
-        height:
-          result.probe?.height ||
-          720,
-        duration:
-          result.probe?.duration ||
-          result.lesson?.duration ||
-          null,
-        codec:
-          result.probe?.codec ||
-          null,
-        bytes:
-          result.size ||
-          null,
-        renderer:
-          'hyperframes'
-      };
-    } catch (error) {
-      console.error(
-        'Video render job failed:',
-        {
-          id: job.id,
-          error:
-            error?.message ||
-            error
-        }
-      );
-
-      job.status = 'error';
-      job.progress = 1;
-      job.finishedAt = Date.now();
-      job.error =
-        String(
-          error?.message ||
-          'יצירת הסרטון נכשלה.'
-        )
-        .slice(0, 1200);
-
-      job.message =
-        'יצירת הסרטון נכשלה';
-    }
-  };
-
-  videoQueue =
-    videoQueue
-      .catch(() => {})
-      .then(task);
-
-  return videoQueue;
-}
-
-app.post(
-  '/api/video/render',
-  rateLimit(
-    'video-hour',
-    LIMITS.videoPerHour,
-    60 * 60 * 1000
-  ),
-  async (req, res) => {
-    await cleanupVideoJobs();
-
-    const lesson =
-      req.body?.lesson;
-
-    if (
-      !lesson ||
-      typeof lesson !== 'object' ||
-      !Array.isArray(lesson.scenes) ||
-      !lesson.scenes.length
-    ) {
-      return res.status(400).json({
-        error:
-          'נתוני הסרטון לא תקינים.',
-        code:
-          'invalid_video_lesson'
-      });
-    }
-
-    const id =
-      crypto.randomUUID();
-
-    const job = {
-      id,
-      status: 'queued',
-      progress: 0,
-      message:
-        'ממתין למנוע הווידאו…',
-      error: null,
-      createdAt: Date.now(),
-      startedAt: null,
-      finishedAt: null,
-      outputPath: null,
-      posterPath: null,
-      metadata: null
-    };
-
-    videoJobs.set(
-      id,
-      job
-    );
-
-    queueVideoRender(
-      job,
-      lesson
-    );
-
-    return res
-      .status(202)
-      .json(
-        videoJobPublic(job)
-      );
-  }
-);
-
-app.get(
-  '/api/video/render/:id',
-  (req, res) => {
-    const job =
-      videoJobs.get(
-        req.params.id
-      );
-
-    if (!job) {
-      return res.status(404).json({
-        error:
-          'הסרטון לא נמצא או שפג תוקפו.',
-        code:
-          'video_job_not_found'
-      });
-    }
-
-    return res.json(
-      videoJobPublic(job)
-    );
-  }
-);
-
-app.get(
-  '/api/video/render/:id/file',
-  (req, res) => {
-    const job =
-      videoJobs.get(
-        req.params.id
-      );
-
-    if (
-      !job ||
-      job.status !== 'ready' ||
-      !job.outputPath
-    ) {
-      return res.status(404).json({
-        error:
-          'קובץ הווידאו עדיין לא מוכן.',
-        code:
-          'video_file_not_ready'
-      });
-    }
-
-    res.setHeader(
-      'Content-Type',
-      'video/mp4'
-    );
-
-    res.setHeader(
-      'Content-Disposition',
-      'inline; filename="sifra-' +
-      job.id +
-      '.mp4"'
-    );
-
-    return res.sendFile(
-      job.outputPath
-    );
-  }
-);
-
-app.get(
-  '/api/video/render/:id/poster',
-  (req, res) => {
-    const job =
-      videoJobs.get(
-        req.params.id
-      );
-
-    if (
-      !job ||
-      job.status !== 'ready' ||
-      !job.posterPath
-    ) {
-      return res.status(404).end();
-    }
-
-    res.setHeader(
-      'Content-Type',
-      'image/jpeg'
-    );
-
-    return res.sendFile(
-      job.posterPath
-    );
-  }
-);
-
-app.get(
-  '/api/video/health',
-  async (_req, res) => {
-    const environment =
-      await videoEnvironment(true);
-
-    return res
-      .status(
-        environment.ok
-          ? 200
-          : 503
-      )
-      .json(environment);
-  }
-);
-
 app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     service: 'sifra'
+  });
+});
+
+app.get('/api/config', (_req, res) => {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return res.status(503).json({
+      error: 'Supabase is not configured',
+      code: 'supabase_not_configured'
+    });
+  }
+
+  return res.json({
+    supabaseUrl: SUPABASE_URL,
+    supabaseAnonKey: SUPABASE_ANON_KEY
   });
 });
 

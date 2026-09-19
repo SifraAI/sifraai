@@ -16,6 +16,7 @@
 <script src="https://cdn.jsdelivr.net/npm/mathjs@14.6.0/lib/browser/math.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg:#fcfcfc;
@@ -53,6 +54,7 @@ html[data-theme="dark"]{
   --danger:#ff7f87;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{
   margin:0;
@@ -612,6 +614,8 @@ html[data-theme="dark"] .home-greeting[data-period="night"] .home-greeting-icon{
   width:100%;
   font-size:16px;
   line-height:1.78;
+  direction:rtl;
+  unicode-bidi:plaintext;
   white-space:normal;
   overflow-wrap:anywhere;
 }
@@ -742,6 +746,16 @@ html[data-theme="dark"] .home-greeting[data-period="night"] .home-greeting-icon{
 .assistant-text .math-display .katex-display{margin:0}
 .assistant-text .math-inline .katex{font-size:1.30em}
 .assistant-text .math-display .katex{font-size:1.68em}
+.assistant-text .katex,
+.assistant-text .katex-display,
+.assistant-text .katex-error{
+  direction:ltr;
+  unicode-bidi:isolate;
+}
+.assistant-text .render-fallback{
+  unicode-bidi:plaintext;
+  white-space:pre-wrap;
+}
 .stream-fade{
   animation:streamFadeIn .17s cubic-bezier(.2,.75,.25,1) both;
 }
@@ -2050,379 +2064,165 @@ html[data-theme="dark"] .temporary-chat-btn.active{
 }
 
 
-/* ===== first-time Sifra welcome ===== */
-.welcome-modal{
+/* Authentication and persisted conversation UI */
+.app.auth-locked{
+  pointer-events:none;
+  user-select:none;
+  filter:blur(2px);
+  opacity:.72;
+}
+.auth-modal{
   position:fixed;
   inset:0;
-  z-index:1000;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:24px;
-  opacity:0;
-  visibility:hidden;
-  pointer-events:none;
-  transition:opacity .2s ease,visibility .2s ease;
-}
-.welcome-modal.open{
-  opacity:1;
-  visibility:visible;
-  pointer-events:auto;
-}
-.welcome-modal-backdrop{
-  position:absolute;
-  inset:0;
-  background:rgba(0,0,0,.58);
-  backdrop-filter:blur(9px);
-  -webkit-backdrop-filter:blur(9px);
-}
-.welcome-card{
-  position:relative;
-  width:min(430px,calc(100vw - 28px));
-  min-height:610px;
-  border:1px solid var(--line-strong);
-  border-radius:24px;
-  background:var(--surface);
-  color:var(--text);
-  box-shadow:0 28px 90px rgba(0,0,0,.35);
-  padding:22px 24px 20px;
+  z-index:3000;
+  display:none;
+  place-items:center;
+  padding:18px;
   direction:rtl;
-  overflow:hidden;
-  transform:translateY(12px) scale(.985);
-  transition:transform .22s cubic-bezier(.2,.75,.25,1);
 }
-.welcome-modal.open .welcome-card{
-  transform:translateY(0) scale(1);
-}
-.welcome-close{
-  position:absolute;
-  top:16px;
-  left:16px;
-  width:34px;
-  height:34px;
-  border:1px solid var(--line);
-  border-radius:10px;
-  background:transparent;
-  color:var(--muted);
-  display:grid;
-  place-items:center;
-}
-.welcome-close:hover{
-  background:var(--surface-hover);
-  color:var(--text);
-}
-.welcome-close svg{
-  width:18px;
-  height:18px;
-}
-.welcome-brand{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:8px;
-  min-height:34px;
-  font-size:14px;
-  font-weight:700;
-}
-.welcome-brand img{
-  width:25px;
-  height:25px;
-  object-fit:contain;
-}
-.welcome-visual{
-  height:146px;
-  margin:18px 0 8px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:0;
-  position:relative;
-}
-.welcome-orb{
-  width:78px;
-  height:78px;
-  border-radius:24px;
-  display:grid;
-  place-items:center;
-  border:1px solid var(--line);
-  box-shadow:0 12px 30px rgba(0,0,0,.11);
-  margin:0 -6px;
-  position:relative;
-}
-.welcome-orb:nth-child(2){
-  width:94px;
-  height:94px;
-  z-index:2;
-}
-.welcome-orb svg{
-  width:31px;
-  height:31px;
-  stroke-width:1.9;
-}
-.welcome-orb:nth-child(2) svg{
-  width:38px;
-  height:38px;
-}
-.welcome-orb-purple{
-  background:color-mix(in srgb,#8d63ff 14%,var(--surface));
-  color:#9d79ff;
-}
-.welcome-orb-blue{
-  background:color-mix(in srgb,#4f86ff 15%,var(--surface));
-  color:#6f9dff;
-}
-.welcome-orb-green{
-  background:color-mix(in srgb,#34b87a 14%,var(--surface));
-  color:#56c58f;
-}
-.welcome-copy{
-  text-align:center;
-}
-.welcome-eyebrow{
-  display:block;
-  margin-bottom:8px;
-  color:var(--muted);
-  font-size:12px;
-  font-weight:700;
-}
-.welcome-copy h2{
-  margin:0;
-  font-size:28px;
-  line-height:1.15;
-  letter-spacing:-.03em;
-  font-weight:700;
-}
-.welcome-copy p{
-  margin:12px auto 0;
-  max-width:350px;
-  color:var(--muted);
-  font-size:13px;
-  line-height:1.6;
-}
-.welcome-features{
-  margin-top:22px;
-  display:flex;
-  flex-direction:column;
-  gap:9px;
-}
-.welcome-feature{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  min-height:68px;
-  padding:10px 11px;
-  border:1px solid var(--line);
-  border-radius:14px;
-  background:color-mix(in srgb,var(--surface-hover) 55%,transparent);
-}
-.welcome-feature-icon{
-  width:38px;
-  height:38px;
-  border-radius:11px;
-  flex:none;
-  display:grid;
-  place-items:center;
-}
-.welcome-feature-icon svg{
-  width:19px;
-  height:19px;
-}
-.welcome-feature-icon.purple{
-  background:color-mix(in srgb,#8d63ff 20%,transparent);
-  color:#9d79ff;
-}
-.welcome-feature-icon.blue{
-  background:color-mix(in srgb,#4f86ff 20%,transparent);
-  color:#6f9dff;
-}
-.welcome-feature-icon.green{
-  background:color-mix(in srgb,#34b87a 20%,transparent);
-  color:#56c58f;
-}
-.welcome-feature div{
-  min-width:0;
-}
-.welcome-feature strong{
-  display:block;
-  margin-bottom:3px;
-  font-size:12.5px;
-}
-.welcome-feature span{
-  display:block;
-  color:var(--muted);
-  font-size:11px;
-  line-height:1.35;
-}
-.welcome-primary{
-  width:100%;
-  height:46px;
-  margin-top:20px;
-  border:0;
-  border-radius:12px;
-  background:var(--text);
-  color:var(--bg);
-  font-size:13px;
-  font-weight:700;
-}
-.welcome-primary:hover{
-  opacity:.92;
-}
-.welcome-never{
-  width:100%;
-  height:34px;
-  margin-top:5px;
-  border:0;
-  background:transparent;
-  color:var(--muted);
-  font-size:11.5px;
-}
-.welcome-never:hover{
-  color:var(--text);
-}
-.welcome-note{
-  margin:6px 0 0;
-  text-align:center;
-  color:var(--muted-2);
-  font-size:10px;
-}
-html[data-theme="dark"] .welcome-card{
-  background:#171717;
-}
-@media(max-width:520px){
-  .welcome-modal{
-    padding:12px;
-  }
-  .welcome-card{
-    width:min(400px,100%);
-    min-height:auto;
-    max-height:calc(100dvh - 24px);
-    overflow-y:auto;
-    border-radius:20px;
-    padding:18px 18px 16px;
-  }
-  .welcome-visual{
-    height:120px;
-    margin-top:12px;
-  }
-  .welcome-orb{
-    width:64px;
-    height:64px;
-    border-radius:20px;
-  }
-  .welcome-orb:nth-child(2){
-    width:78px;
-    height:78px;
-  }
-  .welcome-copy h2{
-    font-size:24px;
-  }
-}
-
-
-/* ===== Hyperframes lesson renderer ===== */
-.lesson-card-hyperframes .lesson-stage{
-  position:relative;
-  aspect-ratio:16/9;
-  min-height:0;
-  overflow:hidden;
-  background:
-    radial-gradient(circle at 50% 42%,rgba(124,141,255,.10),transparent 42%),
-    #101113;
-}
-
-.lesson-card-hyperframes .lesson-render-overlay{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:
-    radial-gradient(circle at 50% 40%,rgba(124,141,255,.08),transparent 44%),
-    color-mix(in srgb,var(--bg) 88%,#101113);
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .18s ease;
-}
-
-.lesson-card-hyperframes .lesson-render-overlay.show{
-  opacity:1;
-  pointer-events:auto;
-}
-
-.lesson-render-idle{
-  width:min(440px,80%);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  text-align:center;
-}
-
-.lesson-render-engine{
-  margin-bottom:10px;
-  padding:5px 9px;
-  border:1px solid var(--line);
-  border-radius:999px;
-  color:var(--muted);
-  font-size:10px;
-  letter-spacing:.02em;
-}
-
-.lesson-render-title{
-  color:var(--text);
-  font-size:16px;
-  font-weight:700;
-}
-
-.lesson-render-sub{
-  margin-top:5px;
-  color:var(--muted);
-  font-size:11px;
-  min-height:17px;
-}
-
-.lesson-render-progress{
-  width:100%;
-  height:6px;
-  margin-top:20px;
-  border-radius:999px;
-  overflow:hidden;
-  background:var(--surface-hover);
-  border:1px solid var(--line);
-}
-
-.lesson-render-progress-fill{
-  display:block;
-  width:0;
-  height:100%;
-  border-radius:inherit;
-  background:linear-gradient(90deg,#6d7cff,#9a77ff);
-  box-shadow:0 0 18px rgba(124,141,255,.35);
-  transition:width .28s ease;
-}
-
-.lesson-render-progress-fill.error{
-  background:#ff6873;
-  box-shadow:none;
-}
-
-.lesson-render-percent{
-  margin-top:8px;
-  color:var(--muted);
-  font-size:10px;
-  font-variant-numeric:tabular-nums;
-}
-
-.lesson-card-hyperframes .lesson-video{
+.auth-modal.open{display:grid}
+.auth-backdrop{
   position:absolute;
   inset:0;
-  width:100%;
-  height:100%;
-  object-fit:contain;
-  background:#000;
-  z-index:1;
+  background:color-mix(in srgb,var(--bg) 76%,rgba(12,12,16,.72));
+  backdrop-filter:blur(12px);
+}
+.auth-card{
+  position:relative;
+  width:min(410px,100%);
+  border:1px solid var(--line-strong);
+  border-radius:20px;
+  background:var(--surface);
+  box-shadow:0 24px 80px rgba(0,0,0,.18);
+  padding:24px;
+}
+.auth-close{
+  position:absolute;top:14px;left:14px;width:31px;height:31px;border:0;border-radius:8px;
+  display:grid;place-items:center;background:transparent;color:var(--muted);font-size:21px;line-height:1;
+}
+.auth-close:hover{background:var(--surface-hover);color:var(--text)}
+.auth-brand{display:flex;align-items:center;gap:9px;font-weight:750;font-size:17px}
+.auth-brand img{width:27px;height:27px;object-fit:contain}
+.auth-copy{margin:20px 0 16px}
+.auth-copy h2{margin:0 0 5px;font-size:24px;letter-spacing:-.4px}
+.auth-copy p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.auth-google,.auth-submit{
+  width:100%;height:42px;border-radius:10px;font-weight:700;font-size:13.5px;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+}
+.auth-google{border:1px solid var(--line-strong);background:var(--surface);color:var(--text)}
+.auth-google:hover{background:var(--surface-hover)}
+.auth-google svg{width:17px;height:17px}
+.auth-divider{display:flex;align-items:center;gap:11px;margin:15px 0;color:var(--muted-2);font-size:11px}
+.auth-divider::before,.auth-divider::after{content:"";height:1px;background:var(--line);flex:1}
+.auth-form{display:grid;gap:10px}
+.auth-field{display:grid;gap:5px}
+.auth-field label{font-size:11.5px;color:var(--muted);font-weight:650}
+.auth-field input{
+  width:100%;height:41px;border:1px solid var(--line-strong);border-radius:9px;
+  background:var(--bg);color:var(--text);padding:0 12px;direction:ltr;text-align:left;
+}
+.auth-field input:focus{border-color:#7256d9;outline:3px solid rgba(114,86,217,.12)}
+.auth-submit{border:0;background:#171717;color:#fff;margin-top:2px}
+html[data-theme="dark"] .auth-submit{background:#f1f1f1;color:#121212}
+.auth-submit:disabled,.auth-google:disabled{opacity:.58}
+.auth-meta{min-height:18px;margin:10px 0 0;text-align:center;font-size:12px;color:var(--muted);line-height:1.45}
+.auth-meta.error{color:var(--danger)}
+.auth-switch{margin:10px 0 0;text-align:center;color:var(--muted);font-size:12px}
+.auth-switch button{border:0;background:transparent;color:var(--text);font-weight:750;padding:3px}
+.auth-top-actions{display:flex;align-items:center;gap:7px}
+.auth-top-btn{height:34px;border-radius:9px;padding:0 13px;font-size:12.5px;font-weight:700}
+.auth-top-btn.secondary{border:1px solid var(--line-strong);background:var(--surface)}
+.auth-top-btn.primary{border:1px solid #171717;background:#171717;color:#fff}
+html[data-theme="dark"] .auth-top-btn.primary{border-color:#eee;background:#eee;color:#111}
+.conversation-panel{
+  display:block;flex:1;min-height:0;overflow:auto;margin:2px 10px 8px;padding:4px;
+  border-top:1px solid var(--line);
+}
+.conversation-panel-title{padding:9px 8px 6px;color:var(--muted);font-size:11px;font-weight:700}
+.conversation-empty{padding:12px 8px;color:var(--muted);font-size:12px;line-height:1.45}
+.conversation-item{
+  display:block;width:100%;border:0;background:transparent;border-radius:9px;
+  color:var(--text);padding:8px;text-align:left;overflow:hidden;direction:ltr;
+}
+.conversation-item:hover,.conversation-item.active{background:var(--surface-hover)}
+.conversation-item strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px}
+.conversation-item time{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.account-signout{color:var(--danger)!important}
+
+.settings-modal{
+  position:fixed;inset:0;z-index:2900;display:none;place-items:center;padding:22px;
+}
+.settings-modal.open{display:grid}
+.settings-backdrop{position:absolute;inset:0;background:rgba(10,10,12,.48);backdrop-filter:blur(9px)}
+.settings-card{
+  position:relative;width:min(920px,calc(100vw - 36px));height:min(650px,calc(100dvh - 44px));
+  display:grid;grid-template-columns:210px minmax(0,1fr);direction:ltr;overflow:hidden;
+  border:1px solid var(--line-strong);border-radius:20px;background:var(--surface);
+  box-shadow:0 28px 100px rgba(0,0,0,.28);
+}
+.settings-tabs{padding:22px 14px;background:var(--sidebar);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:5px}
+.settings-tabs-title{padding:0 10px 17px;font-size:16px;font-weight:780;color:var(--text)}
+.settings-tab{
+  width:100%;height:42px;border:0;border-radius:10px;background:transparent;color:var(--muted);
+  display:flex;align-items:center;gap:10px;padding:0 11px;text-align:left;font-size:13px;font-weight:650;
+}
+.settings-tab svg{width:17px;height:17px;flex:none}
+.settings-tab:hover{background:var(--surface-hover);color:var(--text)}
+.settings-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 5px rgba(0,0,0,.06)}
+.settings-main{direction:rtl;min-width:0;overflow:auto;padding:27px 32px 36px}
+.settings-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:24px;direction:ltr}
+.settings-heading{direction:rtl;text-align:right;flex:1}
+.settings-heading h2{margin:0;font-size:25px;letter-spacing:-.4px}
+.settings-heading p{margin:5px 0 0;color:var(--muted);font-size:12.5px}
+.settings-close{width:34px;height:34px;flex:none;border:0;border-radius:9px;background:transparent;color:var(--muted);font-size:22px;display:grid;place-items:center}
+.settings-close:hover{background:var(--surface-hover);color:var(--text)}
+.settings-panel{display:none}
+.settings-panel.active{display:block}
+.settings-section{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:15px;background:var(--surface)}
+.settings-section-title{padding:12px 15px;border-bottom:1px solid var(--line);font-size:12px;font-weight:750;color:var(--muted)}
+.settings-profile{display:flex;align-items:center;gap:13px;padding:17px}
+.settings-avatar{width:48px;height:48px;border-radius:15px;background:var(--text);color:var(--bg);display:grid;place-items:center;font-size:18px;font-weight:800;flex:none}
+.settings-profile-copy{min-width:0}
+.settings-profile-copy strong,.settings-profile-copy span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.settings-profile-copy strong{font-size:15px}.settings-profile-copy span{color:var(--muted);font-size:12px;margin-top:3px;direction:ltr;text-align:right}
+.settings-row{min-height:58px;padding:10px 15px;display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid var(--line)}
+.settings-row:last-child{border-bottom:0}
+.settings-row-copy{min-width:0}
+.settings-row-copy strong{display:block;font-size:13px;font-weight:680}
+.settings-row-copy span{display:block;color:var(--muted);font-size:11px;line-height:1.45;margin-top:3px}
+.settings-value{color:var(--muted);font-size:12px;direction:ltr;white-space:nowrap}
+.settings-segments{display:flex;align-items:center;gap:4px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--bg);direction:ltr}
+.settings-segment{height:30px;border:0;border-radius:7px;padding:0 11px;background:transparent;color:var(--muted);font-size:11.5px}
+.settings-segment.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.settings-switch{position:relative;width:39px;height:23px;flex:none}
+.settings-switch input{position:absolute;opacity:0;pointer-events:none}
+.settings-switch span{position:absolute;inset:0;border-radius:99px;background:var(--line-strong);transition:.18s}
+.settings-switch span::after{content:"";position:absolute;width:17px;height:17px;top:3px;left:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.22);transition:.18s}
+.settings-switch input:checked+span{background:#7659df}
+.settings-switch input:checked+span::after{transform:translateX(16px)}
+.settings-action{height:34px;border:1px solid var(--line-strong);border-radius:9px;background:var(--surface);padding:0 12px;font-size:11.5px;font-weight:680;white-space:nowrap}
+.settings-action:hover{background:var(--surface-hover)}
+.settings-action.danger{color:var(--danger)}
+.settings-badge{padding:5px 9px;border-radius:99px;background:var(--surface-hover);font-size:10.5px;color:var(--muted);white-space:nowrap}
+html[data-font-size="small"] .assistant-text,html[data-font-size="small"] .user-bubble,html[data-font-size="small"] .composer-input{font-size:14px}
+html[data-font-size="large"] .assistant-text,html[data-font-size="large"] .user-bubble,html[data-font-size="large"] .composer-input{font-size:17px}
+body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+@media(max-width:520px){
+  .auth-card{padding:20px;border-radius:17px}
+  .auth-copy{margin-top:16px}
+  .auth-copy h2{font-size:21px}
+  .auth-top-btn{padding:0 10px}
+}
+@media(max-width:720px){
+  .settings-modal{padding:10px}
+  .settings-card{width:100%;height:calc(100dvh - 20px);grid-template-columns:78px minmax(0,1fr);border-radius:16px}
+  .settings-tabs{padding:17px 8px}.settings-tabs-title{font-size:0;padding:0 4px 12px}.settings-tabs-title::after{content:"S";font-size:18px}
+  .settings-tab{justify-content:center;padding:0}.settings-tab span{display:none}
+  .settings-main{padding:22px 16px 28px}.settings-heading h2{font-size:21px}
+  .settings-row{align-items:flex-start;flex-direction:column;gap:9px}.settings-segments{width:100%}.settings-segment{flex:1}
 }
 
-.lesson-card-hyperframes .lesson-render-overlay{
-  z-index:2;
-}
 
 </style>
 </head>
@@ -2430,67 +2230,82 @@ html[data-theme="dark"] .welcome-card{
 <div class="overlay" id="overlay"></div>
 <div class="toast" id="toast" role="status"></div>
 
-<div class="welcome-modal" id="welcomeModal" aria-hidden="true">
-  <div class="welcome-modal-backdrop" id="welcomeModalBackdrop"></div>
-
-  <section class="welcome-card" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
-    <button class="welcome-close" id="welcomeClose" type="button" aria-label="סגור">
-      <i data-lucide="x" aria-hidden="true"></i>
+<div class="auth-modal" id="authModal" aria-hidden="true">
+  <div class="auth-backdrop" id="authBackdrop"></div>
+  <section class="auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <button class="auth-close" id="authClose" type="button" aria-label="סגור">×</button>
+    <div class="auth-brand"><img id="authLogo" src="/assets/whitelogo.png" alt=""><span>Sifra</span></div>
+    <div class="auth-copy">
+      <h2 id="authTitle">מתחברים וממשיכים בדיוק מאיפה שהפסקת</h2>
+      <p id="authDescription">השיחות, התמונות והתשובות שלך נשמרות באופן פרטי בחשבון.</p>
+    </div>
+    <button class="auth-google" id="googleAuthBtn" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.8 3-4.3 3-7.3Z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1a5.8 5.8 0 0 1-5.5-4H3.2v2.6A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.5 14a6 6 0 0 1 0-3.9V7.5H3.2a10 10 0 0 0 0 9.2L6.5 14Z"/><path fill="#EA4335" d="M12 6a5.4 5.4 0 0 1 3.8 1.5l2.9-2.8A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.8 5.5l3.3 2.6A5.8 5.8 0 0 1 12 6Z"/></svg>
+      <span>המשך עם Google</span>
     </button>
-
-    <div class="welcome-brand">
-      <img id="welcomeLogo" src="/assets/whitelogo.png" alt="">
-      <span>Sifra</span>
-    </div>
-
-    <div class="welcome-visual" aria-hidden="true">
-      <div class="welcome-orb welcome-orb-purple">
-        <i data-lucide="sparkles"></i>
+    <div class="auth-divider">או עם אימייל</div>
+    <form class="auth-form" id="authForm">
+      <div class="auth-field">
+        <label for="authEmail">אימייל</label>
+        <input id="authEmail" type="email" autocomplete="email" required placeholder="name@example.com">
       </div>
-      <div class="welcome-orb welcome-orb-blue">
-        <i data-lucide="function-square"></i>
+      <div class="auth-field">
+        <label for="authPassword">סיסמה</label>
+        <input id="authPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="לפחות 8 תווים">
       </div>
-      <div class="welcome-orb welcome-orb-green">
-        <i data-lucide="play"></i>
+      <button class="auth-submit" id="authSubmit" type="submit">התחברות</button>
+    </form>
+    <p class="auth-meta" id="authStatus" role="status"></p>
+    <p class="auth-switch"><span id="authSwitchText">עדיין אין לך חשבון?</span> <button id="authSwitch" type="button">הרשמה</button></p>
+  </section>
+</div>
+
+<div class="settings-modal" id="settingsModal" aria-hidden="true">
+  <div class="settings-backdrop" id="settingsBackdrop"></div>
+  <section class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <aside class="settings-tabs" aria-label="קטגוריות הגדרות">
+      <div class="settings-tabs-title">Settings</div>
+      <button class="settings-tab active" data-settings-tab="account" type="button"><i data-lucide="user-round"></i><span>Account</span></button>
+      <button class="settings-tab" data-settings-tab="appearance" type="button"><i data-lucide="palette"></i><span>Appearance</span></button>
+      <button class="settings-tab" data-settings-tab="chat" type="button"><i data-lucide="message-square"></i><span>Chat</span></button>
+    </aside>
+    <main class="settings-main">
+      <div class="settings-head">
+        <button class="settings-close" id="settingsClose" type="button" aria-label="סגור">×</button>
+        <div class="settings-heading"><h2 id="settingsTitle">הגדרות</h2><p id="settingsSubtitle">ניהול החשבון והעדפות Sifra</p></div>
       </div>
-    </div>
 
-    <div class="welcome-copy">
-      <span class="welcome-eyebrow">ברוכים הבאים ל-Sifra</span>
-      <h2 id="welcomeTitle">מתמטיקה, אבל הרבה יותר ברורה.</h2>
-      <p>פתרו תרגילים, קבלו הסברים ויזואליים, צרו גרפים וסרטוני לימוד — מאותה שיחה.</p>
-    </div>
-
-    <div class="welcome-features">
-      <div class="welcome-feature">
-        <span class="welcome-feature-icon purple"><i data-lucide="sigma"></i></span>
-        <div>
-          <strong>פתרון שלב־שלב</strong>
-          <span>Sifra מסבירה את הדרך, לא רק זורקת תשובה.</span>
+      <section class="settings-panel active" data-settings-panel="account">
+        <div class="settings-section">
+          <div class="settings-profile"><div class="settings-avatar" id="settingsAvatar">S</div><div class="settings-profile-copy"><strong id="settingsName">החשבון שלי</strong><span id="settingsEmail">—</span></div></div>
+          <div class="settings-row"><div class="settings-row-copy"><strong>שיטת התחברות</strong><span>הספק שמאמת את החשבון שלך</span></div><span class="settings-badge" id="settingsProvider">Email</span></div>
+          <div class="settings-row"><div class="settings-row-copy"><strong>מזהה משתמש</strong><span>מזהה פרטי בחשבון Sifra</span></div><span class="settings-value" id="settingsUserId">—</span></div>
         </div>
-      </div>
-
-      <div class="welcome-feature">
-        <span class="welcome-feature-icon blue"><i data-lucide="line-chart"></i></span>
-        <div>
-          <strong>גרפים ודיאגרמות חיות</strong>
-          <span>המחשות שמופיעות בתוך הצ׳אט ועוזרות להבין באמת.</span>
+        <div class="settings-section">
+          <div class="settings-row"><div class="settings-row-copy"><strong>סנכרון שיחות</strong><span>השיחות והתמונות נשמרות ומסתנכרנות דרך Supabase</span></div><span class="settings-badge">פעיל</span></div>
+          <div class="settings-row"><div class="settings-row-copy"><strong>התנתקות</strong><span>המידע נשאר שמור בחשבון</span></div><button class="settings-action danger" id="settingsSignOut" type="button">התנתקות</button></div>
         </div>
-      </div>
+      </section>
 
-      <div class="welcome-feature">
-        <span class="welcome-feature-icon green"><i data-lucide="clapperboard"></i></span>
-        <div>
-          <strong>סרטוני הסבר</strong>
-          <span>שיעורים קצרים בעברית שאפשר לצפות בהם ולהוריד.</span>
+      <section class="settings-panel" data-settings-panel="appearance">
+        <div class="settings-section">
+          <div class="settings-section-title">מראה</div>
+          <div class="settings-row"><div class="settings-row-copy"><strong>ערכת נושא</strong><span>בהיר, כהה או לפי הגדרת המכשיר</span></div><div class="settings-segments"><button class="settings-segment" data-theme-choice="light">Light</button><button class="settings-segment" data-theme-choice="dark">Dark</button><button class="settings-segment" data-theme-choice="system">System</button></div></div>
+          <div class="settings-row"><div class="settings-row-copy"><strong>גודל טקסט בצ׳אט</strong><span>משפיע על הודעות ושורת הכתיבה</span></div><div class="settings-segments"><button class="settings-segment" data-font-choice="small">קטן</button><button class="settings-segment" data-font-choice="normal">רגיל</button><button class="settings-segment" data-font-choice="large">גדול</button></div></div>
+          <div class="settings-row"><div class="settings-row-copy"><strong>צמצום אנימציות</strong><span>מבטל מעברים ואפקטים מיותרים</span></div><label class="settings-switch"><input id="reduceEffectsSetting" type="checkbox"><span></span></label></div>
         </div>
-      </div>
-    </div>
+        <div class="settings-section"><div class="settings-row"><div class="settings-row-copy"><strong>תצוגת מתמטיקה</strong><span>נוסחאות מוצגות באמצעות KaTeX עם תמיכה בעברית</span></div><span class="settings-badge">KaTeX</span></div></div>
+      </section>
 
-    <button class="welcome-primary" id="welcomeStart" type="button">יאללה, מתחילים</button>
-    <button class="welcome-never" id="welcomeNever" type="button">אל תציג את זה שוב</button>
-
-    <p class="welcome-note">אפשר לפתוח את כל היכולות גם מהכפתורים שמתחת לשורת ההקלדה.</p>
+      <section class="settings-panel" data-settings-panel="chat">
+        <div class="settings-section">
+          <div class="settings-section-title">התנהגות הצ׳אט</div>
+          <div class="settings-row"><div class="settings-row-copy"><strong>מודל ברירת מחדל</strong><span>המודל שישמש בשיחות חדשות</span></div><div class="settings-segments"><button class="settings-segment" data-settings-model="sifra-2">Sifra 2</button><button class="settings-segment" data-settings-model="sifra-1.5">Sifra 1.5</button></div></div>
+          <div class="settings-row"><div class="settings-row-copy"><strong>Enter שולח הודעה</strong><span>כשכבוי, שליחה מתבצעת עם Ctrl/⌘ + Enter</span></div><label class="settings-switch"><input id="enterToSendSetting" type="checkbox"><span></span></label></div>
+          <div class="settings-row"><div class="settings-row-copy"><strong>שיחות שמורות</strong><span>מספר השיחות שזמינות בסרגל הצד</span></div><span class="settings-value" id="settingsConversationCount">0</span></div>
+        </div>
+      </section>
+    </main>
   </section>
 </div>
 
@@ -2513,7 +2328,7 @@ html[data-theme="dark"] .welcome-card{
 
 <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden>
 
-<div class="app">
+<div class="app" id="appShell">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">
       <div class="brand">
@@ -2562,13 +2377,18 @@ html[data-theme="dark"] .welcome-card{
       </div>
     </nav>
 
+    <div class="conversation-panel" id="conversationPanel" aria-label="השיחות שלי">
+      <div class="conversation-panel-title">השיחות שלי</div>
+      <div id="conversationList"><div class="conversation-empty">אין עדיין שיחות שמורות.</div></div>
+    </div>
+
     <div class="sidebar-footer">
       <div class="account-menu" id="accountMenu">
         <div class="account-menu-head">
-          <div class="avatar">S</div>
+          <div class="avatar" id="accountMenuAvatar">S</div>
           <div class="account-menu-copy">
-            <div class="account-menu-title">החשבון שלי</div>
-            <div class="account-menu-sub">Sifra</div>
+            <div class="account-menu-title" id="accountMenuName">החשבון שלי</div>
+            <div class="account-menu-sub" id="accountMenuEmail">Sifra</div>
           </div>
         </div>
         <div class="usage-card">
@@ -2584,13 +2404,14 @@ html[data-theme="dark"] .welcome-card{
           <button class="account-menu-row" id="accountTheme"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.5 15.5A8 8 0 1 1 8.5 3.6a6.6 6.6 0 0 0 12 11.9Z"></path></svg><span id="accountThemeText">מצב כהה</span></button>
           <button class="account-menu-row" id="accountLanguage"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"></path></svg><span>שפה</span></button>
           <button class="account-menu-row" id="accountHelp"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"></circle><path d="M9.7 9a2.4 2.4 0 1 1 3.7 2c-.9.6-1.4 1.1-1.4 2M12 17h.01"></path></svg><span>עזרה ותמיכה</span></button>
+          <button class="account-menu-row account-signout" id="signOutBtn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"></path></svg><span>התנתקות</span></button>
         </div>
       </div>
 
-      <button class="profile account-trigger" id="accountButton">
-        <div class="avatar">S</div>
+      <button class="profile account-trigger" id="accountButton" hidden>
+        <div class="avatar" id="accountButtonAvatar">S</div>
         <div class="profile-copy">
-          <div class="profile-name">החשבון שלי</div>
+          <div class="profile-name" id="accountButtonName">החשבון שלי</div>
         </div>
         <svg class="profile-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 14 4-4 4 4"></path></svg>
       </button>
@@ -2637,7 +2458,11 @@ html[data-theme="dark"] .welcome-card{
         </button>
       </div>
       <div class="topbar-right">
-        <button class="temporary-chat-btn" id="temporaryChatBtn" type="button" aria-label="צ׳אט זמני" title="צ׳אט זמני — השיחה לא תישמר" aria-pressed="false">
+        <div class="auth-top-actions" id="authTopActions">
+          <button class="auth-top-btn secondary" id="topSignIn" type="button">התחברות</button>
+          <button class="auth-top-btn primary" id="topSignUp" type="button">הרשמה</button>
+        </div>
+        <button class="temporary-chat-btn" id="temporaryChatBtn" type="button" aria-label="צ׳אט זמני" title="צ׳אט זמני — השיחה לא תישמר" aria-pressed="false" hidden>
           <span class="temporary-chat-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
               <path d="M7.5 6.5h7a4 4 0 0 1 4 4v1.25a4 4 0 0 1-4 4H12l-3.5 2.75v-2.75h-1a4 4 0 0 1-4-4V10.5a4 4 0 0 1 4-4Z"></path>
@@ -2801,74 +2626,316 @@ html[data-theme="dark"] .welcome-card{
   'use strict';
   const $=function(selector){return document.querySelector(selector)};
   const sidebar=$('#sidebar'),overlay=$('#overlay'),home=$('#home'),chat=$('#chat'),chatInner=$('#chatInner'),bottomZone=$('#bottomZone'),homeInput=$('#homeInput'),chatInput=$('#chatInput'),sendHome=$('#sendHome'),sendChat=$('#sendChat'),fileInput=$('#fileInput'),homeAttachments=$('#homeAttachments'),chatAttachments=$('#chatAttachments'),homeComposer=$('#homeComposer'),chatComposer=$('#chatComposer'),toast=$('#toast'),themeColor=$('#themeColor'),accountMenu=$('#accountMenu'),accountButton=$('#accountButton'),dailyUsage=$('#dailyUsage'),dailyUsageFill=$('#dailyUsageFill'),brandLogo=$('#brandLogo'),scrollDownBtn=$('#scrollDownBtn'),mathModal=$('#mathModal'),mathModalBackdrop=$('#mathModalBackdrop'),mathModalContent=$('#mathModalContent'),mathModalViewport=$('#mathModalViewport'),mathZoomLabel=$('#mathZoomLabel');
-  const state={messages:[],images:[],busy:false,temporary:false};
+  const state={messages:[],images:[],busy:false,temporary:false,user:null,session:null,supabase:null,conversationId:null,conversations:[],chatNamed:false,authReady:false};
   const MAX_IMAGES=2;
 
-  const welcomeModal=$('#welcomeModal');
-  const welcomeClose=$('#welcomeClose');
-  const welcomeStart=$('#welcomeStart');
-  const welcomeNever=$('#welcomeNever');
-  const welcomeLogo=$('#welcomeLogo');
-  const WELCOME_COOKIE='sifra_welcome_hidden';
+  const appShell=$('#appShell');
+  const authLogo=$('#authLogo');
+  const authModal=$('#authModal');
+  const authBackdrop=$('#authBackdrop');
+  const authClose=$('#authClose');
+  const authForm=$('#authForm');
+  const authEmail=$('#authEmail');
+  const authPassword=$('#authPassword');
+  const authSubmit=$('#authSubmit');
+  const authStatus=$('#authStatus');
+  const authSwitch=$('#authSwitch');
+  const authSwitchText=$('#authSwitchText');
+  const googleAuthBtn=$('#googleAuthBtn');
+  const authTopActions=$('#authTopActions');
+  const conversationPanel=$('#conversationPanel');
+  const conversationList=$('#conversationList');
+  const settingsModal=$('#settingsModal');
+  const settingsBackdrop=$('#settingsBackdrop');
+  const settingsClose=$('#settingsClose');
+  const uiPreferences={
+    enterToSend:localStorage.getItem('sifra-enter-to-send')!=='false',
+    reduceEffects:localStorage.getItem('sifra-reduce-effects')==='true',
+    fontSize:['small','normal','large'].includes(localStorage.getItem('sifra-font-size'))?localStorage.getItem('sifra-font-size'):'normal'
+  };
+  let authMode='signin';
+  let sessionQueue=Promise.resolve();
+  let authConfigError='';
+  let pendingSubmissionMemory=null;
 
-  function getCookie(name){
-    const prefix=name+'=';
-    const parts=document.cookie
-      .split(';')
-      .map(function(part){return part.trim()});
+  document.documentElement.dataset.fontSize=uiPreferences.fontSize;
+  document.body.classList.toggle('reduce-effects',uiPreferences.reduceEffects);
 
-    const found=parts.find(function(part){
-      return part.indexOf(prefix)===0;
+  function setAuthStatus(message,isError){
+    authStatus.textContent=message||'';
+    authStatus.classList.toggle('error',Boolean(isError));
+  }
+
+  function setAuthMode(mode){
+    authMode=mode==='signup'?'signup':'signin';
+    const signingUp=authMode==='signup';
+    authSubmit.textContent=signingUp?'יצירת חשבון':'התחברות';
+    authSwitchText.textContent=signingUp?'כבר יש לך חשבון?':'עדיין אין לך חשבון?';
+    authSwitch.textContent=signingUp?'התחברות':'הרשמה';
+    authPassword.autocomplete=signingUp?'new-password':'current-password';
+    setAuthStatus('');
+  }
+
+  function openAuth(mode){
+    setAuthMode(mode||'signin');
+    if(authConfigError)setAuthStatus(authConfigError,true);
+    appShell.classList.add('auth-locked');
+    authModal.classList.add('open');
+    authModal.setAttribute('aria-hidden','false');
+    setTimeout(function(){authEmail.focus()},40);
+  }
+
+  function closeAuth(){
+    authModal.classList.remove('open');
+    authModal.setAttribute('aria-hidden','true');
+    appShell.classList.remove('auth-locked');
+  }
+
+  function rememberPendingSubmission(input,text){
+    const pending={text:text,input:input===chatInput?'chat':'home',images:state.images.slice()};
+    pendingSubmissionMemory=pending;
+    try{sessionStorage.setItem('sifra-pending-submit',JSON.stringify(pending))}catch(error){}
+  }
+
+  function takePendingSubmission(){
+    let pending=pendingSubmissionMemory;
+    pendingSubmissionMemory=null;
+    try{
+      const stored=sessionStorage.getItem('sifra-pending-submit');
+      sessionStorage.removeItem('sifra-pending-submit');
+      if(stored)pending=JSON.parse(stored);
+    }catch(error){}
+    return pending&&typeof pending.text==='string'?pending:null;
+  }
+
+  function routeConversationId(){
+    const match=location.pathname.match(/^\/chat\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/?$/i);
+    return match?match[1].toLowerCase():'';
+  }
+
+  function setConversationUrl(conversationId,replace){
+    const path=conversationId?'/chat/'+encodeURIComponent(conversationId):'/';
+    if(location.pathname===path)return;
+    history[replace?'replaceState':'pushState']({},'',path);
+  }
+
+  function updateAccountUi(user){
+    const metadata=user.user_metadata||{};
+    const displayName=metadata.full_name||metadata.name||String(user.email||'').split('@')[0]||'החשבון שלי';
+    const initial=displayName.trim().charAt(0).toUpperCase()||'S';
+    $('#accountMenuName').textContent=displayName;
+    $('#accountMenuEmail').textContent=user.email||'';
+    $('#accountButtonName').textContent=displayName;
+    $('#accountMenuAvatar').textContent=initial;
+    $('#accountButtonAvatar').textContent=initial;
+    $('#settingsAvatar').textContent=initial;
+    $('#settingsName').textContent=displayName;
+    $('#settingsEmail').textContent=user.email||'';
+    $('#settingsProvider').textContent=(user.app_metadata&&user.app_metadata.provider)==='google'?'Google':'Email';
+    $('#settingsUserId').textContent=user.id?user.id.slice(0,8)+'…':'—';
+  }
+
+  function conversationDate(value){
+    try{return new Intl.DateTimeFormat('he-IL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(value))}
+    catch(error){return ''}
+  }
+
+  function renderConversationList(){
+    conversationList.innerHTML='';
+    if(!state.conversations.length){
+      const empty=document.createElement('div');empty.className='conversation-empty';empty.textContent=state.user?'אין עדיין שיחות שמורות.':'התחברו כדי לשמור ולראות שיחות.';conversationList.appendChild(empty);return;
+    }
+    state.conversations.forEach(function(conversation){
+      const button=document.createElement('button');button.type='button';button.className='conversation-item';
+      button.classList.toggle('active',conversation.id===state.conversationId);
+      const title=document.createElement('strong');title.textContent=conversation.title;
+      const time=document.createElement('time');time.textContent=conversationDate(conversation.updated_at);
+      button.append(title,time);
+      button.addEventListener('click',function(){loadConversation(conversation.id,{pushUrl:true})});
+      conversationList.appendChild(button);
     });
-
-    return found
-      ? decodeURIComponent(found.slice(prefix.length))
-      : '';
   }
 
-  function setCookie(name,value,days){
-    const maxAge=Math.max(0,Math.floor(days*86400));
-    document.cookie=
-      name+'='+encodeURIComponent(value)+
-      '; Path=/; Max-Age='+maxAge+
-      '; SameSite=Lax';
+  async function loadConversations(){
+    if(!state.supabase||!state.user)return;
+    const result=await state.supabase.from('conversations').select('id,title,model,created_at,updated_at').order('updated_at',{ascending:false}).limit(100);
+    if(result.error)throw result.error;
+    state.conversations=result.data||[];
+    renderConversationList();
   }
 
-  function openWelcomeModal(){
-    welcomeModal.classList.add('open');
-    welcomeModal.setAttribute('aria-hidden','false');
+  async function attachmentUrl(attachment){
+    if(!attachment||!attachment.path)return '';
+    const result=await state.supabase.storage.from('chat-attachments').createSignedUrl(attachment.path,3600);
+    return result.error?'':result.data.signedUrl;
+  }
 
-    if(
-      window.lucide&&
-      typeof window.lucide.createIcons==='function'
-    ){
-      window.lucide.createIcons();
+  async function loadConversation(conversationId,options){
+    if(!state.supabase||!state.user||state.busy)return;
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(conversationId||''))){
+      setConversationUrl('',true);state.conversationId=null;state.chatNamed=false;resetChat();showToast('השיחה לא זמינה.');return false;
+    }
+    state.busy=true;updateButtons();
+    try{
+      const ownership=await state.supabase.from('conversations').select('id,title,model,created_at,updated_at').eq('id',conversationId).eq('user_id',state.user.id).maybeSingle();
+      if(ownership.error)throw ownership.error;
+      if(!ownership.data){
+        setConversationUrl('',true);state.conversationId=null;state.chatNamed=false;resetChat();renderConversationList();showToast('השיחה לא זמינה.');return false;
+      }
+      const result=await state.supabase.from('messages').select('id,role,content,attachments,position,created_at').eq('conversation_id',conversationId).eq('user_id',state.user.id).order('position',{ascending:true});
+      if(result.error)throw result.error;
+      resetChat();
+      state.conversationId=conversationId;
+      const activeConversation=state.conversations.find(function(item){return item.id===conversationId});
+      if(activeConversation)Object.assign(activeConversation,ownership.data);else state.conversations.unshift(ownership.data);
+      state.chatNamed=Boolean(ownership.data.title&&ownership.data.title!=='שיחה חדשה');
+      state.messages=[];
+      const rows=result.data||[];
+      for(const message of rows){
+        const attachments=Array.isArray(message.attachments)?message.attachments:[];
+        const imageUrls=(await Promise.all(attachments.map(attachmentUrl))).filter(Boolean);
+        state.messages.push({id:message.id,role:message.role,content:message.content,attachments:attachments,position:message.position});
+        if(message.role==='user')addUserMessage(message.content,imageUrls);
+        else addAssistantMessage(message.content);
+      }
+      if(rows.length){enterChat();requestAnimationFrame(function(){chat.scrollTop=chat.scrollHeight;updateScrollButton()})}
+      if(!options||options.pushUrl!==false)setConversationUrl(conversationId,false);
+      renderConversationList();
+      return true;
+    }catch(error){
+      console.error('Conversation restore failed:',error);showToast('לא הצלחנו לטעון את השיחה. נסה שוב.');
+      return false;
+    }finally{state.busy=false;updateButtons()}
+  }
+
+  async function ensureConversation(firstText){
+    if(state.temporary)return null;
+    if(state.conversationId)return state.conversationId;
+    const model=localStorage.getItem('sifra-client-model')||'sifra-2';
+    const result=await state.supabase.from('conversations').insert({user_id:state.user.id,title:'שיחה חדשה',model:model}).select('id,title,model,created_at,updated_at').single();
+    if(result.error)throw result.error;
+    state.conversationId=result.data.id;
+    state.chatNamed=false;
+    setConversationUrl(result.data.id,false);
+    state.conversations.unshift(result.data);
+    renderConversationList();
+    return result.data.id;
+  }
+
+  function cleanGeneratedChatName(value){
+    return String(value||'').replace(/<[^>]*>/g,' ').replace(/[\u0000-\u001f\u007f]/g,' ').trim().split(/\s+/u).filter(Boolean).slice(0,3).join(' ').slice(0,72).trim();
+  }
+
+  async function saveGeneratedChatName(value){
+    if(state.temporary||state.chatNamed||!state.conversationId)return;
+    const name=cleanGeneratedChatName(value);
+    if(!name)return;
+    const result=await state.supabase.from('conversations').update({title:name}).eq('id',state.conversationId).eq('user_id',state.user.id);
+    if(result.error)throw result.error;
+    const conversation=state.conversations.find(function(item){return item.id===state.conversationId});
+    if(conversation){conversation.title=name;conversation.updated_at=new Date().toISOString()}
+    state.chatNamed=true;
+    renderConversationList();
+  }
+
+  async function uploadAttachments(images){
+    if(state.temporary||!images.length)return [];
+    const uploaded=[];
+    try{
+      for(const image of images){
+        const blob=await fetch(image.dataUrl).then(function(response){return response.blob()});
+        const path=state.user.id+'/'+state.conversationId+'/'+crypto.randomUUID()+'.jpg';
+        const result=await state.supabase.storage.from('chat-attachments').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+        if(result.error)throw result.error;
+        uploaded.push({path:path,name:image.name||'image.jpg',mimeType:'image/jpeg'});
+      }
+    }catch(error){
+      if(uploaded.length)await state.supabase.storage.from('chat-attachments').remove(uploaded.map(function(item){return item.path}));
+      throw error;
+    }
+    return uploaded;
+  }
+
+  async function persistMessage(message,attachments){
+    if(state.temporary)return null;
+    if(!message.id)message.id=crypto.randomUUID();
+    const payload={id:message.id,conversation_id:state.conversationId,user_id:state.user.id,role:message.role,content:message.content,attachments:attachments||[]};
+    let lastError=null;
+    for(let attempt=0;attempt<3;attempt+=1){
+      const result=await state.supabase.from('messages').insert(payload).select('id,position').single();
+      if(!result.error){message.id=result.data.id;message.position=result.data.position;message.attachments=payload.attachments;return result.data.id}
+      if(result.error.code==='23505'){
+        const existing=await state.supabase.from('messages').select('id,position').eq('id',message.id).maybeSingle();
+        if(!existing.error&&existing.data){message.position=existing.data.position;message.attachments=payload.attachments;return existing.data.id}
+      }
+      lastError=result.error;
+      if(attempt<2)await new Promise(function(resolve){setTimeout(resolve,350*(attempt+1))});
+    }
+    throw lastError;
+  }
+
+  async function restoreConversationRoute(){
+    await loadConversations();
+    const conversationId=routeConversationId();
+    if(conversationId){await loadConversation(conversationId,{pushUrl:false});return}
+    if(location.pathname!=='/')setConversationUrl('',true);
+    state.temporary=false;state.conversationId=null;state.chatNamed=false;resetChat();renderConversationList();
+  }
+
+  async function handleSession(session){
+    if(state.authReady&&state.session?.access_token===(session&&session.access_token||undefined))return;
+    const wasSignedIn=Boolean(state.user);
+    const nextUser=session&&session.user;
+    state.session=session||null;
+    state.user=nextUser||null;
+    state.authReady=true;
+    if(!nextUser){
+      state.conversationId=null;state.conversations=[];state.chatNamed=false;state.temporary=false;if(wasSignedIn)resetChat();renderConversationList();
+      if(wasSignedIn)setConversationUrl('',true);
+      closeAuth();closeSettings();authTopActions.hidden=false;$('#temporaryChatBtn').hidden=true;accountButton.hidden=true;return;
+    }
+    updateAccountUi(nextUser);
+    closeAuth();
+    authTopActions.hidden=true;$('#temporaryChatBtn').hidden=false;accountButton.hidden=false;
+    try{
+      const metadata=nextUser.user_metadata||{};
+      const profilePayload={id:nextUser.id,email:nextUser.email||null};
+      if(metadata.full_name||metadata.name)profilePayload.full_name=metadata.full_name||metadata.name;
+      if(metadata.avatar_url)profilePayload.avatar_url=metadata.avatar_url;
+      const profileResult=await state.supabase.from('profiles').upsert(profilePayload,{onConflict:'id'}).select('preferred_model,theme').single();
+      if(!profileResult.error&&profileResult.data){
+        if(['sifra-2','sifra-1.5'].includes(profileResult.data.preferred_model))selectClientModel(profileResult.data.preferred_model);
+        if(['light','dark','system'].includes(profileResult.data.theme))setTheme(profileResult.data.theme);
+      }
+      await restoreConversationRoute();
+    }catch(error){console.error('Initial conversation restore failed:',error);showToast('החשבון נטען, אבל השיחות לא נטענו.')}
+    const pending=takePendingSubmission();
+    if(pending){
+      state.temporary=false;state.conversationId=null;state.chatNamed=false;setConversationUrl('',true);resetChat();
+      state.images=Array.isArray(pending.images)?pending.images.slice(0,MAX_IMAGES):[];
+      homeInput.value=pending.text;resizeTextarea(homeInput);renderAttachments();updateButtons();
+      setTimeout(function(){submit(homeInput)},80);
     }
   }
 
-  function closeWelcomeModal(){
-    welcomeModal.classList.remove('open');
-    welcomeModal.setAttribute('aria-hidden','true');
-  }
-
-  function neverShowWelcomeAgain(){
-    setCookie(
-      WELCOME_COOKIE,
-      '1',
-      365
-    );
-    closeWelcomeModal();
-  }
-
-  welcomeClose.addEventListener('click',closeWelcomeModal);
-  welcomeStart.addEventListener('click',closeWelcomeModal);
-  welcomeNever.addEventListener('click',neverShowWelcomeAgain);
-
-  if(!getCookie(WELCOME_COOKIE)){
-    setTimeout(
-      openWelcomeModal,
-      350
-    );
+  async function initializeAuth(){
+    try{
+      const response=await fetch('/api/config');
+      const config=await response.json();
+      if(!response.ok)throw new Error(config.error||'Supabase is not configured');
+      if(!window.supabase||typeof window.supabase.createClient!=='function')throw new Error('Supabase client failed to load');
+      state.supabase=window.supabase.createClient(config.supabaseUrl,config.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+      state.supabase.auth.onAuthStateChange(function(event,session){
+        if(event==='TOKEN_REFRESHED'){state.session=session;return}
+        sessionQueue=sessionQueue.then(function(){return handleSession(session)}).catch(function(error){console.error('Auth state failed:',error)});
+      });
+      const result=await state.supabase.auth.getSession();
+      if(result.error)throw result.error;
+      await handleSession(result.data.session);
+    }catch(error){
+      console.error('Authentication setup failed:',error);authConfigError='החיבור למסד הנתונים עדיין לא הוגדר בשרת.';setAuthStatus(authConfigError,true);
+      authSubmit.disabled=true;googleAuthBtn.disabled=true;
+    }
   }
 
   const homeGreeting=$('#homeGreeting');
@@ -2987,12 +3054,46 @@ html[data-theme="dark"] .welcome-card{
     }
     return -1;
   }
-  function stashMath(source){
+  function stashMath(source,options){
     const math=[];
     let output='';
     let cursor=0;
+    const streaming=Boolean(options&&options.streaming);
+
+    function stash(sourceText,display){
+      const token='SIFRAMATHTOKEN'+math.length+'END';
+      math.push({
+        token:token,
+        source:sourceText,
+        display:display
+      });
+      output+=token;
+    }
+
+    function unfinished(openerLength,display){
+      if(!streaming){
+        stash(source.slice(cursor+openerLength),display);
+      }
+      cursor=source.length;
+    }
 
     while(cursor<source.length){
+      if(source[cursor]==='`'){
+        let delimiterLength=1;
+        while(source[cursor+delimiterLength]==='`')delimiterLength+=1;
+        const delimiter='`'.repeat(delimiterLength);
+        const end=source.indexOf(delimiter,cursor+delimiterLength);
+
+        if(end===-1){
+          output+=source.slice(cursor);
+          break;
+        }
+
+        output+=source.slice(cursor,end+delimiterLength);
+        cursor=end+delimiterLength;
+        continue;
+      }
+
       if(
         source.startsWith('$$',cursor) &&
         source[cursor-1]!=='\\'
@@ -3000,17 +3101,37 @@ html[data-theme="dark"] .welcome-card{
         const end=source.indexOf('$$',cursor+2);
 
         if(end===-1){
-          output+=source.slice(cursor);
+          unfinished(2,true);
           break;
         }
 
-        const token='SIFRAMATHTOKEN'+math.length+'END';
-        math.push({
-          token:token,
-          source:source.slice(cursor+2,end),
-          display:true
-        });
-        output+=token;
+        stash(source.slice(cursor+2,end),true);
+        cursor=end+2;
+        continue;
+      }
+
+      if(source.startsWith('\\[',cursor)){
+        const end=source.indexOf('\\]',cursor+2);
+
+        if(end===-1){
+          unfinished(2,true);
+          break;
+        }
+
+        stash(source.slice(cursor+2,end),true);
+        cursor=end+2;
+        continue;
+      }
+
+      if(source.startsWith('\\(',cursor)){
+        const end=source.indexOf('\\)',cursor+2);
+
+        if(end===-1){
+          unfinished(2,false);
+          break;
+        }
+
+        stash(source.slice(cursor+2,end),false);
         cursor=end+2;
         continue;
       }
@@ -3024,19 +3145,25 @@ html[data-theme="dark"] .welcome-card{
         const end=findInlineDollar(source,cursor+1);
 
         if(end===-1){
-          output+=source.slice(cursor);
+          unfinished(1,false);
           break;
         }
 
-        const token='SIFRAMATHTOKEN'+math.length+'END';
-        math.push({
-          token:token,
-          source:source.slice(cursor+1,end),
-          display:false
-        });
-        output+=token;
+        stash(source.slice(cursor+1,end),false);
         cursor=end+1;
         continue;
+      }
+
+      if(source[cursor]==='('){
+        const end=source.indexOf(')',cursor+1);
+        if(end!==-1&&source.slice(cursor,end+1).indexOf('\n')===-1){
+          const candidate=source.slice(cursor+1,end);
+          if(/\\(?:boxed|frac|sqrt|parallel|perp|cdot|times|leq?|geq?|neq|approx|angle|overline|vec|quad)\b/.test(candidate)){
+            stash(candidate,false);
+            cursor=end+1;
+            continue;
+          }
+        }
       }
 
       output+=source[cursor];
@@ -3110,9 +3237,16 @@ html[data-theme="dark"] .welcome-card{
       '"></div>';
   }
 
-  function formatAnswer(text){
-    const visuals=stashVisuals(String(text));
-    const stashed=stashMath(visuals.markdown);
+  function stripChatNameControl(text){
+    let clean=String(text||'').replace(/<setchatname\b[^>]*>[\s\S]*?<\/setchatname\s*>/gi,'');
+    const incomplete=clean.search(/<setchatname\b[^>]*>[\s\S]*$/i);
+    if(incomplete!==-1)clean=clean.slice(0,incomplete);
+    return clean;
+  }
+
+  function formatAnswerUnsafe(text,options){
+    const visuals=stashVisuals(stripChatNameControl(text));
+    const stashed=stashMath(visuals.markdown,options);
     let html='';
 
     if(window.marked&&typeof window.marked.parse==='function'){
@@ -3153,6 +3287,17 @@ html[data-theme="dark"] .welcome-card{
     });
 
     return html;
+  }
+
+  function formatAnswer(text,options){
+    try{
+      return formatAnswerUnsafe(text,options);
+    }catch(error){
+      console.error('Sifra answer rendering failed:',error);
+      return '<div class="render-fallback" dir="auto">'+
+        formatTextSegment(stripChatNameControl(text))+
+        '</div>';
+    }
   }
 
   function vizCard(title,subtitle,badge){
@@ -9842,6 +9987,8 @@ html[data-theme="dark"] .welcome-card{
 
   let mediaBunnyLoader=null;
 
+  // Video export intentionally runs in the visitor's browser. Vercel only
+  // serves the app and lesson JSON; it never launches Chrome or FFmpeg.
   function loadMediaBunny(){
     if(!mediaBunnyLoader){
       mediaBunnyLoader=import(
@@ -9852,279 +9999,613 @@ html[data-theme="dark"] .welcome-card{
     return mediaBunnyLoader;
   }
 
+  function installLessonVideo(card,stage,blob,extension){
+    const url=URL.createObjectURL(blob);
+
+    if(card._lessonVideoUrl){
+      URL.revokeObjectURL(card._lessonVideoUrl);
+    }
+
+    card._lessonVideoUrl=url;
+
+    const oldVideo=
+      stage.querySelector('.lesson-video');
+
+    if(oldVideo)oldVideo.remove();
+
+    const video=document.createElement('video');
+    video.className='lesson-video';
+    video.src=url;
+    video.controls=true;
+    video.playsInline=true;
+    video.preload='metadata';
+    stage.appendChild(video);
+
+    const download=
+      card.querySelector('.lesson-download');
+
+    if(download){
+      download.href=url;
+      download.download=
+        'sifra-'+Date.now()+'.'+extension;
+      download.textContent=
+        extension==='mp4'
+          ? 'הורד MP4'
+          : 'הורד WebM';
+      download.hidden=false;
+    }
+
+    const renderButton=
+      card.querySelector('.lesson-render-button');
+
+    if(renderButton){
+      renderButton.textContent='צור מחדש';
+    }
+  }
+
+  async function renderLessonWebm(
+    lesson,
+    renderStatus
+  ){
+    if(
+      typeof MediaRecorder==='undefined'||
+      !HTMLCanvasElement.prototype.captureStream
+    ){
+      throw new Error(
+        'הדפדפן אינו תומך ביצירת וידאו.'
+      );
+    }
+
+    const mimeTypes=[
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm'
+    ];
+
+    const mimeType=
+      mimeTypes.find(function(value){
+        return (
+          !MediaRecorder.isTypeSupported||
+          MediaRecorder.isTypeSupported(value)
+        );
+      });
+
+    if(!mimeType){
+      throw new Error(
+        'הדפדפן לא מצא מקודד וידאו נתמך.'
+      );
+    }
+
+    const width=1280;
+    const height=720;
+    const fps=30;
+    const canvas=document.createElement('canvas');
+    canvas.width=width;
+    canvas.height=height;
+
+    const ctx=
+      canvas.getContext('2d',{alpha:false});
+
+    const stream=canvas.captureStream(fps);
+    const chunks=[];
+    const recorder=new MediaRecorder(
+      stream,
+      {
+        mimeType:mimeType,
+        videoBitsPerSecond:8_000_000
+      }
+    );
+
+    const finished=new Promise(function(resolve,reject){
+      recorder.addEventListener('dataavailable',function(event){
+        if(event.data&&event.data.size>0){
+          chunks.push(event.data);
+        }
+      });
+
+      recorder.addEventListener('stop',function(){
+        const blob=new Blob(chunks,{type:mimeType});
+        if(blob.size<1000){
+          reject(new Error('קובץ הווידאו שנוצר ריק.'));
+          return;
+        }
+        resolve(blob);
+      });
+
+      recorder.addEventListener('error',function(event){
+        reject(
+          event.error||
+          new Error('מקודד הווידאו נכשל.')
+        );
+      });
+    });
+
+    recorder.start(500);
+
+    const started=performance.now();
+
+    await new Promise(function(resolve,reject){
+      function draw(now){
+        if(recorder.state==='inactive'){
+          reject(new Error('רינדור הווידאו נעצר.'));
+          return;
+        }
+
+        const time=Math.min(
+          lesson.duration,
+          (now-started)/1000
+        );
+
+        drawLessonFrame(
+          ctx,
+          lesson,
+          Math.min(time,lesson.duration-.001),
+          width,
+          height
+        );
+
+        if(renderStatus){
+          renderStatus.textContent=
+            'מרנדר בדפדפן… '+
+            Math.min(
+              99,
+              Math.round(time/lesson.duration*100)
+            )+
+            '%';
+        }
+
+        if(time>=lesson.duration){
+          recorder.stop();
+          resolve();
+          return;
+        }
+
+        requestAnimationFrame(draw);
+      }
+
+      requestAnimationFrame(draw);
+    }).finally(function(){
+      stream.getTracks().forEach(function(track){
+        track.stop();
+      });
+    });
+
+    return finished;
+  }
+
   async function renderLessonMp4(card,lesson){
     if(card._lessonRendering)return;
 
-    const renderButton=
-      card.querySelector(
-        '.lesson-render-button'
-      );
-
-    const overlay=
-      card.querySelector(
-        '.lesson-render-overlay'
-      );
-
-    const stage=
-      card.querySelector(
-        '.lesson-stage'
-      );
-
-    const statusEl=
+    const renderButton=card.querySelector('.lesson-render-button');
+    const overlay=card.querySelector('.lesson-render-overlay');
+    const stage=card.querySelector('.lesson-stage');
+    const renderStatus=
       overlay?.querySelector(
         '.lesson-render-sub'
       );
 
-    const bar=
-      overlay?.querySelector(
-        '.lesson-render-progress-fill'
-      );
-
-    const percent=
-      overlay?.querySelector(
-        '.lesson-render-percent'
-      );
-
-    const download=
-      card.querySelector(
-        '.lesson-download'
-      );
-
     card._lessonRendering=true;
 
-    if(renderButton){
-      renderButton.disabled=true;
-      renderButton.hidden=true;
-    }
+    if(renderButton)renderButton.disabled=true;
+    if(overlay)overlay.classList.add('show');
 
-    if(download){
-      download.hidden=true;
-    }
+    stopLessonPreview(card);
 
-    if(overlay){
-      overlay.classList.add('show');
-    }
-
-    const oldVideo=
-      stage.querySelector(
-        '.lesson-video'
-      );
-
-    if(oldVideo){
-      oldVideo.remove();
-    }
-
-    function updateProgress(job){
-      const value=
-        Math.max(
-          0,
-          Math.min(
-            1,
-            Number(job?.progress)||0
-          )
-        );
-
-      if(bar){
-        bar.style.width=
-          Math.round(value*100)+'%';
-      }
-
-      if(percent){
-        percent.textContent=
-          Math.round(value*100)+'%';
-      }
-
-      if(
-        statusEl&&
-        job?.message
-      ){
-        statusEl.textContent=
-          job.message;
-      }
-    }
+    let browserFallbackAllowed=false;
 
     try{
-      updateProgress({
-        progress:.01,
-        message:'שולח את הסטוריבורד למנוע הווידאו…'
+      const preflight=
+        lessonQualityAudit(lesson);
+
+      if(
+        preflight.warnings&&
+        preflight.warnings.length
+      ){
+        console.warn(
+          'Sifra video layout warnings were auto-repaired:',
+          preflight.warnings
+        );
+      }
+
+      if(!preflight.ok){
+        throw new Error(
+          'הווידאו לא עבר בדיקת איכות: '+
+          preflight.issues
+            .slice(0,3)
+            .join(' • ')
+        );
+      }
+
+      await document.fonts.ready;
+      await document.fonts.load('700 54px Huninn');
+      await document.fonts.load('500 28px Huninn');
+
+      if(renderStatus){
+        renderStatus.textContent=
+          'מכין נוסחאות וגרפיקה…';
+      }
+
+      await prepareLessonAssets(lesson);
+
+      browserFallbackAllowed=true;
+
+      if(renderStatus){
+        renderStatus.textContent=
+          'מרנדר את הווידאו…';
+      }
+
+      const media=await loadMediaBunny();
+
+      const {
+        Output,
+        BufferTarget,
+        CanvasSource,
+        Mp4OutputFormat,
+        Quality,
+        Input,
+        BlobSource,
+        ALL_FORMATS,
+        CanvasSink,
+        getFirstEncodableVideoCodec
+      }=media;
+
+      const width=1280;
+      const height=720;
+      const fps=30;
+
+      const canvas=document.createElement('canvas');
+      canvas.width=width;
+      canvas.height=height;
+
+      const ctx=canvas.getContext('2d',{alpha:false});
+
+      const format=
+        new Mp4OutputFormat({
+          fastStart:'in-memory'
+        });
+
+      const probeQuality=
+        new Quality({
+          quantizer:20,
+          bitrate:10_000_000
+        });
+
+      const avcCodec=
+        await getFirstEncodableVideoCodec(
+          ['avc'],
+          {
+            width:width,
+            height:height,
+            frameRate:fps,
+            quality:probeQuality
+          }
+        );
+
+      const codec=
+        avcCodec||
+        await getFirstEncodableVideoCodec(
+          format.getSupportedVideoCodecs(),
+          {
+            width:width,
+            height:height,
+            frameRate:fps,
+            quality:probeQuality
+          }
+        );
+
+      if(!codec){
+        throw new Error(
+          'הדפדפן לא תומך כרגע ביצירת MP4.'
+        );
+      }
+
+      const target=new BufferTarget();
+
+      const output=new Output({
+        format:format,
+        target:target
       });
 
-      const startResponse=
-        await fetch(
-          '/api/video/render',
-          {
-            method:'POST',
-            headers:{
-              'Content-Type':'application/json'
-            },
-            body:JSON.stringify({
-              lesson:lesson
-            })
+      const encodingConfig={
+        codec:codec,
+        quality:new Quality({
+          quantizer:20,
+          bitrate:10_000_000
+        }),
+        keyFrameInterval:2,
+        latencyMode:'quality',
+        contentHint:'detail',
+        hardwareAcceleration:'prefer-software'
+      };
+
+      if(
+        codec==='avc'&&
+        window.VideoEncoder&&
+        typeof window.VideoEncoder.isConfigSupported==='function'
+      ){
+        try{
+          const avcSupport=
+            await window.VideoEncoder.isConfigSupported({
+              codec:'avc1.42001f',
+              width:width,
+              height:height,
+              bitrate:10_000_000,
+              framerate:fps,
+              latencyMode:'quality',
+              hardwareAcceleration:'prefer-software'
+            });
+
+          if(avcSupport.supported){
+            encodingConfig.fullCodecString=
+              'avc1.42001f';
           }
+        }catch(error){
+          console.warn(
+            'AVC baseline probe failed:',
+            error
+          );
+        }
+      }
+
+      const source=new CanvasSource(
+        canvas,
+        encodingConfig
+      );
+
+      output.addVideoTrack(
+        source,
+        {
+          frameRate:fps
+        }
+      );
+
+      output.setMetadataTags({
+        title:lesson.title,
+        artist:'Sifra',
+        comment:'Generated by Sifra'
+      });
+
+      await output.start();
+
+      const totalFrames=Math.max(
+        1,
+        Math.round(lesson.duration*fps)
+      );
+
+      for(let frame=0;frame<totalFrames;frame+=1){
+        const time=frame/fps;
+
+        drawLessonFrame(
+          ctx,
+          lesson,
+          time,
+          width,
+          height
         );
 
-      const startData=
-        await startResponse.json()
-          .catch(function(){
-            return {};
+        await source.add(
+          time,
+          1/fps
+        );
+
+        if(frame%24===0){
+          await new Promise(function(resolve){
+            requestAnimationFrame(resolve);
           });
-
-      if(!startResponse.ok){
-        throw new Error(
-          startData.error||
-          'לא הצלחתי להתחיל את יצירת הסרטון.'
-        );
+        }
       }
 
-      const jobId=
-        startData.id;
+      await output.finalize();
 
-      if(!jobId){
-        throw new Error(
-          'מנוע הווידאו לא החזיר מזהה עבודה.'
+      const blob=
+        new Blob(
+          [target.buffer],
+          {type:'video/mp4'}
         );
+
+      if(renderStatus){
+        renderStatus.textContent=
+          'בודק את קובץ ה-MP4…';
       }
 
-      card._lessonVideoJob=
-        jobId;
+      const validationInput=
+        new Input({
+          source:
+            new BlobSource(blob),
+          formats:
+            ALL_FORMATS
+        });
 
-      let job=startData;
+      try{
+        const readable=
+          await validationInput.canRead();
 
-      while(true){
-        updateProgress(job);
+        if(!readable){
+          throw new Error(
+            'קובץ ה-MP4 שנוצר אינו קריא.'
+          );
+        }
 
-        if(job.status==='ready'){
-          const video=
-            document.createElement(
-              'video'
-            );
+        const track=
+          await validationInput.getPrimaryVideoTrack();
 
-          video.className=
-            'lesson-video';
+        if(!track){
+          throw new Error(
+            'לא נמצא ערוץ וידאו בקובץ.'
+          );
+        }
 
-          video.src=
-            job.fileUrl;
+        const [
+          decodable,
+          outWidth,
+          outHeight,
+          outDuration,
+          fpsMetrics
+        ]=await Promise.all([
+          track.canDecode(),
+          track.getDisplayWidth(),
+          track.getDisplayHeight(),
+          validationInput.computeDuration(),
+          track.computeFrameRateMetrics()
+        ]);
 
-          if(job.posterUrl){
-            video.poster=
-              job.posterUrl;
-          }
+        if(!decodable){
+          throw new Error(
+            'הדפדפן לא מצליח לפענח את ה-MP4 שנוצר.'
+          );
+        }
 
-          video.controls=true;
-          video.playsInline=true;
-          video.preload='metadata';
+        if(
+          outWidth!==width||
+          outHeight!==height
+        ){
+          throw new Error(
+            'רזולוציית ה-MP4 אינה תקינה.'
+          );
+        }
 
-          stage.insertBefore(
-            video,
-            overlay
+        if(
+          !Number.isFinite(outDuration)||
+          Math.abs(
+            outDuration-
+            lesson.duration
+          )>.35
+        ){
+          throw new Error(
+            'משך ה-MP4 אינו תואם לשיעור.'
+          );
+        }
+
+        const measuredFps=
+          Number(
+            fpsMetrics?.
+              bestGuessFrameRate
           );
 
-          if(download){
-            download.href=
-              job.fileUrl;
+        if(
+          Number.isFinite(
+            measuredFps
+          )&&
+          Math.abs(
+            measuredFps-fps
+          )>2
+        ){
+          throw new Error(
+            'קצב הפריימים של ה-MP4 אינו יציב.'
+          );
+        }
 
-            download.download=
-              'sifra-'+
-              Date.now()+
-              '.mp4';
+        if(renderStatus){
+          renderStatus.textContent=
+            'צופה בפריימים ובודק התאמה…';
+        }
 
-            download.hidden=false;
+        const visualQa=
+          await lessonVerifyExportFrames(
+            track,
+            lesson,
+            CanvasSink,
+            width,
+            height
+          );
+
+        console.info(
+          'Sifra video QA passed:',
+          visualQa
+        );
+      }finally{
+        if(
+          typeof validationInput.dispose===
+          'function'
+        ){
+          validationInput.dispose();
+        }
+      }
+
+      installLessonVideo(
+        card,
+        stage,
+        blob,
+        'mp4'
+      );
+
+      if(renderStatus){
+        renderStatus.textContent=
+          'הסרטון מוכן';
+      }
+
+      if(overlay){
+        overlay.classList.remove('show');
+      }
+    }catch(error){
+      if(browserFallbackAllowed){
+        try{
+          console.warn(
+            'MP4 encoding unavailable; using browser WebM fallback:',
+            error
+          );
+
+          if(renderStatus){
+            renderStatus.textContent=
+              'MP4 אינו זמין בדפדפן זה. יוצר WebM…';
           }
 
-          if(renderButton){
-            renderButton.textContent=
-              'צור מחדש';
-            renderButton.hidden=false;
-          }
+          const webm=
+            await renderLessonWebm(
+              lesson,
+              renderStatus
+            );
 
-          if(statusEl){
-            statusEl.textContent=
+          installLessonVideo(
+            card,
+            stage,
+            webm,
+            'webm'
+          );
+
+          if(renderStatus){
+            renderStatus.textContent=
               'הסרטון מוכן';
           }
 
-          if(bar){
-            bar.style.width='100%';
+          if(overlay){
+            overlay.classList.remove('show');
           }
 
-          if(percent){
-            percent.textContent='100%';
-          }
-
-          setTimeout(function(){
-            overlay?.classList.remove(
-              'show'
-            );
-          },260);
-
-          break;
-        }
-
-        if(job.status==='error'){
-          throw new Error(
-            job.error||
+          return;
+        }catch(fallbackError){
+          error=new Error(
+            (fallbackError&&fallbackError.message)||
+            (error&&error.message)||
             'יצירת הסרטון נכשלה.'
           );
         }
+      }
 
-        await new Promise(
-          function(resolve){
-            setTimeout(
-              resolve,
-              700
-            );
-          }
-        );
+      console.error('Video render failed:',error);
 
-        const response=
-          await fetch(
-            '/api/video/render/'+
-            encodeURIComponent(jobId),
-            {
-              cache:'no-store'
-            }
+      if(overlay){
+        const sub=
+          overlay.querySelector(
+            '.lesson-render-sub'
           );
 
-        job=
-          await response.json()
-            .catch(function(){
-              return {};
-            });
-
-        if(!response.ok){
-          throw new Error(
-            job.error||
-            'איבדתי את עבודת הווידאו.'
-          );
+        if(sub){
+          sub.textContent=
+            error.message||
+            'יצירת הסרטון נכשלה.';
+          sub.style.color='#ff9da3';
         }
-      }
-    }catch(error){
-      console.error(
-        'Hyperframes video render failed:',
-        error
-      );
 
-      if(statusEl){
-        statusEl.textContent=
-          error.message||
-          'יצירת הסרטון נכשלה.';
+        setTimeout(function(){
+          overlay.classList.remove('show');
 
-        statusEl.style.color=
-          '#ff8f98';
-      }
-
-      if(bar){
-        bar.style.width='100%';
-        bar.classList.add('error');
-      }
-
-      if(renderButton){
-        renderButton.textContent=
-          'נסה שוב';
-        renderButton.hidden=false;
-      }
-
-      if(percent){
-        percent.textContent='!';
+          if(sub){
+            sub.textContent=
+              'הסרטון יופיע כאן כשהוא מוכן';
+            sub.style.color='';
+          }
+        },2200);
       }
     }finally{
       card._lessonRendering=false;
@@ -10134,128 +10615,12 @@ html[data-theme="dark"] .welcome-card{
       }
     }
   }
-  function prepareHyperframesLessonPayload(raw){
-    const data=
-      parseLessonPayload(raw);
-
-    const sourceScenes=
-      Array.isArray(data.scenes)
-        ? data.scenes
-        : Array.isArray(data.pages)
-          ? data.pages
-          : [];
-
-    if(!sourceScenes.length){
-      throw new Error(
-        'אין סצנות לסרטון'
-      );
-    }
-
-    const scenes=
-      sourceScenes
-        .slice(0,7)
-        .map(function(scene,index){
-          const value=
-            scene&&
-            typeof scene==='object'
-              ? Object.assign({},scene)
-              : {};
-
-          if(
-            !Array.isArray(value.elements)||
-            !value.elements.length
-          ){
-            const elements=[];
-
-            if(value.title){
-              elements.push({
-                type:'title',
-                text:String(value.title)
-              });
-            }
-
-            if(value.formula){
-              elements.push({
-                type:'formula',
-                text:repairLessonFormulaValue(
-                  value.formula
-                )
-              });
-            }
-
-            if(value.body){
-              elements.push({
-                type:'text',
-                text:String(value.body)
-              });
-            }
-
-            if(
-              Array.isArray(value.bullets)&&
-              value.bullets.length
-            ){
-              elements.push({
-                type:'bullets',
-                items:value.bullets
-                  .slice(0,4)
-                  .map(String)
-              });
-            }
-
-            if(!elements.length){
-              elements.push({
-                type:'title',
-                text:'שלב '+(index+1)
-              });
-            }
-
-            value.elements=elements;
-          }
-
-          return value;
-        });
-
-    const duration=
-      scenes.reduce(
-        function(sum,scene,index){
-          return (
-            sum+
-            clamp(
-              Number(
-                scene.seconds??
-                scene.duration??
-                (index===0?2.6:6)
-              ),
-              index===0?2:3,
-              11
-            )
-          );
-        },
-        0
-      );
-
-    return {
-      title:
-        String(
-          data.title||
-          'סרטון הסבר במתמטיקה'
-        ).slice(0,100),
-      duration:duration,
-      scenes:scenes
-    };
-  }
 
   function renderLessonViz(target,payload){
     let lesson;
 
     try{
-      // Do not run the old canvas auto-layout anymore. The AI now supplies
-      // semantic lesson data and the server-side Hyperframes renderer owns
-      // composition, spacing, motion and MP4 output.
-      lesson=
-        prepareHyperframesLessonPayload(
-          payload
-        );
+      lesson=normalizeLesson(payload);
     }catch(error){
       console.error(
         'Sifra lesson normalization failed:',
@@ -10269,14 +10634,10 @@ html[data-theme="dark"] .welcome-card{
         'Video'
       );
 
-      target.appendChild(
-        shell.card
-      );
+      target.appendChild(shell.card);
 
       const el=
-        document.createElement(
-          'div'
-        );
+        document.createElement('div');
 
       el.className='viz-error';
       el.textContent=
@@ -10289,73 +10650,101 @@ html[data-theme="dark"] .welcome-card{
     const card=
       document.createElement('div');
 
-    card.className=
-      'lesson-card lesson-card-hyperframes';
+    card.className='lesson-card';
+    card._lessonTime=0;
 
     const meta=
       document.createElement('div');
 
-    meta.className=
-      'lesson-meta';
+    meta.className='lesson-meta';
 
     const title=
       document.createElement('div');
 
-    title.className=
-      'lesson-meta-title';
-
-    title.textContent=
-      lesson.title;
+    title.className='lesson-meta-title';
+    title.textContent=lesson.title;
 
     const sub=
       document.createElement('div');
 
-    sub.className=
-      'lesson-meta-sub';
-
+    sub.className='lesson-meta-sub';
     sub.textContent=
       Math.round(lesson.duration)+
       ' שניות • '+
       lesson.scenes.length+
-      ' סצנות • Hyperframes';
+      ' סצנות • 1280×720';
 
-    meta.append(
-      title,
-      sub
-    );
+    meta.append(title,sub);
 
     const stage=
       document.createElement('div');
 
-    stage.className=
-      'lesson-stage';
+    stage.className='lesson-stage';
+
+    const canvas=
+      document.createElement('canvas');
+
+    canvas.className='lesson-canvas';
+    canvas.width=1280;
+    canvas.height=720;
 
     const overlay=
       document.createElement('div');
 
-    overlay.className=
-      'lesson-render-overlay show';
-
+    overlay.className='lesson-render-overlay';
     overlay.innerHTML=
       '<div class="lesson-render-idle">'+
-        '<div class="lesson-render-engine">Sifra Motion Engine</div>'+
-        '<div class="lesson-render-title">בונה את הסרטון שלך…</div>'+
-        '<div class="lesson-render-sub">מתכנן קומפוזיציה, תנועה וטיימינג</div>'+
-        '<div class="lesson-render-progress">'+
-          '<span class="lesson-render-progress-fill"></span>'+
-        '</div>'+
-        '<div class="lesson-render-percent">0%</div>'+
+        '<div class="lesson-render-title">יוצר את הסרטון…</div>'+
+        '<div class="lesson-render-sub">הסרטון יופיע כאן כשהוא מוכן</div>'+
+        '<div class="lesson-loader"></div>'+
       '</div>';
 
-    stage.appendChild(
-      overlay
+    stage.append(canvas,overlay);
+
+    const toolbar=
+      document.createElement('div');
+
+    toolbar.className='lesson-toolbar';
+
+    const play=
+      document.createElement('button');
+
+    play.className='lesson-play';
+    play.type='button';
+    play.textContent='▶';
+    play.setAttribute(
+      'aria-label',
+      'נגן או עצור'
+    );
+
+    const scrubber=
+      document.createElement('input');
+
+    scrubber.className='lesson-scrubber';
+    scrubber.type='range';
+    scrubber.min='0';
+    scrubber.max='1';
+    scrubber.step='0.001';
+    scrubber.value='0';
+
+    const time=
+      document.createElement('div');
+
+    time.className='lesson-time';
+    time.textContent=
+      '0:00 / '+
+      formatLessonTime(lesson.duration);
+
+    toolbar.append(
+      play,
+      scrubber,
+      time
     );
 
     const actions=
       document.createElement('div');
 
-    actions.className=
-      'lesson-actions';
+    actions.className='lesson-actions';
 
     const render=
       document.createElement('button');
@@ -10364,9 +10753,7 @@ html[data-theme="dark"] .welcome-card{
       'lesson-action primary lesson-render-button';
 
     render.type='button';
-    render.textContent=
-      'צור מחדש';
-    render.hidden=true;
+    render.textContent='צור סרטון';
 
     const download=
       document.createElement('a');
@@ -10374,15 +10761,13 @@ html[data-theme="dark"] .welcome-card{
     download.className=
       'lesson-action lesson-download';
 
-    download.textContent=
-      'הורד MP4';
+    download.textContent='הורד MP4';
     download.hidden=true;
 
     const spacer=
       document.createElement('div');
 
-    spacer.className=
-      'lesson-spacer';
+    spacer.className='lesson-spacer';
 
     actions.append(
       spacer,
@@ -10393,52 +10778,113 @@ html[data-theme="dark"] .welcome-card{
     card.append(
       meta,
       stage,
+      toolbar,
       actions
     );
 
-    target.appendChild(
-      card
+    target.appendChild(card);
+
+    renderLessonPreviewFrame(
+      card,
+      lesson,
+      0
+    );
+
+    Promise.all([
+      document.fonts.ready,
+      prepareLessonAssets(lesson)
+    ]).then(function(){
+      renderLessonPreviewFrame(
+        card,
+        lesson,
+        card._lessonTime||0
+      );
+
+      setTimeout(function(){
+        renderLessonMp4(
+          card,
+          lesson
+        );
+      },40);
+    }).catch(function(error){
+      console.warn(
+        'Lesson asset preparation failed:',
+        error
+      );
+    });
+
+    play.addEventListener(
+      'click',
+      function(){
+        const video=
+          stage.querySelector(
+            '.lesson-video'
+          );
+
+        if(video){
+          if(video.paused)video.play();
+          else video.pause();
+          return;
+        }
+
+        if(card._lessonPlaying){
+          stopLessonPreview(card);
+        }else{
+          if(card._lessonTime>=lesson.duration-.05){
+            card._lessonTime=0;
+          }
+
+          startLessonPreview(
+            card,
+            lesson
+          );
+        }
+      }
+    );
+
+    canvas.addEventListener(
+      'click',
+      function(){
+        if(card._lessonPlaying){
+          stopLessonPreview(card);
+        }else{
+          if(card._lessonTime>=lesson.duration-.05){
+            card._lessonTime=0;
+          }
+
+          startLessonPreview(
+            card,
+            lesson
+          );
+        }
+      }
+    );
+
+    scrubber.addEventListener(
+      'input',
+      function(){
+        stopLessonPreview(card);
+
+        card._lessonTime=
+          Number(scrubber.value)*
+          lesson.duration;
+
+        renderLessonPreviewFrame(
+          card,
+          lesson,
+          card._lessonTime
+        );
+      }
     );
 
     render.addEventListener(
       'click',
       function(){
-        const fill=
-          overlay.querySelector(
-            '.lesson-render-progress-fill'
-          );
-
-        const subEl=
-          overlay.querySelector(
-            '.lesson-render-sub'
-          );
-
-        if(fill){
-          fill.classList.remove(
-            'error'
-          );
-          fill.style.width='0%';
-        }
-
-        if(subEl){
-          subEl.style.color='';
-        }
-
         renderLessonMp4(
           card,
           lesson
         );
       }
-    );
-
-    setTimeout(
-      function(){
-        renderLessonMp4(
-          card,
-          lesson
-        );
-      },
-      40
     );
   }
 
@@ -10781,18 +11227,29 @@ html[data-theme="dark"] .welcome-card{
   });
   chat.addEventListener('scroll',updateScrollButton,{passive:true});
 
+  let themePreference=localStorage.getItem('sifra-theme-choice')||localStorage.getItem('sifra-theme')||'system';
+
   function setTheme(theme){
-    document.documentElement.dataset.theme=theme;
-    localStorage.setItem('sifra-theme',theme);
-    const dark=theme==='dark';
+    themePreference=['light','dark','system'].includes(theme)?theme:'system';
+    const resolved=themePreference==='system'
+      ?(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')
+      :themePreference;
+    document.documentElement.dataset.theme=resolved;
+    localStorage.setItem('sifra-theme-choice',themePreference);
+    localStorage.setItem('sifra-theme',resolved);
+    const dark=resolved==='dark';
     $('#themeText').textContent=dark?'מצב בהיר':'מצב כהה';if($('#accountThemeText'))$('#accountThemeText').textContent=dark?'מצב בהיר':'מצב כהה';
     themeColor.setAttribute('content',dark?'#111111':'#fcfcfc');
     if(brandLogo)brandLogo.src=dark?'/assets/whitelogo.png':'/assets/blacklogo.png';
-    if(welcomeLogo)welcomeLogo.src=dark?'/assets/whitelogo.png':'/assets/blacklogo.png';
+    if(authLogo)authLogo.src=dark?'/assets/whitelogo.png':'/assets/blacklogo.png';
     $('#themeIcon').innerHTML=dark?'<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>':'<path d="M20.5 15.5A8 8 0 1 1 8.5 3.6a6.6 6.6 0 0 0 12 11.9Z"></path>';
+    document.querySelectorAll('[data-theme-choice]').forEach(function(button){button.classList.toggle('active',button.dataset.themeChoice===themePreference)});
+    if(state.supabase&&state.user)state.supabase.from('profiles').update({theme:themePreference}).eq('id',state.user.id).then(function(){});
   }
-  const savedTheme=localStorage.getItem('sifra-theme');
-  if(savedTheme)setTheme(savedTheme);else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)setTheme('dark');else setTheme('light');
+  setTheme(themePreference);
+  if(window.matchMedia){
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){if(themePreference==='system')setTheme('system')});
+  }
 
   const modelSwitch=$('#modelSwitch');
   const modelTrigger=$('#modelTrigger');
@@ -10818,6 +11275,10 @@ html[data-theme="dark"] .welcome-card{
     });
     modelTriggerName.textContent=modelLabel(model);
     localStorage.setItem('sifra-client-model',model);
+    if(state.supabase&&state.user){
+      state.supabase.from('profiles').update({preferred_model:model}).eq('id',state.user.id).then(function(){});
+      if(state.conversationId)state.supabase.from('conversations').update({model:model}).eq('id',state.conversationId).then(function(){});
+    }
     closeModelMenu();
   }
 
@@ -10840,10 +11301,66 @@ html[data-theme="dark"] .welcome-card{
     });
   });
 
+  const settingsTitles={
+    account:['החשבון שלי','פרטי התחברות וסנכרון'],
+    appearance:['מראה','עיצוב, טקסט ותנועה'],
+    chat:['העדפות צ׳אט','מודל והתנהגות שורת הכתיבה']
+  };
+
+  function selectSettingsTab(name){
+    const selected=settingsTitles[name]?name:'account';
+    document.querySelectorAll('[data-settings-tab]').forEach(function(button){button.classList.toggle('active',button.dataset.settingsTab===selected)});
+    document.querySelectorAll('[data-settings-panel]').forEach(function(panel){panel.classList.toggle('active',panel.dataset.settingsPanel===selected)});
+    $('#settingsTitle').textContent=settingsTitles[selected][0];
+    $('#settingsSubtitle').textContent=settingsTitles[selected][1];
+  }
+
+  function syncSettingsUi(){
+    document.querySelectorAll('[data-theme-choice]').forEach(function(button){button.classList.toggle('active',button.dataset.themeChoice===themePreference)});
+    document.querySelectorAll('[data-font-choice]').forEach(function(button){button.classList.toggle('active',button.dataset.fontChoice===uiPreferences.fontSize)});
+    document.querySelectorAll('[data-settings-model]').forEach(function(button){button.classList.toggle('active',button.dataset.settingsModel===(localStorage.getItem('sifra-client-model')||'sifra-2'))});
+    $('#enterToSendSetting').checked=uiPreferences.enterToSend;
+    $('#reduceEffectsSetting').checked=uiPreferences.reduceEffects;
+    $('#settingsConversationCount').textContent=String(state.conversations.length);
+    if(state.user)updateAccountUi(state.user);
+  }
+
+  function openSettings(tab){
+    if(!state.user){openAuth('signin');return}
+    selectSettingsTab(tab||'account');syncSettingsUi();
+    accountMenu.classList.remove('open');accountButton.classList.remove('open');
+    settingsModal.classList.add('open');settingsModal.setAttribute('aria-hidden','false');appShell.classList.add('auth-locked');
+  }
+
+  function closeSettings(){
+    settingsModal.classList.remove('open');settingsModal.setAttribute('aria-hidden','true');appShell.classList.remove('auth-locked');
+  }
+
+  async function signOutUser(){
+    if(!state.supabase)return;
+    closeSettings();
+    const result=await state.supabase.auth.signOut();
+    if(result.error)showToast('לא הצלחנו להתנתק. נסה שוב.');
+  }
+
+  authClose.addEventListener('click',closeAuth);
+  authBackdrop.addEventListener('click',closeAuth);
+  settingsClose.addEventListener('click',closeSettings);
+  settingsBackdrop.addEventListener('click',closeSettings);
+  document.querySelectorAll('[data-settings-tab]').forEach(function(button){button.addEventListener('click',function(){selectSettingsTab(button.dataset.settingsTab)})});
+  document.querySelectorAll('[data-theme-choice]').forEach(function(button){button.addEventListener('click',function(){setTheme(button.dataset.themeChoice);syncSettingsUi()})});
+  document.querySelectorAll('[data-font-choice]').forEach(function(button){button.addEventListener('click',function(){uiPreferences.fontSize=button.dataset.fontChoice;localStorage.setItem('sifra-font-size',uiPreferences.fontSize);document.documentElement.dataset.fontSize=uiPreferences.fontSize;syncSettingsUi()})});
+  document.querySelectorAll('[data-settings-model]').forEach(function(button){button.addEventListener('click',function(){selectClientModel(button.dataset.settingsModel);syncSettingsUi()})});
+  $('#enterToSendSetting').addEventListener('change',function(event){uiPreferences.enterToSend=event.target.checked;localStorage.setItem('sifra-enter-to-send',String(uiPreferences.enterToSend))});
+  $('#reduceEffectsSetting').addEventListener('change',function(event){uiPreferences.reduceEffects=event.target.checked;localStorage.setItem('sifra-reduce-effects',String(uiPreferences.reduceEffects));document.body.classList.toggle('reduce-effects',uiPreferences.reduceEffects)});
+  $('#settingsSignOut').addEventListener('click',signOutUser);
+
   $('#themeBtn').addEventListener('click',function(){setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark')});
   $('#moreBtn').addEventListener('click',function(){$('#morePanel').classList.toggle('open')});
   $('#searchBtn').addEventListener('click',function(){showToast('חיפוש יתווסף בהמשך')});
-  $('#libraryBtn').addEventListener('click',function(){showToast('הספרייה תתווסף בהמשך')});
+  $('#libraryBtn').addEventListener('click',function(){
+    loadConversations().then(function(){conversationPanel.scrollTo({top:0,behavior:'smooth'})}).catch(function(){showToast('לא הצלחנו לטעון את הספרייה')});
+  });
   accountButton.addEventListener('click',function(event){event.stopPropagation();accountMenu.classList.toggle('open');accountButton.classList.toggle('open',accountMenu.classList.contains('open'))});
   accountMenu.addEventListener('click',function(event){event.stopPropagation()});
   document.addEventListener('click',function(){
@@ -10852,13 +11369,43 @@ html[data-theme="dark"] .welcome-card{
     closeModelMenu();
   });
   document.addEventListener('keydown',function(event){
-    if(event.key==='Escape')closeModelMenu();
+    if(event.key==='Escape'){
+      closeModelMenu();
+      if(settingsModal.classList.contains('open'))closeSettings();
+      else if(authModal.classList.contains('open'))closeAuth();
+    }
   });
   $('#upgradeBtn').addEventListener('click',function(){showToast('השדרוג יתווסף בהמשך')});
-  $('#accountSettings').addEventListener('click',function(){showToast('הגדרות יתווספו בהמשך')});
+  $('#accountSettings').addEventListener('click',function(){openSettings('account')});
   $('#accountLanguage').addEventListener('click',function(){showToast('בחירת שפה תתווסף בהמשך')});
   $('#accountHelp').addEventListener('click',function(){showToast('מרכז העזרה יתווסף בהמשך')});
-  $('#accountTheme').addEventListener('click',function(){setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark')});
+  $('#accountTheme').addEventListener('click',function(){openSettings('appearance')});
+
+  authSwitch.addEventListener('click',function(){setAuthMode(authMode==='signin'?'signup':'signin')});
+  $('#topSignIn').addEventListener('click',function(){openAuth('signin')});
+  $('#topSignUp').addEventListener('click',function(){openAuth('signup')});
+  authForm.addEventListener('submit',async function(event){
+    event.preventDefault();
+    if(!state.supabase)return;
+    authSubmit.disabled=true;googleAuthBtn.disabled=true;setAuthStatus(authMode==='signup'?'יוצר חשבון...':'מתחבר...');
+    try{
+      const credentials={email:authEmail.value.trim(),password:authPassword.value};
+      const result=authMode==='signup'
+        ?await state.supabase.auth.signUp({email:credentials.email,password:credentials.password,options:{emailRedirectTo:location.origin}})
+        :await state.supabase.auth.signInWithPassword(credentials);
+      if(result.error)throw result.error;
+      if(authMode==='signup'&&!result.data.session)setAuthStatus('שלחנו לך אימייל לאישור. אחרי האישור אפשר להתחבר.');
+      else setAuthStatus('');
+    }catch(error){setAuthStatus(error.message||'לא הצלחנו להתחבר. בדוק את הפרטים ונסה שוב.',true)}
+    finally{authSubmit.disabled=false;googleAuthBtn.disabled=false}
+  });
+  googleAuthBtn.addEventListener('click',async function(){
+    if(!state.supabase)return;
+    googleAuthBtn.disabled=true;authSubmit.disabled=true;setAuthStatus('מעביר ל-Google...');
+    const result=await state.supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin}});
+    if(result.error){setAuthStatus(result.error.message||'ההתחברות עם Google נכשלה.',true);googleAuthBtn.disabled=false;authSubmit.disabled=false}
+  });
+  $('#signOutBtn').addEventListener('click',signOutUser);
 
   function openSidebar(){if(window.innerWidth<=860){sidebar.classList.add('mobile-open');overlay.classList.add('on')}else document.body.classList.remove('sidebar-collapsed')}
   function closeSidebar(){accountMenu.classList.remove('open');accountButton.classList.remove('open');if(window.innerWidth<=860){sidebar.classList.remove('mobile-open');overlay.classList.remove('on')}else document.body.classList.add('sidebar-collapsed')}
@@ -11030,6 +11577,7 @@ html[data-theme="dark"] .welcome-card{
     let flushTimer=0;
     let revealDone=false;
     let resolveReveal;
+    let pendingChatName='';
 
     const revealFinished=new Promise(function(resolve){resolveReveal=resolve});
 
@@ -11042,7 +11590,7 @@ html[data-theme="dark"] .welcome-card{
     }
 
     function renderVisible(){
-      content.innerHTML=formatAnswer(visibleText);
+      content.innerHTML=formatAnswer(visibleText,{streaming:true});
       hydrateVisuals(content,{deferLessons:true});
       animateStreamTail(content);
       updateScrollButton();
@@ -11124,6 +11672,11 @@ html[data-theme="dark"] .welcome-card{
         return;
       }
 
+      if(eventName==='chat_name'){
+        pendingChatName=cleanGeneratedChatName(data.name);
+        return;
+      }
+
       if(eventName==='error'){
         const streamError=new Error(data.error||'החיבור למודל נקטע. נסה שוב.');
         streamError.streamError=true;
@@ -11132,12 +11685,17 @@ html[data-theme="dark"] .welcome-card{
     }
 
     try{
+      const sessionResult=await state.supabase.auth.getSession();
+      const accessToken=sessionResult.data.session&&sessionResult.data.session.access_token;
+      if(!accessToken)throw new Error('ההתחברות פגה. התחבר שוב.');
+      const requestChatName=!state.temporary&&!state.chatNamed&&!state.messages.some(function(message){return message.role==='assistant'});
       const response=await fetch('/api/chat',{
         method:'POST',
-        headers:{'Content-Type':'application/json'},
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+accessToken},
         body:JSON.stringify({
-          messages:state.messages.slice(-16),
+          messages:state.messages.slice(-16).map(function(message){return {role:message.role,content:message.content}}),
           images:images.map(function(item){return {dataUrl:item.dataUrl}}),
+          requestChatName:requestChatName,
           temporary:state.temporary
         })
       });
@@ -11188,19 +11746,29 @@ html[data-theme="dark"] .welcome-card{
       markNetworkFinished();
       await revealFinished;
 
-      if(!receivedText.trim())throw new Error('השרת החזיר תשובה ריקה.');
+      const finalText=stripChatNameControl(receivedText).trim();
+      if(!finalText)throw new Error('השרת החזיר תשובה ריקה.');
 
       content.classList.remove('streaming');
       // Final authoritative render: now the full stream is present, so lesson
       // JSON is parsed exactly once instead of on intermediate reveal bursts.
-      content.innerHTML=formatAnswer(receivedText);
+      content.innerHTML=formatAnswer(finalText);
       hydrateVisuals(content);
-      state.messages.push({role:'assistant',content:receivedText});
-      row.appendChild(actionBar(receivedText));
+      if(pendingChatName&&!state.temporary){
+        try{await saveGeneratedChatName(pendingChatName)}
+        catch(nameError){console.error('Chat name persistence failed:',nameError);showToast('השיחה נשמרה, אבל השם שלה לא עודכן.')}
+      }
+      const assistantMessage={role:'assistant',content:finalText,position:state.messages.length};
+      state.messages.push(assistantMessage);
+      if(!state.temporary){
+        try{await persistMessage(assistantMessage,[]);await loadConversations()}
+        catch(saveError){console.error('Assistant persistence failed:',saveError);showToast('התשובה מוצגת, אבל השמירה נכשלה. בדוק את החיבור.')}
+      }
+      row.appendChild(actionBar(finalText));
       updateScrollButton();
 
       if(!completed)console.warn('Sifra stream ended without an explicit done event');
-      return receivedText;
+      return finalText;
     }catch(error){
       markNetworkFinished();
 
@@ -11226,6 +11794,7 @@ html[data-theme="dark"] .welcome-card{
     if(state.busy)return;
     const text=input.value.trim()||(state.images.length?'פתור את התרגיל שבתמונה והסבר שלב-שלב.':'');
     if(!text)return;
+    if(!state.user){rememberPendingSubmission(input,text);openAuth('signin');return}
 
     const sourceComposer=input===homeInput?homeComposer:chatComposer;
     const sourceRect=sourceComposer.getBoundingClientRect();
@@ -11233,7 +11802,8 @@ html[data-theme="dark"] .welcome-card{
     state.busy=true;updateButtons();
     const first=enterChat(),images=state.images.splice(0);renderAttachments();
     const row=addUserMessage(text,images.map(function(item){return item.dataUrl}));
-    state.messages.push({role:'user',content:text});
+    const userMessage={role:'user',content:text,position:state.messages.length};
+    state.messages.push(userMessage);
     input.value='';resizeTextarea(input);
 
     if(first){
@@ -11245,13 +11815,34 @@ html[data-theme="dark"] .welcome-card{
     await new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve)})});
 
     const messageMotion=animateUserFlight(sourceRect,row);
-    const aiRequest=requestAI(images);
 
     try{
-      await Promise.all([
-        messageMotion,
-        aiRequest
-      ]);
+      if(!state.temporary){
+        const wasNew=!state.conversationId;
+        let storedAttachments=[];
+        try{
+          await ensureConversation(text);
+          storedAttachments=await uploadAttachments(images);
+          await persistMessage(userMessage,storedAttachments);
+        }catch(saveError){
+          console.error('User message persistence failed:',saveError);
+          if(storedAttachments.length)await state.supabase.storage.from('chat-attachments').remove(storedAttachments.map(function(item){return item.path}));
+          if(wasNew&&state.conversationId){
+            const failedConversation=state.conversationId;
+            await state.supabase.from('conversations').delete().eq('id',failedConversation);
+            state.conversationId=null;
+            state.conversations=state.conversations.filter(function(item){return item.id!==failedConversation});
+            setConversationUrl('',true);
+            renderConversationList();
+          }
+          state.messages.pop();row.remove();
+          if(!state.messages.length)resetChat();
+          showToast('ההודעה לא נשמרה ולכן לא נשלחה. בדוק את החיבור ונסה שוב.');
+          return;
+        }
+      }
+      await messageMotion;
+      await requestAI(images);
     }catch(error){
       console.warn(
         'Sifra request failed:',
@@ -11268,7 +11859,11 @@ html[data-theme="dark"] .welcome-card{
   async function retryLastAnswer(){
     if(state.busy||!state.messages.length)return;
     if(state.messages[state.messages.length-1].role==='assistant'){
-      state.messages.pop();
+      const removed=state.messages.pop();
+      if(!state.temporary&&removed.id){
+        const removal=await state.supabase.from('messages').delete().eq('id',removed.id);
+        if(removal.error){state.messages.push(removed);showToast('לא הצלחנו להכין ניסיון חוזר');return}
+      }
       const rows=chatInner.querySelectorAll('.assistant-row');
       if(rows.length)rows[rows.length-1].remove();
     }
@@ -11375,7 +11970,11 @@ html[data-theme="dark"] .welcome-card{
   homeInput.addEventListener('input',function(){resizeTextarea(homeInput);updateButtons()});
   chatInput.addEventListener('input',function(){resizeTextarea(chatInput);updateButtons()});
   [homeInput,chatInput].forEach(function(input){
-    input.addEventListener('keydown',function(event){if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submit(input)}})
+    input.addEventListener('keydown',function(event){
+      const plainEnter=event.key==='Enter'&&!event.shiftKey&&uiPreferences.enterToSend;
+      const modifiedEnter=event.key==='Enter'&&(event.ctrlKey||event.metaKey)&&!uiPreferences.enterToSend;
+      if(plainEnter||modifiedEnter){event.preventDefault();submit(input)}
+    })
   });
   sendHome.addEventListener('click',function(){submit(homeInput)});
   sendChat.addEventListener('click',function(){submit(chatInput)});
@@ -11403,11 +12002,14 @@ html[data-theme="dark"] .welcome-card{
         : 'צ׳אט זמני — השיחה לא תישמר';
   }
 
-  function setTemporaryChat(enabled){
+  async function setTemporaryChat(enabled){
     const next=Boolean(enabled);
     if(state.temporary===next)return;
 
     state.temporary=next;
+    state.conversationId=null;
+    state.chatNamed=false;
+    setConversationUrl('',false);
     resetChat();
     syncTemporaryChatUi();
 
@@ -11433,6 +12035,9 @@ html[data-theme="dark"] .welcome-card{
 
   $('#newChat').addEventListener('click',function(){
     state.temporary=false;
+    state.conversationId=null;
+    state.chatNamed=false;
+    setConversationUrl('',false);
     resetChat();
     syncTemporaryChatUi();
   });
@@ -11440,7 +12045,13 @@ html[data-theme="dark"] .welcome-card{
   $('#micHome').addEventListener('click',micNotice);
   $('#micChat').addEventListener('click',micNotice);
   window.addEventListener('resize',function(){if(window.innerWidth>860){sidebar.classList.remove('mobile-open');overlay.classList.remove('on')}});
+  window.addEventListener('popstate',function(){
+    if(!state.user)return;
+    if(state.busy){setConversationUrl(state.temporary?'':state.conversationId,true);showToast('חכה לסיום התשובה לפני מעבר שיחה');return}
+    state.temporary=false;syncTemporaryChatUi();restoreConversationRoute().catch(function(error){console.error('Route restore failed:',error);showToast('לא הצלחנו לפתוח את השיחה')});
+  });
   updateButtons();
+  initializeAuth();
 })();
 </script>
 </body>
