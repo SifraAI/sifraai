@@ -166,6 +166,9 @@ body.sidebar-collapsed .sidebar{
 }
 .nav-btn span{direction:rtl;unicode-bidi:plaintext}
 .nav-btn:hover{background:var(--surface-hover)}
+.nav-btn.active{background:var(--surface-hover);font-weight:650}
+.subject-nav{position:relative}
+.subject-nav.active::after{content:"";position:absolute;right:3px;top:9px;bottom:9px;width:2px;border-radius:999px;background:var(--text);opacity:.72}
 .nav-btn svg{flex:none}
 .more-panel{
   display:none;
@@ -2147,7 +2150,10 @@ html[data-theme="dark"] .auth-top-btn.primary{border-color:#eee;background:#eee;
 }
 .conversation-item:hover,.conversation-item.active{background:var(--surface-hover)}
 .conversation-item strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px}
-.conversation-item time{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.conversation-meta{display:flex;align-items:center;gap:6px;margin-top:3px;color:var(--muted);font-size:10px;white-space:nowrap}
+.conversation-item time{display:block;color:inherit;font-size:10px;margin:0}
+.conversation-subject{font-size:9.5px;font-weight:700;color:var(--muted);direction:rtl}
+.conversation-subject::before{content:"•";margin-left:6px;font-weight:400;color:var(--muted-2)}
 .account-signout{color:var(--danger)!important}
 
 .settings-modal{
@@ -2354,6 +2360,18 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
           <path d="m13 11 7-7"></path><path d="M16 4h4v4"></path>
         </svg>
         <span>שיחה חדשה</span>
+      </button>
+      <button class="nav-btn subject-nav active" type="button" data-subject="math" aria-label="מתמטיקה">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3.5" width="16" height="17" rx="2.5"></rect><path d="M8 8h8M8 12h2M14 12h2M8 16h2M14 16h2"></path></svg>
+        <span>מתמטיקה</span>
+      </button>
+      <button class="nav-btn subject-nav" type="button" data-subject="physics" aria-label="פיזיקה">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"></circle><ellipse cx="12" cy="12" rx="9" ry="3.8"></ellipse><ellipse cx="12" cy="12" rx="9" ry="3.8" transform="rotate(60 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="3.8" transform="rotate(120 12 12)"></ellipse></svg>
+        <span>פיזיקה</span>
+      </button>
+      <button class="nav-btn subject-nav" type="button" data-subject="chemistry" aria-label="כימיה">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3.5h6M10 3.5v5.3l-5 8.4A2.2 2.2 0 0 0 6.9 20.5h10.2a2.2 2.2 0 0 0 1.9-3.3l-5-8.4V3.5"></path><path d="M7.2 15h9.6"></path><circle cx="10" cy="17.4" r=".8" fill="currentColor" stroke="none"></circle><circle cx="14.5" cy="18" r=".65" fill="currentColor" stroke="none"></circle></svg>
+        <span>כימיה</span>
       </button>
       <button class="nav-btn" id="libraryBtn">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -2626,8 +2644,15 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
   'use strict';
   const $=function(selector){return document.querySelector(selector)};
   const sidebar=$('#sidebar'),overlay=$('#overlay'),home=$('#home'),chat=$('#chat'),chatInner=$('#chatInner'),bottomZone=$('#bottomZone'),homeInput=$('#homeInput'),chatInput=$('#chatInput'),sendHome=$('#sendHome'),sendChat=$('#sendChat'),fileInput=$('#fileInput'),homeAttachments=$('#homeAttachments'),chatAttachments=$('#chatAttachments'),homeComposer=$('#homeComposer'),chatComposer=$('#chatComposer'),toast=$('#toast'),themeColor=$('#themeColor'),accountMenu=$('#accountMenu'),accountButton=$('#accountButton'),dailyUsage=$('#dailyUsage'),dailyUsageFill=$('#dailyUsageFill'),brandLogo=$('#brandLogo'),scrollDownBtn=$('#scrollDownBtn'),mathModal=$('#mathModal'),mathModalBackdrop=$('#mathModalBackdrop'),mathModalContent=$('#mathModalContent'),mathModalViewport=$('#mathModalViewport'),mathZoomLabel=$('#mathZoomLabel');
-  const state={messages:[],images:[],busy:false,temporary:false,user:null,session:null,supabase:null,conversationId:null,conversations:[],chatNamed:false,authReady:false};
+  const state={messages:[],images:[],busy:false,temporary:false,user:null,session:null,supabase:null,conversationId:null,conversations:[],chatNamed:false,authReady:false,subject:'math'};
   const MAX_IMAGES=2;
+  const SUBJECTS={
+    math:{label:'מתמטיקה',titles:['מה נפתור היום?','במה צריך עזרה היום?','על מה עובדים היום?','איזה תרגיל נפתור יחד?','מה לא מסתדר?'],placeholders:['תכתוב כאן תרגיל...','אפשר גם לצרף תמונה...','שאל אותי על משוואות, גיאומטריה ועוד...','נתקעת בשיעורי הבית? אני כאן.'],tools:[['צור לי סרטון הסבר קצר בעברית על ','צור סרטון','הסבר ויזואלי קצר עם אנימציות.'],['בנה לי גרף ברור והסבר מה רואים בו עבור ','בנה גרף','גרף אינטראקטיבי עם הסבר.'],['פתור לי את התרגיל הבא שלב־שלב: ','פתור תרגיל','פתרון מלא בלי לדלג על שלבים.'],['צור לי מבחן תרגול קצר בנושא ','מבחן תרגול','שאלות מדורגות עם פתרונות.']],starts:[['למד אותי נושא מתמטי מהבסיס עם דוגמה פשוטה: ','למד אותי נושא','הסבר פשוט מהבסיס.'],['בדוק את הפתרון שלי, מצא איפה טעיתי והסבר למה: ','בדוק פתרון','מצא טעויות והסבר אותן.'],['תן לי 5 תרגילים מהקל לקשה בנושא ','תרגול לפי רמה','תרגילים מהקל לקשה.']]},
+    physics:{label:'פיזיקה',titles:['מה נחקור בפיזיקה היום?','איזה חוק לא מסתדר?','כוחות, אנרגיה או תנועה?','איזה תרגיל פיזיקה נפתור?'],placeholders:['שאל אותי שאלה בפיזיקה...','אפשר לצרף צילום של תרגיל או שרטוט...','קינמטיקה, כוחות, חשמל, גלים ועוד...'],tools:[['צור לי סרטון הסבר קצר בפיזיקה על ','צור סרטון','המחשה של התהליך הפיזיקלי.'],['בנה לי תרשים כוחות והסבר אותו עבור ','תרשים כוחות','כיוונים, כוחות ורכיבים בצורה ברורה.'],['פתור לי את תרגיל הפיזיקה הבא שלב־שלב: ','פתור תרגיל','חוקים, הצבה, יחידות ותשובה.'],['צור לי מבחן תרגול קצר בפיזיקה בנושא ','מבחן תרגול','שאלות מדורגות עם פתרונות.']],starts:[['למד אותי נושא בפיזיקה מהבסיס עם דוגמה מהחיים: ','למד אותי נושא','אינטואיציה לפני הנוסחאות.'],['בדוק את הפתרון שלי בפיזיקה, כולל יחידות וסימנים: ','בדוק פתרון','מצא טעויות בחוק, בהצבה או ביחידות.'],['תן לי 5 תרגילי פיזיקה מהקל לקשה בנושא ','תרגול לפי רמה','תרגול הדרגתי עם יחידות.']]},
+    chemistry:{label:'כימיה',titles:['מה נחקור בכימיה היום?','איזו תגובה נפתור?','מה קורה ברמת החלקיקים?','סטוכיומטריה, קשרים או חומצות?'],placeholders:['שאל אותי שאלה בכימיה...','אפשר לצרף צילום של תרגיל או טבלה...','תגובות, מולים, קשרים, חומצות ועוד...'],tools:[['צור לי סרטון הסבר קצר בכימיה על ','צור סרטון','המחשה של חלקיקים ותהליך כימי.'],['אזן והסבר לי את התגובה הכימית הבאה: ','אזן תגובה','איזון מסודר ושימור אטומים.'],['פתור לי את תרגיל הכימיה הבא שלב־שלב: ','פתור תרגיל','מולים, יחידות וחישוב מסודר.'],['צור לי מבחן תרגול קצר בכימיה בנושא ','מבחן תרגול','שאלות מדורגות עם פתרונות.']],starts:[['למד אותי נושא בכימיה מהבסיס עם דוגמה פשוטה: ','למד אותי נושא','הבנה ברמת החלקיקים.'],['בדוק את הפתרון שלי בכימיה ומצא איפה טעיתי: ','בדוק פתרון','בדיקת נוסחאות, איזון וחישוב.'],['תן לי 5 תרגילי כימיה מהקל לקשה בנושא ','תרגול לפי רמה','תרגול הדרגתי לפי הנושא.']]}
+  };
+  function normalizeSubject(subject){return SUBJECTS[subject]?subject:'math'}
+  function subjectLabel(subject){return SUBJECTS[normalizeSubject(subject)].label}
 
   const appShell=$('#appShell');
   const authLogo=$('#authLogo');
@@ -2749,8 +2774,11 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
       const button=document.createElement('button');button.type='button';button.className='conversation-item';
       button.classList.toggle('active',conversation.id===state.conversationId);
       const title=document.createElement('strong');title.textContent=conversation.title;
+      const meta=document.createElement('span');meta.className='conversation-meta';
       const time=document.createElement('time');time.textContent=conversationDate(conversation.updated_at);
-      button.append(title,time);
+      const type=document.createElement('span');type.className='conversation-subject';type.textContent=subjectLabel(conversation.subject);
+      meta.append(time,type);
+      button.append(title,meta);
       button.addEventListener('click',function(){loadConversation(conversation.id,{pushUrl:true})});
       conversationList.appendChild(button);
     });
@@ -2758,7 +2786,7 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
 
   async function loadConversations(){
     if(!state.supabase||!state.user)return;
-    const result=await state.supabase.from('conversations').select('id,title,model,created_at,updated_at').order('updated_at',{ascending:false}).limit(100);
+    const result=await state.supabase.from('conversations').select('id,title,model,subject,created_at,updated_at').order('updated_at',{ascending:false}).limit(100);
     if(result.error)throw result.error;
     state.conversations=result.data||[];
     renderConversationList();
@@ -2777,13 +2805,14 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
     }
     state.busy=true;updateButtons();
     try{
-      const ownership=await state.supabase.from('conversations').select('id,title,model,created_at,updated_at').eq('id',conversationId).eq('user_id',state.user.id).maybeSingle();
+      const ownership=await state.supabase.from('conversations').select('id,title,model,subject,created_at,updated_at').eq('id',conversationId).eq('user_id',state.user.id).maybeSingle();
       if(ownership.error)throw ownership.error;
       if(!ownership.data){
         setConversationUrl('',true);state.conversationId=null;state.chatNamed=false;resetChat();renderConversationList();showToast('השיחה לא זמינה.');return false;
       }
       const result=await state.supabase.from('messages').select('id,role,content,attachments,position,created_at').eq('conversation_id',conversationId).eq('user_id',state.user.id).order('position',{ascending:true});
       if(result.error)throw result.error;
+      state.subject=normalizeSubject(ownership.data.subject);
       resetChat();
       state.conversationId=conversationId;
       const activeConversation=state.conversations.find(function(item){return item.id===conversationId});
@@ -2812,7 +2841,7 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
     if(state.temporary)return null;
     if(state.conversationId)return state.conversationId;
     const model=localStorage.getItem('sifra-client-model')||'sifra-2';
-    const result=await state.supabase.from('conversations').insert({user_id:state.user.id,title:'שיחה חדשה',model:model}).select('id,title,model,created_at,updated_at').single();
+    const result=await state.supabase.from('conversations').insert({user_id:state.user.id,title:'שיחה חדשה',model:model,subject:state.subject}).select('id,title,model,subject,created_at,updated_at').single();
     if(result.error)throw result.error;
     state.conversationId=result.data.id;
     state.chatNamed=false;
@@ -11696,6 +11725,7 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
           messages:state.messages.slice(-16).map(function(message){return {role:message.role,content:message.content}}),
           images:images.map(function(item){return {dataUrl:item.dataUrl}}),
           requestChatName:requestChatName,
+          subject:state.subject,
           temporary:state.temporary
         })
       });
@@ -11881,19 +11911,8 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
 
   // Keep the empty home screen alive without distracting from actual typing.
   const homeTitle=$('#homeTitle');
-  const homeTitlePhrases=[
-    'מה נפתור היום?',
-    'במה צריך עזרה היום?',
-    'על מה עובדים היום?',
-    'איזה תרגיל נפתור יחד?',
-    'מה לא מסתדר?'
-  ];
-  const homePlaceholderPhrases=[
-    'תכתוב כאן תרגיל...',
-    'אפשר גם לצרף תמונה...',
-    'שאל אותי על משוואות, גיאומטריה ועוד...',
-    'נתקעת בשיעורי הבית? אני כאן.'
-  ];
+  let homeTitlePhrases=SUBJECTS[state.subject].titles.slice();
+  let homePlaceholderPhrases=SUBJECTS[state.subject].placeholders.slice();
   const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let titlePhraseIndex=0;
   let placeholderPhraseIndex=0;
@@ -11901,6 +11920,30 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
   let placeholderDeleting=false;
   let placeholderTimer=0;
   let placeholderStopped=false;
+
+  function applySubjectHome(){
+    state.subject=normalizeSubject(state.subject);
+    const config=SUBJECTS[state.subject];
+    homeTitlePhrases=config.titles.slice();
+    homePlaceholderPhrases=config.placeholders.slice();
+    titlePhraseIndex=0;placeholderPhraseIndex=0;placeholderCharIndex=0;placeholderDeleting=false;
+    clearTimeout(placeholderTimer);placeholderStopped=false;
+    if(homeTitle)homeTitle.textContent=homeTitlePhrases[0];
+    homeInput.placeholder=reduceMotion?('שאל את Sifra ב'+config.label):'';
+    chatInput.placeholder='שאל את Sifra ב'+config.label;
+    document.querySelectorAll('.subject-nav').forEach(function(button){button.classList.toggle('active',button.dataset.subject===state.subject)});
+    document.querySelectorAll('.home-tools .home-tool').forEach(function(button,index){
+      const item=config.tools[index];if(!item)return;button.dataset.prompt=item[0];
+      const strong=button.querySelector('strong'),desc=button.querySelector('div span');
+      if(strong)strong.textContent=item[1];if(desc)desc.textContent=item[2];
+    });
+    document.querySelectorAll('.home-starts .home-start').forEach(function(button,index){
+      const item=config.starts[index];if(!item)return;button.dataset.prompt=item[0];
+      const strong=button.querySelector('strong'),desc=button.querySelector('.home-start-copy span');
+      if(strong)strong.textContent=item[1];if(desc)desc.textContent=item[2];
+    });
+    if(!reduceMotion)schedulePlaceholder(500);
+  }
 
   function cycleHomeTitle(){
     if(!homeTitle||reduceMotion||chat.classList.contains('on'))return;
@@ -11963,8 +12006,8 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
   }else{
     setInterval(cycleHomeTitle,4200);
     schedulePlaceholder(650);
-    homeInput.addEventListener('focus',stopHomePlaceholder,{once:true});
-    homeInput.addEventListener('input',stopHomePlaceholder,{once:true});
+    homeInput.addEventListener('focus',stopHomePlaceholder);
+    homeInput.addEventListener('input',stopHomePlaceholder);
   }
 
   homeInput.addEventListener('input',function(){resizeTextarea(homeInput);updateButtons()});
@@ -12028,7 +12071,7 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
 
   function resetChat(){
     state.messages=[];state.images=[];state.busy=false;chatInner.innerHTML='';chat.classList.remove('on');bottomZone.classList.remove('on');home.style.display='flex';homeInput.value='';chatInput.value='';
-    resizeTextarea(homeInput);resizeTextarea(chatInput);renderAttachments();updateButtons();updateScrollButton();
+    resizeTextarea(homeInput);resizeTextarea(chatInput);renderAttachments();updateButtons();updateScrollButton();applySubjectHome();
     if(window.innerWidth<=860){sidebar.classList.remove('mobile-open');overlay.classList.remove('on')}
     setTimeout(function(){homeInput.focus()},40);
   }
@@ -12040,6 +12083,17 @@ body.reduce-effects *,body.reduce-effects *::before,body.reduce-effects *::after
     setConversationUrl('',false);
     resetChat();
     syncTemporaryChatUi();
+  });
+  document.querySelectorAll('.subject-nav').forEach(function(button){
+    button.addEventListener('click',function(){
+      state.subject=normalizeSubject(button.dataset.subject);
+      state.temporary=false;
+      state.conversationId=null;
+      state.chatNamed=false;
+      setConversationUrl('',false);
+      resetChat();
+      syncTemporaryChatUi();
+    });
   });
   function micNotice(){showToast('קלט קולי יתווסף בהמשך')}
   $('#micHome').addEventListener('click',micNotice);
