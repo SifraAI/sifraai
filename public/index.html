@@ -350,37 +350,114 @@ body.sidebar-collapsed .sidebar{
 }
 .topbar-left,.topbar-right{display:flex;align-items:center;gap:7px}
 .model-switch{
-  display:flex;
-  align-items:stretch;
-  gap:3px;
-  padding:3px;
-  border:1px solid var(--line);
-  background:var(--surface);
-  border-radius:13px;
-  box-shadow:0 3px 14px rgba(0,0,0,.14);
+  position:relative;
+  direction:ltr;
 }
-.model-option{
-  min-width:108px;
-  min-height:38px;
+.model-trigger{
+  height:38px;
+  min-width:116px;
+  border:1px solid transparent;
+  background:transparent;
+  color:var(--text);
+  border-radius:10px;
+  padding:0 10px 0 11px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  font-size:14px;
+  text-align:left;
+  transition:background .15s ease,border-color .15s ease;
+}
+.model-trigger:hover,
+.model-switch.open .model-trigger{
+  background:var(--surface-hover);
+  border-color:var(--line);
+}
+.model-trigger-chevron{
+  color:var(--muted);
+  transition:transform .16s ease;
+}
+.model-switch.open .model-trigger-chevron{transform:rotate(180deg)}
+.model-menu{
+  position:absolute;
+  top:43px;
+  left:0;
+  width:350px;
+  padding:8px;
+  border:1px solid var(--line-strong);
+  border-radius:13px;
+  background:var(--surface);
+  box-shadow:0 18px 45px rgba(0,0,0,.22);
+  opacity:0;
+  visibility:hidden;
+  transform:translateY(-4px) scale(.985);
+  transform-origin:top left;
+  pointer-events:none;
+  transition:opacity .14s ease,transform .14s ease,visibility .14s ease;
+  z-index:120;
+}
+.model-switch.open .model-menu{
+  opacity:1;
+  visibility:visible;
+  transform:translateY(0) scale(1);
+  pointer-events:auto;
+}
+.model-menu-option{
+  width:100%;
+  min-height:72px;
   border:0;
   background:transparent;
-  color:var(--muted);
-  border-radius:10px;
-  padding:5px 9px 4px;
-  text-align:left;
-  line-height:1.05;
-  transition:background .16s ease,color .16s ease,transform .16s ease;
-}
-.model-option:hover{background:var(--surface-hover);color:var(--text)}
-.model-option.active{
-  background:var(--surface-hover);
   color:var(--text);
-  box-shadow:inset 0 0 0 1px var(--line-strong),0 1px 4px rgba(0,0,0,.08);
+  border-radius:9px;
+  padding:10px 10px 9px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  text-align:left;
+  direction:ltr;
+  transition:background .14s ease;
 }
-.model-option:active{transform:scale(.985)}
-.model-name{display:block;font-size:12px;font-weight:600;letter-spacing:.01em}
-.model-info{display:block;margin-top:3px;font-size:9.5px;color:var(--muted);white-space:nowrap}
-.model-option.active .model-info{color:var(--muted)}
+.model-menu-option:hover{background:var(--surface-hover)}
+.model-menu-copy{
+  min-width:0;
+  flex:1;
+  display:block;
+}
+.model-menu-title{
+  display:block;
+  font-size:14px;
+  line-height:1.15;
+  font-weight:600;
+}
+.model-menu-desc{
+  display:block;
+  margin-top:4px;
+  max-width:270px;
+  color:var(--muted);
+  font-size:11.5px;
+  line-height:1.35;
+}
+.model-menu-check{
+  width:20px;
+  height:20px;
+  display:grid;
+  place-items:center;
+  color:var(--text);
+  opacity:0;
+  flex:none;
+}
+.model-menu-check svg{width:17px;height:17px}
+.model-menu-option.active .model-menu-check{opacity:1}
+.model-menu-option.active{background:color-mix(in srgb,var(--text) 3%,transparent)}
+html[data-theme="dark"] .model-menu{
+  background:#242424;
+  border-color:#373737;
+  box-shadow:0 18px 50px rgba(0,0,0,.38);
+}
+html[data-theme="dark"] .model-menu-option:hover{background:#2d2d2d}
+html[data-theme="dark"] .model-menu-option.active{background:#292929}
 .reopen-sidebar{display:none}
 body.sidebar-collapsed .reopen-sidebar{display:grid}
 .share-btn{
@@ -1899,6 +1976,19 @@ html[data-theme="dark"] .temporary-chat-btn.active{
   }
 }
 
+
+@media(max-width:860px){
+  .model-trigger{min-width:104px;height:36px;font-size:13px}
+  .model-menu{width:min(350px,calc(100vw - 24px))}
+}
+@media(max-width:560px){
+  .model-switch{padding:0;gap:0}
+  .model-trigger{min-width:98px;height:34px;padding-inline:9px;font-size:12px}
+  .model-menu{top:39px}
+  .model-menu-option{min-height:66px}
+  .model-menu-desc{font-size:11px}
+}
+
 </style>
 </head>
 <body>
@@ -2011,15 +2101,35 @@ html[data-theme="dark"] .temporary-chat-btn.active{
   <main class="main">
     <header class="topbar">
       <div class="topbar-left">
-        <div class="model-switch" id="modelSwitch" aria-label="בחירת מודל">
-          <button class="model-option" data-client-model="sifra-1.5" type="button">
-            <span class="model-name">Sifra 1.5</span>
-            <span class="model-info">מהיר וקליל</span>
+        <div class="model-switch" id="modelSwitch">
+          <button class="model-trigger" id="modelTrigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="בחירת מודל">
+            <span id="modelTriggerName">Sifra 2</span>
+            <svg class="model-trigger-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m7 9.5 5 5 5-5"></path>
+            </svg>
           </button>
-          <button class="model-option active" data-client-model="sifra-2" type="button">
-            <span class="model-name">Sifra 2</span>
-            <span class="model-info">מדויק וחכם יותר</span>
-          </button>
+
+          <div class="model-menu" id="modelMenu" role="listbox" aria-label="מודלים">
+            <button class="model-menu-option" data-client-model="sifra-2" type="button" role="option">
+              <span class="model-menu-copy">
+                <span class="model-menu-title">Sifra 2</span>
+                <span class="model-menu-desc">מדויק וחכם יותר למשימות מתמטיות מורכבות.</span>
+              </span>
+              <span class="model-menu-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.2 4.2L19 7"></path></svg>
+              </span>
+            </button>
+
+            <button class="model-menu-option" data-client-model="sifra-1.5" type="button" role="option">
+              <span class="model-menu-copy">
+                <span class="model-menu-title">Sifra 1.5</span>
+                <span class="model-menu-desc">מהיר וקליל לשאלות, תרגול ועבודה יומיומית.</span>
+              </span>
+              <span class="model-menu-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.2 4.2L19 7"></path></svg>
+              </span>
+            </button>
+          </div>
         </div>
         <button class="icon-btn reopen-sidebar" id="reopenSidebar" aria-label="פתח סרגל צד" title="פתח סרגל צד">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
@@ -10200,15 +10310,50 @@ html[data-theme="dark"] .temporary-chat-btn.active{
   const savedTheme=localStorage.getItem('sifra-theme');
   if(savedTheme)setTheme(savedTheme);else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)setTheme('dark');else setTheme('light');
 
-  const modelOptions=Array.from(document.querySelectorAll('.model-option'));
+  const modelSwitch=$('#modelSwitch');
+  const modelTrigger=$('#modelTrigger');
+  const modelTriggerName=$('#modelTriggerName');
+  const modelMenu=$('#modelMenu');
+  const modelOptions=Array.from(document.querySelectorAll('.model-menu-option'));
   const savedClientModel=localStorage.getItem('sifra-client-model')||'sifra-2';
-  function selectClientModel(model){
-    modelOptions.forEach(function(option){option.classList.toggle('active',option.dataset.clientModel===model)});
-    localStorage.setItem('sifra-client-model',model);
+
+  function modelLabel(model){
+    return model==='sifra-1.5'?'Sifra 1.5':'Sifra 2';
   }
+
+  function closeModelMenu(){
+    modelSwitch.classList.remove('open');
+    modelTrigger.setAttribute('aria-expanded','false');
+  }
+
+  function selectClientModel(model){
+    modelOptions.forEach(function(option){
+      const selected=option.dataset.clientModel===model;
+      option.classList.toggle('active',selected);
+      option.setAttribute('aria-selected',selected?'true':'false');
+    });
+    modelTriggerName.textContent=modelLabel(model);
+    localStorage.setItem('sifra-client-model',model);
+    closeModelMenu();
+  }
+
   selectClientModel(savedClientModel);
+
+  modelTrigger.addEventListener('click',function(event){
+    event.stopPropagation();
+    const open=!modelSwitch.classList.contains('open');
+    modelSwitch.classList.toggle('open',open);
+    modelTrigger.setAttribute('aria-expanded',open?'true':'false');
+  });
+
+  modelMenu.addEventListener('click',function(event){
+    event.stopPropagation();
+  });
+
   modelOptions.forEach(function(option){
-    option.addEventListener('click',function(){selectClientModel(option.dataset.clientModel)});
+    option.addEventListener('click',function(){
+      selectClientModel(option.dataset.clientModel);
+    });
   });
 
   $('#themeBtn').addEventListener('click',function(){setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark')});
@@ -10217,7 +10362,14 @@ html[data-theme="dark"] .temporary-chat-btn.active{
   $('#libraryBtn').addEventListener('click',function(){showToast('הספרייה תתווסף בהמשך')});
   accountButton.addEventListener('click',function(event){event.stopPropagation();accountMenu.classList.toggle('open');accountButton.classList.toggle('open',accountMenu.classList.contains('open'))});
   accountMenu.addEventListener('click',function(event){event.stopPropagation()});
-  document.addEventListener('click',function(){accountMenu.classList.remove('open');accountButton.classList.remove('open')});
+  document.addEventListener('click',function(){
+    accountMenu.classList.remove('open');
+    accountButton.classList.remove('open');
+    closeModelMenu();
+  });
+  document.addEventListener('keydown',function(event){
+    if(event.key==='Escape')closeModelMenu();
+  });
   $('#upgradeBtn').addEventListener('click',function(){showToast('השדרוג יתווסף בהמשך')});
   $('#accountSettings').addEventListener('click',function(){showToast('הגדרות יתווספו בהמשך')});
   $('#accountLanguage').addEventListener('click',function(){showToast('בחירת שפה תתווסף בהמשך')});
