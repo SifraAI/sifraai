@@ -2,12 +2,133 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 const helmet = require('helmet');
 const { streamSifra, ProviderError } = require('./ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+const LOGGING_TO_FILE = /^(?:1|true|yes|on)$/i.test(
+  String(
+    process.env.logging_to_file ??
+    process.env.LOGGING_TO_FILE ??
+    ''
+  )
+);
+
+const CONTEXT_FILE =
+  path.join(__dirname, 'context.md');
+
+let contextStream = null;
+let contextStreamFailed = false;
+
+function ensureContextFile() {
+  if (!LOGGING_TO_FILE) return;
+
+  try {
+    fs.closeSync(
+      fs.openSync(CONTEXT_FILE, 'a')
+    );
+  } catch (error) {
+    contextStreamFailed = true;
+    console.error(
+      'Failed to create context.md:',
+      error?.message || error
+    );
+  }
+}
+
+function getContextStream() {
+  if (
+    !LOGGING_TO_FILE ||
+    contextStreamFailed
+  ) {
+    return null;
+  }
+
+  if (!contextStream) {
+    contextStream =
+      fs.createWriteStream(
+        CONTEXT_FILE,
+        {
+          flags: 'a',
+          encoding: 'utf8'
+        }
+      );
+
+    contextStream.on(
+      'error',
+      (error) => {
+        contextStreamFailed = true;
+        console.error(
+          'context.md logging failed:',
+          error?.message || error
+        );
+      }
+    );
+  }
+
+  return contextStream;
+}
+
+function appendContext(text) {
+  if (
+    !LOGGING_TO_FILE ||
+    contextStreamFailed ||
+    !text
+  ) {
+    return Promise.resolve();
+  }
+
+  const stream =
+    getContextStream();
+
+  if (!stream) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    stream.write(
+      String(text),
+      'utf8',
+      resolve
+    );
+  });
+}
+
+function sessionHeader({
+  id,
+  mode
+}) {
+  const now =
+    new Date().toISOString();
+
+  return (
+    '\n\n---\n\n' +
+    '# Sifra Session\n\n' +
+    '- started: ' + now + '\n' +
+    '- mode: ' + mode + '\n' +
+    '- session: ' + id + '\n\n'
+  );
+}
+
+ensureContextFile();
+
+if (
+  LOGGING_TO_FILE &&
+  !process.env.SIFRA_SESSION_ID
+) {
+  fs.appendFileSync(
+    CONTEXT_FILE,
+    sessionHeader({
+      id: 'server-' + process.pid,
+      mode: 'npm start / direct'
+    }),
+    'utf8'
+  );
+}
 
 // All Sifra request limits live here.
 const LIMITS = {
@@ -294,6 +415,8 @@ app.post(
       new AbortController();
 
     let streamStarted = false;
+    let contextRequestStarted = false;
+    let contextRequestId = null;
 
     res.on('close', () => {
       if (!res.writableEnded) {
@@ -338,6 +461,44 @@ app.post(
       const images =
         validateImages(req.body?.images);
 
+      contextRequestId =
+        String(
+          res.getHeader('X-Request-Id') ||
+          crypto.randomUUID()
+        );
+
+      if (LOGGING_TO_FILE) {
+        const latestUser =
+          messages
+            .slice()
+            .reverse()
+            .find(
+              (message) =>
+                message.role === 'user'
+            );
+
+        await appendContext(
+          '\n\n## Request — ' +
+          new Date().toISOString() +
+          '\n\n' +
+          '- request: ' +
+          contextRequestId +
+          '\n' +
+          '- images: ' +
+          images.length +
+          '\n\n' +
+          '**User:**\n\n' +
+          (
+            latestUser?.content ||
+            ''
+          ) +
+          '\n\n' +
+          '**Assistant (live):**\n\n'
+        );
+
+        contextRequestStarted = true;
+      }
+
       const result =
         await streamSifra({
           messages,
@@ -345,6 +506,10 @@ app.post(
           signal:
             abortController.signal,
           onToken: async (token) => {
+            // Write every provider token immediately, in the same order
+            // it is streamed to the browser.
+            await appendContext(token);
+
             sendEvent(
               'token',
               { text: token }
@@ -352,12 +517,46 @@ app.post(
           }
         });
 
+      if (
+        LOGGING_TO_FILE &&
+        contextRequestStarted
+      ) {
+        await appendContext(
+          '\n\n**Model:** `' +
+          String(
+            result.model ||
+            'unknown'
+          ) +
+          '`\n\n' +
+          '<!-- end-request:' +
+          contextRequestId +
+          ' -->\n'
+        );
+      }
+
       sendEvent('done', {
         model: result.model
       });
 
       return res.end();
     } catch (error) {
+      if (
+        LOGGING_TO_FILE &&
+        contextRequestStarted
+      ) {
+        await appendContext(
+          '\n\n> [request error] ' +
+          String(
+            error?.message ||
+            error ||
+            'unknown error'
+          ) +
+          '\n\n<!-- end-request:' +
+          contextRequestId +
+          ' -->\n'
+        );
+      }
+
       if (
         abortController.signal.aborted
       ) {
