@@ -379,7 +379,7 @@ async function buildComposition(rawLesson,dir){
     '<title>'+esc(lesson.title)+'</title>',
     '<link rel="stylesheet" href="./katex.min.css">',
     '<style>'+CSS+'</style></head><body>',
-    '<div id="sifra-lesson" data-composition-id="sifra-lesson" data-start="0" data-width="'+WIDTH+'" data-height="'+HEIGHT+'" data-duration="'+lesson.duration.toFixed(3)+'">',
+    '<div id="sifra-lesson" data-composition-id="sifra-lesson" data-start="0" data-width="'+WIDTH+'" data-height="'+HEIGHT+'" data-duration="'+lesson.duration.toFixed(3)+'" data-fps="'+FPS+'">',
     scenes.join(''),
     '</div><script src="./gsap.min.js"><\/script><script>',
     animationScript(lesson.duration),
