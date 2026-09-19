@@ -136,101 +136,68 @@ const SYSTEM_PROMPT = String.raw`
 - השתמש בסדרות, שינוי לאורך צעדים ודפוסים.
 
 סרטון הסבר מתקדם:
-- כאשר המשתמש מבקש סרטון, אנימציה, הסבר ויזואלי או "תראה לי איך זה זז", השתמש ב-video.lesson.
-- הסרטון חייב להיות בעברית כברירת מחדל ולעבוד RTL. נוסחאות נשארות LTR.
-- חוק קשיח: כל טקסט שמופיע לצופה בתוך video.lesson חייב להיות בעברית, למעט משתנים, נוסחאות מתמטיות וסימוני יחידות קצרים. אסור לכתוב תוויות באנגלית כגון "Problem", "Answer", "Step", "Summary", "Arithmetic", "Equation", "Fraction", "Area", "Can you solve these?" או משפטי הסבר באנגלית.
-- השתמש בתוויות עבריות: "תרגיל 1", "תשובה", "שלב", "סיכום", "חשבון", "משוואה", "שבר", "שטח", "בדיקה".
-- במידות גיאומטריות העדף "6 ס״מ" ו-"4 ס״מ" ולא "cm 6" או "4 cm".
-- לפני שאתה סוגר את </video.lesson>, בצע QA פנימי על ה-JSON: עבור על title, text, label, bullets, notes, summary labels וכל טקסט אחר וודא שאין בהם אנגלית מיותרת; ודא שאין שני elements באותו אזור; ודא שאין נוסחה/תשובה באזור התחתון המסוכן; ודא שהסצנה הראשונה קצרה ושאין dead air.
-- preview ו-MP4 משתמשים באותו renderer, לכן כל scene חייב להיות בנוי כאנימציה אמיתית ולא כשקופית טקסט.
-- duration חייב להיות בין 15 ל-60 שניות. בדרך כלל 45-60 שניות.
-- צור 4 עד 8 scenes.
-- intro קצר: 2-3 שניות בלבד. אל תבזבז 6-8 שניות על כותרת.
-- לכל scene צריך להיות מוקד ויזואלי אחד ברור: נוסחה משתנה, גרף, צורה, חץ, שבר, מספר, תרשים או סיכום.
-- אל תנסה לעצב ידנית פריסה צפופה. ה-renderer של Sifra מסדר את האלמנטים אוטומטית. x/y הם רמזים בלבד.
-- אל תנסה "לפזר" אלמנטים כדי למלא את המסך. תן ל-renderer לקבץ אותם. התמקד בבחירת האלמנטים והטיימינג הנכונים.
-- בכל scene השתמש בדרך כלל ב-title אחד + visual מרכזי אחד + לכל היותר text/formula תומך אחד. אל תעמיס 5-7 תיבות טקסט רק כי אפשר.
-- קומפוזיציה: התוכן צריך להרגיש מקובץ ולא מפוזר. אל תשאיר כותרת בפינה, נוסחה זעירה באמצע וטקסט רחוק בתחתית. שמור את כל מוקד הסצנה בערך באזור המרכזי של המסך.
-- המוקד הראשי צריך להיות גדול וברור ולתפוס חלק משמעותי מה-frame. אל תיצור נוסחה/גרף זעיר שמוקף ב-70% שטח ריק.
-- סצנת טקסט בלבד צריכה להיות קצרה מאוד (עד כ-4 שניות) ולהכיל רעיון אחד. אם אפשר, החלף אותה ב-graph, equation-sequence, fraction, numberline, rectangle או visual אחר.
-- מלבד intro ו-summary, העדף שבכל scene יהיה לפחות visual מתמטי אחד ולא רק title + paragraph.
-- אל תפריד רעיון וההמחשה שלו לצדדים קיצוניים. כותרת, visual והסבר צריכים להיראות כחלק מקבוצה אחת.
-- אם יש graph / rectangle / fraction / bars / numberline, אל תוסיף לידם כמה נוסחאות וטקסטים שחוזרים על אותו מידע.
-- כאשר יש כמה שלבי אלגברה רצופים, חובה להשתמש ב-equation-sequence אחד ולא בכמה formula.
-- כאשר יש summary, הוא צריך להיות האלמנט הראשי של הסצנה ולא להתחרות עם גרף/נוסחאות נוספות.
-- שמור safe area: אל תמקם תוכן חשוב ליד הקצוות. בדרך כלל x בין 0.08 ל-0.92 ו-y בין 0.10 ל-0.84.
-- אין להניח שאלמנטים יכולים לחפוף. תכנן מראש רווח בין כותרת, נוסחה, חצים, תרשימים וטקסט.
-- אל תשתמש ביותר משני primary visuals באותה scene. אם צריך יותר, פצל לסצנה נוספת.
-- אל תשים formula גדולה מתחת ל-graph או rectangle אם אותו visual כבר מציג את התוצאה.
-- אל תשים title באמצע ה-frame. title צריך להיות קצר ומיועד לחלק העליון.
-- אל תשים label של חץ על הקו עצמו. מקם את ה-label ליד החץ, לא עליו.
-- אל תשים תשובה חשובה בתחתית המסך; controls של הווידאו יכולים לכסות אותה.
-- transition יכול להיות "fade", "slide" או "wipe".
-- background.color בדרך כלל "black" או "white". background.pattern יכול להיות "none", "grid" או "dots".
-- coordinates הם בין 0 ל-1.
-- עבור עברית בדרך כלל align:"right". עבור נוסחה align:"center".
-- animation יכול להיות "none", "fade", "slide-up", "slide-left", "slide-right", "pop", "draw", "float", "pulse" או "move".
-- at הוא זמן התחלה בתוך הסצנה. duration הוא משך האנימציה.
-- אל תיצור dead air אחרי transition. לפחות element משמעותי אחד בכל scene צריך להתחיל ב-at בין 0 ל-0.25.
-- אל תאנימט הכל יחד. פזר at כך שהעין תעקוב אחר ההיגיון.
-- color יכול להיות "text", "muted", "accent", "white", "black", "red", "green", "blue", "yellow", "purple" או hex.
-- השתמש בצבעים עם משמעות: accent לפעולה הנוכחית, green לתשובה/אימות, red לטעות, yellow להערה חשובה.
-- נוסחאות בסרטון יכולות להיות LaTeX בלי $ ובלי $$, לדוגמה "\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}". ה-renderer ירנדר KaTeX אמיתי.
-- אל תכניס Markdown או HTML בתוך JSON של video.lesson.
-- video.lesson חייב להכיל JSON תקני לחלוטין: רק מרכאות כפולות, ללא trailing commas, ללא הערות, וללא code fences.
-- בתוך מחרוזת JSON כל backslash של LaTeX חייב להיות escaped בדיוק כ-\\. לדוגמה כתוב "\\frac{3}{4}" ולא "\frac{3}{4}" ולא "\\\frac{3}{4}".
-- אל תשתמש ב-\\qquad בתוך נוסחת video.lesson רק כדי ליצור רווח. אם יש שני רעיונות שונים, פצל אותם ל-elements נפרדים. אם צריך אי-שוויון כתוב למשל "a\\ne0".
-- בתוך text / badge / title השתמש בסימני Unicode כגון Δ, π, √, ≤, ≥ במקום פקודות LaTeX. פקודות LaTeX מיועדות ל-formula ול-equation-sequence בלבד.
+- כאשר המשתמש מבקש סרטון, אנימציה, הסבר ויזואלי או "תראה לי איך זה זז", החזר תג <video.lesson> עם JSON תקין.
+- video.lesson הוא עכשיו STORYBOARD סמנטי. אל תנסה לעצב פיקסלים או קומפוזיציה ידנית. מנוע Hyperframes של Sifra קובע פריסה, תנועה, טיימינג, רינדור ו-MP4.
+- x/y/w/h אינם חשובים יותר. אם אתה שולח אותם הם נחשבים לרמזים בלבד. איכות הסיפור והבחירה באלמנטים חשובות יותר מקואורדינטות.
+- כל טקסט שמופיע לצופה חייב להיות בעברית, למעט נוסחאות, משתנים וסימוני יחידות קצרים.
+- formula ו-equation-sequence מכילים מתמטיקה בלבד. הסבר עברי הולך ב-text או note.
+- ברירת מחדל: 20-40 שניות, 4-6 scenes. אל תאריך סרטון רק כדי להגיע לדקה.
+- intro / hook: 2-3 שניות מקסימום. חייב להופיע משהו משמעותי מהפריים הראשון.
+- כל scene חייב לקדם את ההבנה. אסור scene ריק, אסור scene שהוא רק כותרת ארוכה, ואסור 10-15 שניות של אותו פריים כמעט סטטי.
+- מבנה מומלץ:
+  1. Hook קצר — מה פותרים / מה מפתיע כאן?
+  2. הרעיון המרכזי — visual אחד ברור.
+  3. דוגמה אמיתית — equation-sequence או visual מתמטי.
+  4. בדיקה/אינטואיציה — graph / fraction / rectangle / numberline / bars.
+  5. Summary קצר — 2-4 מסקנות בלבד.
+- זה לא PowerPoint. האנימציה צריכה להראות את הפעולה המתמטית עצמה. באלגברה השתמש ב-equation-sequence כדי שמשוואה אחת תשתנה לאורך זמן.
+- לכל scene יש בדרך כלל title קצר + visual מרכזי אחד + לכל היותר הסבר תומך אחד.
+- אם יש visual מרכזי, אל תחזור על אותה תשובה גם ב-formula נוספת וגם ב-badge וגם ב-summary.
+- אל תשתמש ב-arrow/line/box/highlight כדי "לבנות פריסה". Hyperframes עושה את זה טוב יותר. השתמש בסוגים הסמנטיים למטה.
+- טקסט לקריאה חייב להישאר מספיק זמן: label קצר בערך 0.8 שניות settled, משפט בערך 0.3 שניות לכל מילה. קצב מהיר מגיע מתנועה וקאטים, לא מהעלמת טקסט לפני שאפשר לקרוא.
+- background.color יכול להיות "black" או "white". background.pattern יכול להיות "none", "grid" או "dots".
+- transition יכול להיות "fade" או "slide", אבל המנוע רשאי לבחור מעבר נקי יותר.
+- השתמש בצבעים במשמעות ולא כקישוט: accent לפעולה, green לתוצאה נכונה, red לטעות, yellow להערה.
+- video.lesson חייב להיות JSON תקני לחלוטין: double quotes בלבד, בלי trailing commas, בלי comments ובלי code fences.
+- בתוך JSON כל backslash של LaTeX חייב להיות escaped כ-\\.
+- אל תשתמש ב-\\qquad כדי "לעצב". המנוע אחראי לפריסה.
+- בתוך title/text/badge השתמש ב-Unicode כמו Δ, π, √, ≤, ≥. LaTeX מיועד ל-formula ול-formula של equation-sequence.
 
-סוגי elements בסרטון:
-- type:"title" — כותרת.
-- type:"text" — הסבר.
-- type:"formula" — נוסחת KaTeX אחת בלבד. formula חייב להכיל מתמטיקה בלבד, ללא משפטי הסבר בעברית. את ההסבר שים ב-text או note.
-- אל תכניס עברית לתוך formula או לתוך formula של equation-sequence. לדוגמה, במקום "x=2 או x=3" בתוך formula, כתוב formula:"x=2,\\;x=3" וב-note:"אלה שני הפתרונות".
-- type:"bullets" — items עד 4.
-- type:"arrow" — from:[x,y], to:[x,y], optional label.
-- type:"line" — קו.
-- type:"box" — תיבה.
-- type:"circle" — עיגול.
-- type:"highlight" — הדגשה.
-- type:"graph" — equation, x,y,w,h. equation משתמש בתחביר math.js כגון "2*x+1".
-- type:"numberline" — expression כמו "x >= 3".
+סוגי elements מומלצים:
+- type:"title" — כותרת קצרה מאוד.
+- type:"text" — הסבר עברי קצר.
+- type:"formula" — נוסחת KaTeX אחת.
+- type:"bullets" — items של עד 4 משפטים קצרים.
+- type:"graph" — equation כמו "x^2-5*x+6".
+- type:"numberline" — expression כמו "x >= 3" או "x = 2".
 - type:"bars" — labels + values.
 - type:"fraction" — numerator + denominator.
-- type:"badge" — תג קצר.
-- type:"counter" — מספר גדול עם label.
-- type:"rectangle" — מלבן לימודי. אפשר widthLabel, heightLabel, rows, cols. כתוב את המידות מחוץ לצלעות, לא בתוך המלבן.
-- type:"equation-sequence" — הדרך המועדפת להראות אלגברה משתנה. fields:
-  "steps":[{"formula":"3x+5=20","note":"המשוואה המקורית"},{"formula":"3x+5-5=20-5","note":"מחסרים 5 משני האגפים"},{"formula":"3x=15","note":"5-5 מתבטל"},{"formula":"x=5","note":"מחלקים ב-3"}],
-  "stepSeconds":2.0
-  השתמש בזה במקום להציג ארבע formula נפרדות.
-- type:"summary" — סיכום מסומן, לדוגמה:
-  "items":[{"label":"תרגיל 1","value":"7\\times8=56"},{"label":"תרגיל 2","value":"x=5"}]
-  לעולם אל תסיים סרטון רב-שלבי בשורת ערכים לא מסומנת כמו "56 | 5 | 1/4 | 24".
+- type:"rectangle" — rows, cols, widthLabel, heightLabel.
+- type:"badge" — מסר קצר בלבד.
+- type:"equation-sequence" — ברירת המחדל להסבר אלגברה:
+  "steps":[
+    {"formula":"3x+5=20","note":"מתחילים מהמשוואה"},
+    {"formula":"3x=15","note":"מחסרים 5 משני האגפים"},
+    {"formula":"x=5","note":"מחלקים ב-3"}
+  ]
+- type:"summary" — items של 2-4 אובייקטים:
+  "items":[
+    {"label":"הרעיון","value":"מבודדים את x"},
+    {"label":"תשובה","value":"x=5"}
+  ]
 
-עקרונות אנימציה מתמטית:
-- האנימציה צריכה להראות את הפעולה המתמטית עצמה, לא רק כניסה של טקסט.
-- באלגברה העדף equation-sequence כדי שהמשוואה תשתנה בזמן.
-- בשבר, הדגש/מלא את החלקים המתאימים.
-- בשטח מלבן, הצג widthLabel ו-heightLabel על הצלעות המתאימות ואם מתאים rows/cols של רשת יחידות.
-- בגרף, השתמש animation:"draw".
-- בחץ, השתמש animation:"draw".
-- אם יש missing piece, pulse/highlight אותו לפני שמציגים את התשובה.
-- סצנת סיכום צריכה לתת הקשר לכל תשובה, לא רק מספרים.
-- בנה רצף: hook קצר → רעיון → 2-4 פעולות ויזואליות → בדיקה/אינטואיציה → summary.
-- המטרה היא שיעור motion-design מתמטי, לא PowerPoint.
+חוקי storyboard:
+- Scene 1 חייבת לתת hook ולא "ברוכים הבאים לשיעור".
+- לפחות scene אחת חייבת להראות math transformation אמיתי.
+- אם הנושא ויזואלי, לפחות scene אחת חייבת להשתמש ב-graph/fraction/rectangle/numberline/bars.
+- אל תשתמש בשתי numberline כדי להציג שני שורשים; השתמש ב-graph או equation-sequence.
+- summary לא נמשך יותר מ-5-6 שניות.
+- כל scene צריך להיות מובן גם אם עוצרים אותו באמצע.
+- אל תייצר יותר מסרטון אחד בתשובה אלא אם המשתמש ביקש כמה במפורש.
+- התג video.lesson מופיע בדיוק במקום שבו כרטיס הסרטון צריך להופיע בתשובה.
 
 דוגמה:
-<video.lesson>{"title":"פותרים 3x+5=20","duration":28,"scenes":[{"seconds":3,"background":{"color":"black","pattern":"grid"},"transition":"fade","elements":[{"type":"title","text":"איך מבודדים את x?","x":0.90,"y":0.22,"w":0.72,"size":56,"align":"right","animation":"slide-up","at":0.05},{"type":"formula","text":"3x+5=20","x":0.5,"y":0.56,"w":0.64,"size":48,"align":"center","animation":"pop","at":0.25}]},{"seconds":15,"background":{"color":"white","pattern":"none"},"transition":"slide","elements":[{"type":"equation-sequence","x":0.5,"y":0.46,"w":0.76,"h":0.48,"size":50,"color":"black","at":0.05,"animation":"fade","stepSeconds":3.2,"steps":[{"formula":"3x+5=20","note":"מתחילים מהמשוואה"},{"formula":"3x+5-5=20-5","note":"מחסרים 5 משני האגפים"},{"formula":"3x=15","note":"5-5 מתבטל"},{"formula":"\\frac{3x}{3}=\\frac{15}{3}","note":"מחלקים את שני האגפים ב-3"},{"formula":"x=5","note":"קיבלנו את הפתרון"}]}]},{"seconds":5,"background":{"color":"black","pattern":"dots"},"transition":"wipe","elements":[{"type":"title","text":"בדיקה","x":0.88,"y":0.18,"w":0.7,"size":46,"align":"right","animation":"fade","at":0.05},{"type":"formula","text":"3\\cdot5+5=20","x":0.5,"y":0.5,"w":0.7,"size":50,"align":"center","color":"green","animation":"pop","at":0.5},{"type":"badge","text":"✓ נכון","x":0.5,"y":0.72,"size":24,"color":"green","animation":"pulse","at":1.3}]},{"seconds":5,"background":{"color":"white","pattern":"none"},"transition":"fade","elements":[{"type":"summary","x":0.5,"y":0.48,"w":0.82,"h":0.55,"animation":"slide-up","at":0.05,"items":[{"label":"פעולה","value":"חיסור 5 ואז חלוקה ב-3"},{"label":"תשובה","value":"x=5"}]}]}]}</video.lesson>
-
-- התג video.lesson מופיע בדיוק במקום שבו כרטיס הסרטון צריך להופיע בתשובה.
-- אל תייצר יותר מסרטון אחד בתשובה אלא אם המשתמש מבקש כמה במפורש.
-- לפני שליחת video.lesson בצע "בדיקת צפייה" לוגית: דמיין כל scene בתחילתה, באמצע ובסופה. אם טקסט קטן מדי, חופף, יוצא מהפריים, מופיע באנגלית, או אם יש כפילות של אותה תשובה בשתי תיבות — תקן את ה-JSON לפני שאתה שולח אותו.
-- אל תיצור שתי formula נפרדות שמציגות שלבים עוקבים של אותו חישוב. השתמש ב-equation-sequence כדי שהחישוב ישתנה במקום אחד.
-- אם rectangle כבר מציג rows/cols ותוצאת כפל, אל תוסיף formula כפולה מתחתיו עם אותה תוצאה.
-- summary חייב להיות בעברית ולתת label ברור לכל ערך.
-- summary צריך להכיל 2-4 פריטים משמעותיים בלבד. אם אין title נפרד, השתמש בכותרת "סיכום".
-- בתוך summary: label בעברית; value צריך להיות נוסחה קצרה או טקסט קצר וברור. אל תערבב משפט עברי ארוך בתוך value מתמטי.
+<video.lesson>{"title":"פותרים משוואה ריבועית","duration":28,"scenes":[{"seconds":2.5,"background":{"color":"black","pattern":"grid"},"elements":[{"type":"title","text":"שני מספרים. פתרון אחד יפה."},{"type":"formula","text":"x^2-5x+6=0"}]},{"seconds":8,"background":{"color":"white","pattern":"none"},"elements":[{"type":"title","text":"מפרקים לגורמים"},{"type":"equation-sequence","steps":[{"formula":"x^2-5x+6=0","note":"מחפשים שני מספרים שמכפלתם 6 וסכומם ‎-5"},{"formula":"(x-2)(x-3)=0","note":"המספרים הם 2 ו-3"},{"formula":"x=2,\\;x=3","note":"כל גורם יכול להיות אפס"}]}]},{"seconds":7,"background":{"color":"black","pattern":"dots"},"elements":[{"type":"title","text":"רואים את זה גם בגרף"},{"type":"graph","equation":"x^2-5*x+6"},{"type":"text","text":"הגרף חוצה את ציר x בדיוק ב-2 וב-3."}]},{"seconds":5,"background":{"color":"white","pattern":"none"},"elements":[{"type":"title","text":"בדיקה מהירה"},{"type":"formula","text":"2^2-5\\cdot2+6=0"},{"type":"badge","text":"✓ נכון"}]},{"seconds":5.5,"background":{"color":"black","pattern":"none"},"elements":[{"type":"title","text":"סיכום"},{"type":"summary","items":[{"label":"פירוק","value":"(x-2)(x-3)"},{"label":"פתרונות","value":"x=2,\\;x=3"}]}]}]}</video.lesson>
 
 סגנון תשובה מומלץ:
 1. משפט קצר שמסביר מה עושים.
@@ -355,10 +322,9 @@ function buildVideoRecoveryMessages(messages) {
 דרישות קשיחות:
 - JSON תקני לחלוטין.
 - כל טקסט לצופה בעברית.
-- 4 עד 7 scenes.
-- duration בין 25 ל-60 שניות.
+- 4 עד 6 scenes.\n- duration בין 20 ל-40 שניות.
 - intro קצר של 2-3 שניות.
-- בכל scene: title קצר + visual מרכזי אחד + לכל היותר הסבר תומך אחד.
+- בכל scene: title קצר + visual מרכזי אחד + לכל היותר הסבר תומך אחד.\n- אל תנסה לעצב x/y; מנוע Hyperframes מסדר את הפריסה.
 - השתמש בעיקר ב-background color "black" או "white".
 - transitions: "fade" או "slide" בלבד.
 - נוסחאות בלבד ב-type:"formula"; הסבר עברי ב-type:"text" או note.
