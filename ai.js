@@ -331,7 +331,7 @@ function buildVideoRecoveryMessages(messages) {
 - transitions: "fade" או "slide" בלבד.
 - נוסחאות בלבד ב-type:"formula"; הסבר עברי ב-type:"text" או note.
 - באלגברה מרובת שלבים השתמש ב-type:"equation-sequence".
-- אפשר elements: title, text, formula, equation-sequence, graph, numberline, fraction, rectangle, bars, arrow, badge, summary.
+- אפשר elements: title, text, formula, equation-sequence, graph, numberline, fraction, rectangle, bars, badge, summary.
 - formula ו-equation-sequence משתמשים ב-LaTeX עם backslash כפול בתוך JSON, למשל "\\frac{3}{4}".
 - summary בסוף עם 2-4 items, label בעברית ו-value קצר.
 - אין trailing commas.
