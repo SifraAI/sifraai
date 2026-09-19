@@ -1759,6 +1759,92 @@ html[data-theme="dark"] .home-start:nth-child(3) .home-start-badge{
   }
 }
 
+
+/* ===== temporary chat control ===== */
+.topbar-right{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+}
+
+.temporary-chat-btn{
+  position:relative;
+  width:40px;
+  height:40px;
+  padding:0;
+  border:1px dashed var(--line-strong);
+  border-radius:13px;
+  background:color-mix(in srgb,var(--surface) 72%,transparent);
+  color:var(--muted);
+  display:grid;
+  place-items:center;
+  transition:
+    background .16s ease,
+    color .16s ease,
+    border-color .16s ease,
+    transform .16s ease,
+    box-shadow .16s ease;
+}
+
+.temporary-chat-btn:hover{
+  color:var(--text);
+  border-color:color-mix(in srgb,var(--text) 34%,var(--line));
+  background:var(--surface-hover);
+  transform:translateY(-1px);
+}
+
+.temporary-chat-icon{
+  width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+}
+
+.temporary-chat-icon svg{
+  width:22px;
+  height:22px;
+}
+
+.temporary-chat-dot{
+  position:absolute;
+  top:6px;
+  right:6px;
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--muted-2);
+  border:1.5px solid var(--bg);
+  transition:background .16s ease,transform .16s ease;
+}
+
+.temporary-chat-btn.active{
+  color:#8c6cff;
+  border-style:solid;
+  border-color:color-mix(in srgb,#8c6cff 55%,var(--line));
+  background:color-mix(in srgb,#8c6cff 11%,var(--surface));
+  box-shadow:0 0 0 3px color-mix(in srgb,#8c6cff 8%,transparent);
+}
+
+.temporary-chat-btn.active .temporary-chat-dot{
+  background:#8c6cff;
+  transform:scale(1.12);
+}
+
+html[data-theme="dark"] .temporary-chat-btn.active{
+  color:#b7a3ff;
+  border-color:#55438f;
+  background:#241f35;
+  box-shadow:0 0 0 3px rgba(140,108,255,.08);
+}
+
+@media(max-width:560px){
+  .temporary-chat-btn{
+    width:38px;
+    height:38px;
+    border-radius:12px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1888,16 +1974,15 @@ html[data-theme="dark"] .home-start:nth-child(3) .home-start-badge{
         </button>
       </div>
       <div class="topbar-right">
-        <button class="share-btn" id="shareBtn">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 15V3"></path><path d="m7 8 5-5 5 5"></path><path d="M5 12v6.5A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5V12"></path>
-          </svg>
-          <span>שיתוף</span>
-        </button>
-        <button class="icon-btn" id="topMoreBtn" aria-label="עוד" title="עוד">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle>
-          </svg>
+        <button class="temporary-chat-btn" id="temporaryChatBtn" type="button" aria-label="צ׳אט זמני" title="צ׳אט זמני — השיחה לא תישמר" aria-pressed="false">
+          <span class="temporary-chat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7.5 6.5h7a4 4 0 0 1 4 4v1.25a4 4 0 0 1-4 4H12l-3.5 2.75v-2.75h-1a4 4 0 0 1-4-4V10.5a4 4 0 0 1 4-4Z"></path>
+              <path d="M14.5 4.25h1.25A4.25 4.25 0 0 1 20 8.5v1"></path>
+              <path d="M8 11.1h.01M11 11.1h.01M14 11.1h.01"></path>
+            </svg>
+          </span>
+          <span class="temporary-chat-dot"></span>
         </button>
       </div>
     </header>
@@ -2049,7 +2134,7 @@ html[data-theme="dark"] .home-start:nth-child(3) .home-start-badge{
   'use strict';
   const $=function(selector){return document.querySelector(selector)};
   const sidebar=$('#sidebar'),overlay=$('#overlay'),home=$('#home'),chat=$('#chat'),chatInner=$('#chatInner'),bottomZone=$('#bottomZone'),homeInput=$('#homeInput'),chatInput=$('#chatInput'),sendHome=$('#sendHome'),sendChat=$('#sendChat'),fileInput=$('#fileInput'),homeAttachments=$('#homeAttachments'),chatAttachments=$('#chatAttachments'),homeComposer=$('#homeComposer'),chatComposer=$('#chatComposer'),toast=$('#toast'),themeColor=$('#themeColor'),accountMenu=$('#accountMenu'),accountButton=$('#accountButton'),dailyUsage=$('#dailyUsage'),dailyUsageFill=$('#dailyUsageFill'),brandLogo=$('#brandLogo'),scrollDownBtn=$('#scrollDownBtn'),mathModal=$('#mathModal'),mathModalBackdrop=$('#mathModalBackdrop'),mathModalContent=$('#mathModalContent'),mathModalViewport=$('#mathModalViewport'),mathZoomLabel=$('#mathZoomLabel');
-  const state={messages:[],images:[],busy:false};
+  const state={messages:[],images:[],busy:false,temporary:false};
   const MAX_IMAGES=2;
 
   function esc(value){return String(value).replace(/[&<>"']/g,function(char){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]})}
@@ -10009,7 +10094,6 @@ html[data-theme="dark"] .home-start:nth-child(3) .home-start-badge{
   $('#moreBtn').addEventListener('click',function(){$('#morePanel').classList.toggle('open')});
   $('#searchBtn').addEventListener('click',function(){showToast('חיפוש יתווסף בהמשך')});
   $('#libraryBtn').addEventListener('click',function(){showToast('הספרייה תתווסף בהמשך')});
-  $('#topMoreBtn').addEventListener('click',function(){showToast('אפשרויות נוספות יתווספו בהמשך')});
   accountButton.addEventListener('click',function(event){event.stopPropagation();accountMenu.classList.toggle('open');accountButton.classList.toggle('open',accountMenu.classList.contains('open'))});
   accountMenu.addEventListener('click',function(event){event.stopPropagation()});
   document.addEventListener('click',function(){accountMenu.classList.remove('open');accountButton.classList.remove('open')});
@@ -10031,7 +10115,6 @@ html[data-theme="dark"] .home-start:nth-child(3) .home-start-badge{
       else{await navigator.clipboard.writeText(text||location.href);showToast('הועתק ללוח')}
     }catch(error){if(error&&error.name!=='AbortError')showToast('לא הצלחתי לשתף')}
   }
-  $('#shareBtn').addEventListener('click',function(){shareText('')});
 
   function iconButton(label,svg){
     const button=document.createElement('button');
@@ -10297,7 +10380,8 @@ html[data-theme="dark"] .home-start:nth-child(3) .home-start-badge{
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           messages:state.messages.slice(-16),
-          images:images.map(function(item){return {dataUrl:item.dataUrl}})
+          images:images.map(function(item){return {dataUrl:item.dataUrl}}),
+          temporary:state.temporary
         })
       });
 
@@ -10460,6 +10544,41 @@ html[data-theme="dark"] .home-start:nth-child(3) .home-start-badge{
     })
   });
 
+  const temporaryChatBtn=$('#temporaryChatBtn');
+
+  function syncTemporaryChatUi(){
+    temporaryChatBtn.classList.toggle('active',state.temporary);
+    temporaryChatBtn.setAttribute(
+      'aria-pressed',
+      state.temporary?'true':'false'
+    );
+    temporaryChatBtn.title=
+      state.temporary
+        ? 'צ׳אט זמני פעיל — לחץ כדי לחזור לצ׳אט רגיל'
+        : 'צ׳אט זמני — השיחה לא תישמר';
+  }
+
+  function setTemporaryChat(enabled){
+    const next=Boolean(enabled);
+    if(state.temporary===next)return;
+
+    state.temporary=next;
+    resetChat();
+    syncTemporaryChatUi();
+
+    showToast(
+      next
+        ? 'צ׳אט זמני פעיל — השיחה הזו לא תישמר'
+        : 'חזרת לצ׳אט רגיל'
+    );
+  }
+
+  temporaryChatBtn.addEventListener('click',function(){
+    setTemporaryChat(!state.temporary);
+  });
+
+  syncTemporaryChatUi();
+
   function resetChat(){
     state.messages=[];state.images=[];state.busy=false;chatInner.innerHTML='';chat.classList.remove('on');bottomZone.classList.remove('on');home.style.display='flex';homeInput.value='';chatInput.value='';
     resizeTextarea(homeInput);resizeTextarea(chatInput);renderAttachments();updateButtons();updateScrollButton();
@@ -10467,7 +10586,11 @@ html[data-theme="dark"] .home-start:nth-child(3) .home-start-badge{
     setTimeout(function(){homeInput.focus()},40);
   }
 
-  $('#newChat').addEventListener('click',resetChat);
+  $('#newChat').addEventListener('click',function(){
+    state.temporary=false;
+    resetChat();
+    syncTemporaryChatUi();
+  });
   function micNotice(){showToast('קלט קולי יתווסף בהמשך')}
   $('#micHome').addEventListener('click',micNotice);
   $('#micChat').addEventListener('click',micNotice);
