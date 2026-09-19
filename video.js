@@ -523,14 +523,16 @@ async function checkComposition(dir,onProgress){
       '.',
       '--samples','15',
       '--at-transitions',
-      '--frame-check',
+      '--frame-check=',
+      '--snapshots',
       '--timeout','30000'
     ],
     {
       cwd:dir,
       timeoutMs:180000,
       env:{
-        HYPERFRAMES_NO_UPDATE_CHECK:'1'
+        HYPERFRAMES_NO_UPDATE_CHECK:'1',
+        HYPERFRAMES_NO_TELEMETRY:'1'
       }
     }
   );
@@ -550,7 +552,8 @@ async function renderHyperframes(dir,output,onProgress){
   await runProcess(hyperframesBin(),['render','--quality','high','--fps',String(FPS),'--output',output],{
     cwd:dir,
     env:{
-      HYPERFRAMES_NO_UPDATE_CHECK:'1'
+      HYPERFRAMES_NO_UPDATE_CHECK:'1',
+        HYPERFRAMES_NO_TELEMETRY:'1'
     },
     timeoutMs:Number(process.env.SIFRA_VIDEO_TIMEOUT_MS||12*60*1000),
     onOutput(value){
@@ -753,7 +756,8 @@ async function ensureVideoEnvironment(){
               ? 180000
               : 30000,
           env:{
-            HYPERFRAMES_NO_UPDATE_CHECK:'1'
+            HYPERFRAMES_NO_UPDATE_CHECK:'1',
+        HYPERFRAMES_NO_TELEMETRY:'1'
           }
         }
       );
