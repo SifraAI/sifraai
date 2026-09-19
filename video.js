@@ -292,7 +292,7 @@ const CSS=[
 'html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0d0e10}',
 'body{font-family:Arial,"Noto Sans Hebrew",sans-serif;-webkit-font-smoothing:antialiased}',
 '#sifra-lesson{position:relative;width:1280px;height:720px;overflow:hidden;background:#0d0e10}',
-'.scene{position:absolute;inset:0;visibility:hidden;opacity:0;overflow:hidden;isolation:isolate}',
+'.scene{position:absolute;inset:0;overflow:hidden;isolation:isolate}',
 '.scene-bg{position:absolute;inset:0;z-index:-2}',
 '.theme-dark{--bg:#0f1012;--panel:#181a1e;--text:#f4f5f7;--muted:#a4a8b1;--line:rgba(255,255,255,.10);--accent:#7b8dff;--green:#58d092}',
 '.theme-light{--bg:#f7f7f6;--panel:#fff;--text:#151618;--muted:#6d7179;--line:rgba(0,0,0,.10);--accent:#5668dc;--green:#279566}',
@@ -327,19 +327,18 @@ function animationScript(duration){
     'const scenes=Array.from(document.querySelectorAll(".scene"));',
     'scenes.forEach(function(scene,index){',
     'const start=Number(scene.dataset.start||0),dur=Number(scene.dataset.duration||0),end=start+dur;',
-    'tl.set(scene,{autoAlpha:1},start);',
-    'const kicker=scene.querySelector(".scene-kicker"),title=scene.querySelector(".scene-title"),main=scene.querySelector(".scene-main"),badge=scene.querySelector(".scene-badge"),bg=scene.querySelector(".scene-bg");',
-    'if(bg)tl.fromTo(bg,{scale:1.012,x:0,y:0},{scale:1.032,x:index%2===0?-5:5,y:-3,duration:Math.max(.8,dur),ease:"none"},start);',
-    'if(kicker)tl.fromTo(kicker,{autoAlpha:0,y:12},{autoAlpha:1,y:0,duration:.28,ease:"power2.out"},start+.02);',
-    'if(title)tl.fromTo(title,{autoAlpha:0,y:28},{autoAlpha:1,y:0,duration:.48,ease:"power3.out"},start+.06);',
+    'const shell=scene.querySelector(".scene-shell"),kicker=scene.querySelector(".scene-kicker"),title=scene.querySelector(".scene-title"),main=scene.querySelector(".scene-main"),badge=scene.querySelector(".scene-badge");',
+    'if(shell)tl.fromTo(shell,{opacity:0},{opacity:1,duration:.18,ease:"power1.out"},start);',
+    'if(kicker)tl.fromTo(kicker,{opacity:0,y:12},{opacity:1,y:0,duration:.28,ease:"power2.out"},start+.02);',
+    'if(title)tl.fromTo(title,{opacity:0,y:28},{opacity:1,y:0,duration:.48,ease:"power3.out"},start+.06);',
     'const steps=Array.from(scene.querySelectorAll(".equation-step"));',
-    'if(steps.length){steps.forEach(function(step,stepIndex){const span=Math.max(1.2,dur-1.15)/steps.length;const at=start+.58+stepIndex*span;if(stepIndex>0)tl.to(steps[stepIndex-1],{autoAlpha:0,y:-24,duration:.22,ease:"power2.in"},Math.max(start,at-.18));tl.fromTo(step,{autoAlpha:0,y:30,scale:.985},{autoAlpha:1,y:0,scale:1,duration:.34,ease:"power3.out"},at);});if(main)tl.to(main,{y:-4,duration:Math.max(.8,dur-.8),ease:"none"},start+.72);}else if(main){tl.fromTo(main,{autoAlpha:0,y:26,scale:.99},{autoAlpha:1,y:0,scale:1,duration:.5,ease:"power3.out"},start+.34);tl.to(main,{y:-4,scale:1.006,duration:Math.max(.8,dur-.9),ease:"none"},start+.84);}',
+    'if(steps.length){steps.forEach(function(step,stepIndex){const span=Math.max(1.2,dur-1.15)/steps.length;const at=start+.58+stepIndex*span;if(stepIndex>0)tl.to(steps[stepIndex-1],{opacity:0,y:-24,duration:.22,ease:"power2.in"},Math.max(start,at-.18));tl.fromTo(step,{opacity:0,y:30,scale:.985},{opacity:1,y:0,scale:1,duration:.34,ease:"power3.out"},at);});}else if(main){tl.fromTo(main,{opacity:0,y:26,scale:.99},{opacity:1,y:0,scale:1,duration:.5,ease:"power3.out"},start+.34);}',
     'Array.from(scene.querySelectorAll(".draw-path,.draw-line")).forEach(function(node,i){let length=500;try{length=node.getTotalLength()}catch(e){}gsap.set(node,{strokeDasharray:length,strokeDashoffset:length});tl.to(node,{strokeDashoffset:0,duration:Math.min(1.4,Math.max(.65,dur*.22)),ease:"power2.out"},start+.62+i*.08);});',
-    'const cells=Array.from(scene.querySelectorAll(".fraction-cell,.area-cell"));if(cells.length)tl.fromTo(cells,{autoAlpha:.2,scale:.82},{autoAlpha:1,scale:1,duration:.25,stagger:.035,ease:"back.out(1.5)"},start+.62);',
+    'const cells=Array.from(scene.querySelectorAll(".fraction-cell,.area-cell"));if(cells.length)tl.fromTo(cells,{opacity:.2,scale:.82},{opacity:1,scale:1,duration:.25,stagger:.035,ease:"back.out(1.5)"},start+.62);',
     'const bars=Array.from(scene.querySelectorAll(".bar"));if(bars.length)tl.fromTo(bars,{scaleY:0},{scaleY:1,duration:.5,stagger:.08,ease:"power3.out"},start+.6);',
-    'const cards=Array.from(scene.querySelectorAll(".summary-card"));if(cards.length)tl.fromTo(cards,{autoAlpha:0,y:28,scale:.97},{autoAlpha:1,y:0,scale:1,duration:.38,stagger:.12,ease:"power3.out"},start+.5);',
-    'if(badge)tl.fromTo(badge,{autoAlpha:0,y:14,scale:.97},{autoAlpha:1,y:0,scale:1,duration:.3,ease:"power2.out"},Math.max(start+.72,end-.95));',
-    'if(index<scenes.length-1)tl.to(scene,{autoAlpha:0,duration:.18,ease:"power1.in"},Math.max(start,end-.18));',
+    'const cards=Array.from(scene.querySelectorAll(".summary-card"));if(cards.length)tl.fromTo(cards,{opacity:0,y:28,scale:.97},{opacity:1,y:0,scale:1,duration:.38,stagger:.12,ease:"power3.out"},start+.5);',
+    'if(badge)tl.fromTo(badge,{opacity:0,y:14,scale:.97},{opacity:1,y:0,scale:1,duration:.3,ease:"power2.out"},Math.max(start+.72,end-.95));',
+    'if(shell&&index<scenes.length-1)tl.to(shell,{opacity:0,duration:.16,ease:"power1.in"},Math.max(start,end-.16));',
     '});',
     'tl.set({}, {}, '+Number(duration).toFixed(3)+');',
     'window.__timelines=window.__timelines||{};window.__timelines["sifra-lesson"]=tl;',
@@ -374,7 +373,7 @@ async function buildComposition(rawLesson,dir){
     '<title>'+esc(lesson.title)+'</title>',
     '<link rel="stylesheet" href="./katex.min.css">',
     '<style>'+CSS+'</style></head><body>',
-    '<div id="sifra-lesson" data-composition-id="sifra-lesson" data-width="'+WIDTH+'" data-height="'+HEIGHT+'" data-duration="'+lesson.duration.toFixed(3)+'">',
+    '<div id="sifra-lesson" data-composition-id="sifra-lesson" data-start="0" data-width="'+WIDTH+'" data-height="'+HEIGHT+'" data-duration="'+lesson.duration.toFixed(3)+'">',
     scenes.join(''),
     '</div><script src="./gsap.min.js"><\/script><script>',
     animationScript(lesson.duration),
@@ -464,9 +463,7 @@ async function writePlanningArtifacts(lesson,root){
     '- summaries arrive card-by-card',
     '',
     '## Quality gates',
-    '- Hyperframes lint',
-    '- Hyperframes validate',
-    '- Hyperframes inspect',
+    '- Hyperframes check (layout + runtime + motion + contrast + transition sampling)',
     '- ffprobe output verification',
     '- FFmpeg post-render freeze scan',
     '- poster extraction + frame-0 bake',
@@ -502,12 +499,30 @@ function runProcess(command,args,options={}){
 function npx(){return process.platform==='win32'?'npx.cmd':'npx'}
 
 async function checkComposition(dir,onProgress){
-  onProgress?.(.08,'בודק את הקומפוזיציה…');
-  await runProcess(npx(),['--no-install','hyperframes','lint','.'],{cwd:dir,timeoutMs:90000});
-  onProgress?.(.14,'בודק את הווידאו בדפדפן…');
-  await runProcess(npx(),['--no-install','hyperframes','validate','.'],{cwd:dir,timeoutMs:120000});
-  onProgress?.(.20,'בודק פריסה וגלישות…');
-  await runProcess(npx(),['--no-install','hyperframes','inspect','.'],{cwd:dir,timeoutMs:120000});
+  onProgress?.(.08,'בודק פריסה, תנועה וניגודיות…');
+
+  await runProcess(
+    npx(),
+    [
+      '--no-install',
+      'hyperframes',
+      'check',
+      '.',
+      '--samples','15',
+      '--at-transitions',
+      '--frame-check',
+      '--timeout','30000'
+    ],
+    {
+      cwd:dir,
+      timeoutMs:180000,
+      env:{
+        HYPERFRAMES_NO_UPDATE_CHECK:'1'
+      }
+    }
+  );
+
+  onProgress?.(.20,'בדיקת Hyperframes עברה בהצלחה');
 }
 
 function parseProgress(value){
@@ -519,8 +534,11 @@ function parseProgress(value){
 
 async function renderHyperframes(dir,output,onProgress){
   onProgress?.(.23,'מרנדר באיכות גבוהה…');
-  await runProcess(npx(),['--no-install','hyperframes','render','.','--quality','high','--fps',String(FPS),'--output',output],{
+  await runProcess(npx(),['--no-install','hyperframes','render','--quality','high','--fps',String(FPS),'--output',output],{
     cwd:dir,
+    env:{
+      HYPERFRAMES_NO_UPDATE_CHECK:'1'
+    },
     timeoutMs:Number(process.env.SIFRA_VIDEO_TIMEOUT_MS||12*60*1000),
     onOutput(value){
       const p=parseProgress(value);
@@ -684,13 +702,78 @@ async function renderLesson({lesson:rawLesson,jobId,onProgress}){
 
 async function ensureVideoEnvironment(){
   await fsp.mkdir(JOB_ROOT,{recursive:true});
-  const tests=[['ffmpeg',['-version']],['ffprobe',['-version']],[npx(),['--no-install','hyperframes','info']]];
-  const results=[];
+
+  const major=
+    Number(
+      String(process.versions.node||'0')
+        .split('.')[0]
+    );
+
+  const results=[
+    {
+      command:'node',
+      ok:major>=22,
+      detail:process.versions.node
+    }
+  ];
+
+  const tests=[
+    ['ffmpeg',['-version']],
+    ['ffprobe',['-version']],
+    [
+      npx(),
+      [
+        '--no-install',
+        'hyperframes',
+        'browser',
+        'ensure'
+      ]
+    ]
+  ];
+
   for(const entry of tests){
-    try{await runProcess(entry[0],entry[1],{timeoutMs:30000});results.push({command:entry[0],ok:true})}
-    catch(error){results.push({command:entry[0],ok:false,error:error?.message||String(error)})}
+    try{
+      await runProcess(
+        entry[0],
+        entry[1],
+        {
+          timeoutMs:
+            entry[1].includes('browser')
+              ? 180000
+              : 30000,
+          env:{
+            HYPERFRAMES_NO_UPDATE_CHECK:'1'
+          }
+        }
+      );
+
+      results.push({
+        command:
+          entry[0]+' '+
+          entry[1].slice(2).join(' '),
+        ok:true
+      });
+    }catch(error){
+      results.push({
+        command:
+          entry[0]+' '+
+          entry[1].slice(2).join(' '),
+        ok:false,
+        error:
+          error?.message||
+          String(error)
+      });
+    }
   }
-  return {ok:results.every(item=>item.ok),results,root:JOB_ROOT};
+
+  return {
+    ok:
+      results.every(
+        item=>item.ok
+      ),
+    results,
+    root:JOB_ROOT
+  };
 }
 
 async function removeJobFiles(jobId){
